@@ -36,6 +36,7 @@ const health_1 = __importDefault(require("./routes/health"));
 const cache_1 = __importDefault(require("./routes/cache"));
 const files_1 = __importDefault(require("./routes/files"));
 const monitoring_1 = __importDefault(require("./routes/monitoring"));
+const settings_1 = __importDefault(require("./routes/settings"));
 const monitoringService_1 = require("./services/monitoringService");
 const requestTiming_1 = require("./middleware/requestTiming");
 const express_status_monitor_1 = __importDefault(require("express-status-monitor"));
@@ -127,6 +128,7 @@ app.use('/api/v1/reports', reportExports_1.default);
 app.use('/api/v1/cache', cache_1.default);
 app.use('/api/v1/files', files_1.default);
 app.use('/api/v1/monitoring', monitoring_1.default);
+app.use('/api/v1/settings', settings_1.default);
 app.use('/uploads', express_1.default.static('uploads'));
 app.get('/api/v1', (0, caching_1.cacheResponse)(300), (req, res) => {
     res.json({

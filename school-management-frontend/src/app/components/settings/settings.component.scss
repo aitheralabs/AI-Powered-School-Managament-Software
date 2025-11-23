@@ -110,10 +110,38 @@
   }
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 16px;
+
+  p {
+    color: #6c757d;
+    font-size: 14px;
+  }
+}
+
 .save-section {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 16px;
   padding: 24px 0;
+
+  .reset-button {
+    padding: 0 32px;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #6c757d;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
 
   .save-button {
     padding: 0 48px;
@@ -121,8 +149,13 @@
     font-size: 16px;
     font-weight: 500;
 
-    mat-icon {
+    mat-icon, mat-spinner {
       margin-right: 8px;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
 }

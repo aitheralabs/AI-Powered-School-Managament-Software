@@ -15,3 +15,4 @@ export { ParentService } from './parentService';
 export { StaffService } from './staffService';
 export { AttendanceReportService } from './attendanceReportService';
 export { FeeReportService } from './feeReportService';
+export { SettingsService } from './settingsService';

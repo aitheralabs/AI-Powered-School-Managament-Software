@@ -32,6 +32,7 @@ import healthRoutes from './routes/health';
 import cacheRoutes from './routes/cache';
 import fileRoutes from './routes/files';
 import monitoringRoutes from './routes/monitoring';
+import settingsRoutes from './routes/settings';
 // import auditRoutes from './routes/audit';
 
 // Import monitoring service
@@ -160,6 +161,7 @@ app.use('/api/v1/reports', reportExportRoutes);
 app.use('/api/v1/cache', cacheRoutes);
 app.use('/api/v1/files', fileRoutes);
 app.use('/api/v1/monitoring', monitoringRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 // app.use('/api/v1/audit', auditRoutes);
 
 // Serve static files (uploaded files)

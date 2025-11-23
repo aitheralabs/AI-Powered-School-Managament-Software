@@ -1,7 +1,13 @@
 <div class="settings-container">
   <h1 class="page-title">Settings</h1>
 
-  <div class="settings-grid">
+  <!-- Loading Spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading settings...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="settings-grid">
     <!-- Notification Settings -->
     <mat-card class="settings-card">
       <mat-card-header>
@@ -21,7 +27,7 @@
               <p>Receive notifications via email</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="emailNotifications"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="emailNotifications" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
 
         <div class="setting-item">
@@ -32,7 +38,7 @@
               <p>Receive push notifications in browser</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="pushNotifications"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="pushNotifications" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
 
         <div class="setting-item">
@@ -43,7 +49,7 @@
               <p>Receive notifications via SMS</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="smsNotifications"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="smsNotifications" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
       </mat-card-content>
     </mat-card>
@@ -67,7 +73,7 @@
               <p>Enable dark theme</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="darkMode"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="darkMode" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
 
         <div class="setting-item">
@@ -78,7 +84,7 @@
               <p>Show more content in less space</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="compactView"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="compactView" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
       </mat-card-content>
     </mat-card>
@@ -102,7 +108,7 @@
               <p>Make your profile visible to others</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="profileVisibility"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="profileVisibility" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
 
         <div class="setting-item">
@@ -113,7 +119,7 @@
               <p>Show when you're online</p>
             </div>
           </div>
-          <mat-slide-toggle [(ngModel)]="activityStatus"></mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="activityStatus" (change)="onToggleChange()"></mat-slide-toggle>
         </div>
       </mat-card-content>
     </mat-card>
@@ -130,15 +136,15 @@
 
       <mat-card-content>
         <div class="action-buttons">
-          <button mat-raised-button color="primary">
+          <button mat-raised-button color="primary" (click)="onChangePassword()">
             <mat-icon>lock</mat-icon>
             Change Password
           </button>
-          <button mat-raised-button>
+          <button mat-raised-button (click)="onDownloadData()">
             <mat-icon>download</mat-icon>
             Download Data
           </button>
-          <button mat-raised-button color="warn">
+          <button mat-raised-button color="warn" (click)="onDeleteAccount()">
             <mat-icon>delete</mat-icon>
             Delete Account
           </button>
@@ -148,10 +154,17 @@
   </div>
 
   <!-- Save Button -->
-  <div class="save-section">
-    <button mat-raised-button color="primary" (click)="saveSettings()" class="save-button">
-      <mat-icon>save</mat-icon>
-      Save Settings
+  <div *ngIf="!isLoading" class="save-section">
+    <button mat-button (click)="resetSettings()" [disabled]="isSaving" class="reset-button">
+      <mat-icon>restore</mat-icon>
+      Reset to Default
+    </button>
+    <button mat-raised-button color="primary" (click)="saveSettings()" 
+            [disabled]="!hasChanges || isSaving" class="save-button">
+      <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+      <mat-icon *ngIf="!isSaving">save</mat-icon>
+      <span *ngIf="!isSaving">Save Settings</span>
+      <span *ngIf="isSaving">Saving...</span>
     </button>
   </div>
 </div>
