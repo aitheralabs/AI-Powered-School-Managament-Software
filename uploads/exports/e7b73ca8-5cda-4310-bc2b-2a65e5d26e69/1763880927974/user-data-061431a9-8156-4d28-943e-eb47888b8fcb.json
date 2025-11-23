@@ -1,0 +1,36 @@
+{
+  "profile": {
+    "id": "e7b73ca8-5cda-4310-bc2b-2a65e5d26e69",
+    "firstName": "Abhishek",
+    "lastName": "singhz",
+    "email": "abhissshekaaaaaaaa@cerotechnology.com",
+    "role": "staff",
+    "phone": "6203430305",
+    "dateOfBirth": "2025-11-01T18:30:00.000Z",
+    "address": "Vill-Bangra Rabbi ,P.O-Berua ,P.S-Saraiya",
+    "createdAt": "2025-11-08T17:32:25.261Z",
+    "updatedAt": "2025-11-23T04:52:25.597Z"
+  },
+  "settings": {
+    "userId": "e7b73ca8-5cda-4310-bc2b-2a65e5d26e69",
+    "emailNotifications": true,
+    "pushNotifications": true,
+    "smsNotifications": false,
+    "darkMode": false,
+    "compactView": false,
+    "profileVisibility": true,
+    "activityStatus": false,
+    "createdAt": "2025-11-23T05:49:23.704Z",
+    "updatedAt": "2025-11-23T05:50:51.513Z"
+  },
+  "roleSpecificData": {
+    "staff": {}
+  },
+  "auditLogs": [],
+  "exportMetadata": {
+    "exportDate": "2025-11-23T06:55:27.963Z",
+    "exportedBy": "e7b73ca8-5cda-4310-bc2b-2a65e5d26e69",
+    "dataVersion": "1.0",
+    "recordCount": 2
+  }
+}

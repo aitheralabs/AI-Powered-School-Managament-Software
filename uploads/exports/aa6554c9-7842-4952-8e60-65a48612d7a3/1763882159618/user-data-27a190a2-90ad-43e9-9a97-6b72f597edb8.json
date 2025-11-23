@@ -1,0 +1,36 @@
+{
+  "profile": {
+    "id": "aa6554c9-7842-4952-8e60-65a48612d7a3",
+    "firstName": "Astha",
+    "lastName": "Singh",
+    "email": "asthakumarsingh8051@gmail.com",
+    "role": "staff",
+    "phone": "6203430305",
+    "dateOfBirth": "2025-11-16T18:30:00.000Z",
+    "address": "Vill-Bangra Rabbi ,P.O-Berua ,P.S-Saraiya",
+    "createdAt": "2025-11-23T07:07:42.745Z",
+    "updatedAt": "2025-11-23T07:07:42.745Z"
+  },
+  "settings": {
+    "userId": "aa6554c9-7842-4952-8e60-65a48612d7a3",
+    "emailNotifications": true,
+    "pushNotifications": false,
+    "smsNotifications": false,
+    "darkMode": false,
+    "compactView": false,
+    "profileVisibility": true,
+    "activityStatus": true,
+    "createdAt": "2025-11-23T07:07:59.222Z",
+    "updatedAt": "2025-11-23T07:07:59.222Z"
+  },
+  "roleSpecificData": {
+    "staff": {}
+  },
+  "auditLogs": [],
+  "exportMetadata": {
+    "exportDate": "2025-11-23T07:15:59.389Z",
+    "exportedBy": "aa6554c9-7842-4952-8e60-65a48612d7a3",
+    "dataVersion": "1.0",
+    "recordCount": 2
+  }
+}

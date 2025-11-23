@@ -222,16 +222,122 @@ export class SettingsComponent implements OnInit, OnDestroy {
    */
   onDownloadData() {
     this.notificationService.info('Preparing your data for download...');
-    // TODO: Implement data download functionality
+    this.isSaving = true;
+
+    this.settingsService.exportData()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSaving = false;
+          if (response.success && response.data) {
+            this.notificationService.success('Data export completed! Downloading JSON file...');
+            
+            // Download JSON file (contains all user data)
+            if (response.data.jsonUrl) {
+              this.downloadFile(response.data.jsonUrl, 'user-data.json');
+            }
+
+            // Show expiration info
+            if (response.data.expiresAt) {
+              const expiryDate = new Date(response.data.expiresAt);
+              this.notificationService.info(
+                `Export file will be available until ${expiryDate.toLocaleString()}`
+              );
+            }
+          }
+        },
+        error: (error) => {
+          this.isSaving = false;
+          const errorMessage = this.errorService.processError(error);
+          this.notificationService.error(errorMessage.message, 'Export Failed');
+          this.errorService.logError(error, 'Settings.onDownloadData');
+        }
+      });
+  }
+
+  /**
+   * Download file helper
+   */
+  private downloadFile(url: string, filename: string) {
+    // Prepend backend URL if the URL is relative
+    const fullUrl = url.startsWith('http') ? url : `http://localhost:3000${url}`;
+    
+    // Fetch the file and download as blob to force download
+    fetch(fullUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        console.error('Download failed:', error);
+        this.notificationService.error('Failed to download file', 'Download Error');
+      });
   }
 
   /**
    * Delete account
    */
   onDeleteAccount() {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      this.notificationService.warning('Account deletion is not yet implemented');
-      // TODO: Implement account deletion
+    const password = prompt('Please enter your password to confirm account deletion:');
+    
+    if (!password) {
+      return; // User cancelled
     }
+
+    const finalConfirm = confirm(
+      'WARNING: This action is PERMANENT and CANNOT be undone!\n\n' +
+      'All your data will be deleted including:\n' +
+      '- Profile information\n' +
+      '- Settings and preferences\n' +
+      '- Activity history\n' +
+      '- Role-specific data\n\n' +
+      'Are you absolutely sure you want to delete your account?'
+    );
+
+    if (!finalConfirm) {
+      return;
+    }
+
+    this.isSaving = true;
+    this.settingsService.deleteAccount(password)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isSaving = false;
+          if (response.success) {
+            this.notificationService.success('Account deleted successfully. You will be logged out.');
+            
+            // Log out user after short delay
+            setTimeout(() => {
+              // Clear local storage
+              localStorage.clear();
+              sessionStorage.clear();
+              
+              // Redirect to login
+              window.location.href = '/login';
+            }, 2000);
+          }
+        },
+        error: (error) => {
+          this.isSaving = false;
+          const errorMessage = this.errorService.processError(error);
+          
+          if (error.status === 401) {
+            this.notificationService.error('Incorrect password. Account deletion cancelled.', 'Authentication Failed');
+          } else {
+            this.notificationService.error(errorMessage.message, 'Deletion Failed');
+          }
+          
+          this.errorService.logError(error, 'Settings.onDeleteAccount');
+        }
+      });
   }
 }

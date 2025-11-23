@@ -164,8 +164,19 @@ app.use('/api/v1/monitoring', monitoringRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 // app.use('/api/v1/audit', auditRoutes);
 
-// Serve static files (uploaded files)
-app.use('/uploads', express.static('uploads'));
+// Serve static files (uploaded files) with proper download headers
+app.use('/uploads', (req, res, next) => {
+  // Check if it's an export file (JSON or PDF)
+  if (req.path.includes('/exports/') && (req.path.endsWith('.json') || req.path.endsWith('.pdf'))) {
+    const filename = req.path.split('/').pop();
+    const contentType = req.path.endsWith('.json') ? 'application/json' : 'application/pdf';
+    
+    // Set headers to force download
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  }
+  next();
+}, express.static('uploads'));
 
 // API documentation endpoint
 app.get('/api/v1', cacheResponse(300), (req, res) => {

@@ -95,4 +95,20 @@ export class SettingsService {
   clearSettings(): void {
     this.settingsSubject.next(null);
   }
+
+  /**
+   * Export user data
+   */
+  exportData(): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/export-data`, {});
+  }
+
+  /**
+   * Delete user account
+   */
+  deleteAccount(password: string): Observable<ApiResponse<any>> {
+    return this.http.delete<ApiResponse<any>>(`${this.apiUrl}/delete-account`, {
+      body: { password, confirmation: true }
+    });
+  }
 }

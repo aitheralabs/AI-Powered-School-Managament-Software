@@ -129,7 +129,15 @@ app.use('/api/v1/cache', cache_1.default);
 app.use('/api/v1/files', files_1.default);
 app.use('/api/v1/monitoring', monitoring_1.default);
 app.use('/api/v1/settings', settings_1.default);
-app.use('/uploads', express_1.default.static('uploads'));
+app.use('/uploads', (req, res, next) => {
+    if (req.path.includes('/exports/') && (req.path.endsWith('.json') || req.path.endsWith('.pdf'))) {
+        const filename = req.path.split('/').pop();
+        const contentType = req.path.endsWith('.json') ? 'application/json' : 'application/pdf';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+    next();
+}, express_1.default.static('uploads'));
 app.get('/api/v1', (0, caching_1.cacheResponse)(300), (req, res) => {
     res.json({
         success: true,

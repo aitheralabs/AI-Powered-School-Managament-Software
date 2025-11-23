@@ -1,0 +1,40 @@
+{
+  "profile": {
+    "id": "319c5e90-30c2-4248-af48-0fb47e79ad89",
+    "firstName": "Kunal",
+    "lastName": "Kumar",
+    "email": "arnavkmumarsingh8051@gmail.com",
+    "role": "teacher",
+    "phone": "6203430301",
+    "dateOfBirth": "2025-11-18T18:30:00.000Z",
+    "address": "Vill-Bangra Rabbi ,P.O-Berua ,P.S-Saraiya",
+    "createdAt": "2025-11-22T16:03:51.748Z",
+    "updatedAt": "2025-11-23T05:57:24.140Z"
+  },
+  "settings": {
+    "userId": "319c5e90-30c2-4248-af48-0fb47e79ad89",
+    "emailNotifications": true,
+    "pushNotifications": true,
+    "smsNotifications": true,
+    "darkMode": true,
+    "compactView": true,
+    "profileVisibility": true,
+    "activityStatus": true,
+    "createdAt": "2025-11-23T05:51:49.255Z",
+    "updatedAt": "2025-11-23T05:57:40.586Z"
+  },
+  "roleSpecificData": {
+    "teacher": {
+      "classes": [],
+      "subjects": [],
+      "assignments": []
+    }
+  },
+  "auditLogs": [],
+  "exportMetadata": {
+    "exportDate": "2025-11-23T06:38:23.933Z",
+    "exportedBy": "319c5e90-30c2-4248-af48-0fb47e79ad89",
+    "dataVersion": "1.0",
+    "recordCount": 2
+  }
+}
