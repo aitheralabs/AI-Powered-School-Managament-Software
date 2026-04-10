@@ -1,0 +1,177 @@
+<div class="attendance-marking-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>how_to_reg</mat-icon>
+        Mark Attendance
+      </mat-card-title>
+      <mat-card-subtitle>
+        Select class and date to mark student attendance
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Selection Form -->
+      <form [formGroup]="attendanceForm" class="selection-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="class-field">
+            <mat-label>Select Class</mat-label>
+            <mat-select formControlName="classId" (selectionChange)="onClassChange()">
+              <mat-option *ngFor="let class of classes" [value]="class.id">
+                {{ class.name }} ({{ class.grade }} - {{ class.section }})
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="attendanceForm.get('classId')?.hasError('required')">
+              Please select a class
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="date" 
+                   [max]="maxDate" (dateChange)="onDateChange()">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error *ngIf="attendanceForm.get('date')?.hasError('required')">
+              Please select a date
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div *ngIf="!canMarkAttendance()" class="warning-message">
+          <mat-icon color="warn">warning</mat-icon>
+          <span>Cannot mark attendance for future dates</span>
+        </div>
+      </form>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading || isLoadingStudents" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>{{ isLoading ? 'Loading classes...' : 'Loading students...' }}</p>
+      </div>
+
+      <!-- Students Table -->
+      <div *ngIf="students.length > 0 && !isLoadingStudents" class="students-section">
+        <div class="section-header">
+          <h3>Students in {{ getClassName(attendanceForm.get('classId')?.value) }}</h3>
+          <div class="bulk-actions">
+            <button mat-stroked-button (click)="markAllPresent()" [disabled]="isSubmitting">
+              <mat-icon>check_circle</mat-icon>
+              Mark All Present
+            </button>
+            <button mat-stroked-button (click)="markAllAbsent()" [disabled]="isSubmitting">
+              <mat-icon>cancel</mat-icon>
+              Mark All Absent
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table mat-table [dataSource]="students" class="attendance-table">
+            <!-- Checkbox Column -->
+            <ng-container matColumnDef="select">
+              <th mat-header-cell *matHeaderCellDef>Present</th>
+              <td mat-cell *matCellDef="let student">
+                <mat-checkbox 
+                  [checked]="student.isPresent"
+                  (change)="onCheckboxChange(student, $event.checked)"
+                  [disabled]="isSubmitting"
+                  color="primary">
+                </mat-checkbox>
+              </td>
+            </ng-container>
+
+            <!-- Student Number Column -->
+            <ng-container matColumnDef="studentNumber">
+              <th mat-header-cell *matHeaderCellDef>Student ID</th>
+              <td mat-cell *matCellDef="let student">{{ student.studentNumber }}</td>
+            </ng-container>
+
+            <!-- Student Name Column -->
+            <ng-container matColumnDef="studentName">
+              <th mat-header-cell *matHeaderCellDef>Student Name</th>
+              <td mat-cell *matCellDef="let student">{{ student.studentName }}</td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let student">
+                <mat-radio-group 
+                  [value]="student.status" 
+                  (change)="onStatusChange(student, $event.value)"
+                  [disabled]="isSubmitting">
+                  <mat-radio-button 
+                    *ngFor="let status of attendanceStatuses" 
+                    [value]="status.value"
+                    [color]="status.color"
+                    class="status-radio">
+                    {{ status.label }}
+                  </mat-radio-button>
+                </mat-radio-group>
+              </td>
+            </ng-container>
+
+            <!-- Remarks Column -->
+            <ng-container matColumnDef="remarks">
+              <th mat-header-cell *matHeaderCellDef>Remarks</th>
+              <td mat-cell *matCellDef="let student">
+                <mat-form-field appearance="outline" class="remarks-field">
+                  <input matInput [(ngModel)]="student.remarks" 
+                         placeholder="Optional remarks" 
+                         [disabled]="isSubmitting">
+                </mat-form-field>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+                [class.absent-row]="row.status === 'absent'"
+                [class.late-row]="row.status === 'late'"
+                [class.excused-row]="row.status === 'excused'"></tr>
+          </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="attendance-summary">
+          <h4>Summary</h4>
+          <div class="summary-chips">
+            <mat-chip-set>
+              <mat-chip color="primary" selected>
+                Present: {{ (students | filter: 'status': 'present').length }}
+              </mat-chip>
+              <mat-chip color="warn" selected>
+                Absent: {{ (students | filter: 'status': 'absent').length }}
+              </mat-chip>
+              <mat-chip color="accent" selected>
+                Late: {{ (students | filter: 'status': 'late').length }}
+              </mat-chip>
+              <mat-chip selected>
+                Excused: {{ (students | filter: 'status': 'excused').length }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submit-section">
+          <button mat-raised-button color="primary" 
+                  (click)="onSubmit()" 
+                  [disabled]="isSubmitting || !canMarkAttendance()">
+            <mat-spinner *ngIf="isSubmitting" diameter="20" class="button-spinner"></mat-spinner>
+            <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+            <span *ngIf="!isSubmitting">Save Attendance</span>
+            <span *ngIf="isSubmitting">Saving...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- No Students Message -->
+      <div *ngIf="students.length === 0 && !isLoadingStudents && attendanceForm.get('classId')?.value" 
+           class="no-students">
+        <mat-icon>school</mat-icon>
+        <p>No students found in this class</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,244 @@
+.attendance-marking-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  mat-card {
+    mat-card-header {
+      margin-bottom: 20px;
+
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 24px;
+      }
+    }
+  }
+}
+
+.selection-form {
+  margin-bottom: 30px;
+
+  .form-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+
+    .class-field {
+      flex: 2;
+    }
+
+    .date-field {
+      flex: 1;
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 10px;
+
+      .class-field,
+      .date-field {
+        flex: 1;
+        width: 100%;
+      }
+    }
+  }
+}
+
+.warning-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  color: #856404;
+  margin-top: 16px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  gap: 16px;
+
+  p {
+    margin: 0;
+    color: #666;
+  }
+}
+
+.students-section {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h3 {
+      margin: 0;
+      color: #333;
+    }
+
+    .bulk-actions {
+      display: flex;
+      gap: 12px;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .bulk-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 24px;
+
+  .attendance-table {
+    width: 100%;
+    min-width: 800px;
+
+    th {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .status-radio {
+      margin-right: 16px;
+      
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+
+    .remarks-field {
+      width: 100%;
+      
+      ::ng-deep .mat-mdc-form-field-wrapper {
+        padding-bottom: 0;
+      }
+    }
+
+    // Row styling based on status
+    .absent-row {
+      background-color: #ffebee;
+    }
+
+    .late-row {
+      background-color: #fff3e0;
+    }
+
+    .excused-row {
+      background-color: #f3e5f5;
+    }
+
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+  }
+}
+
+.attendance-summary {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    color: #333;
+  }
+
+  .summary-chips {
+    mat-chip-set {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+}
+
+.submit-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+
+  button {
+    min-width: 200px;
+    height: 48px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    .button-spinner {
+      margin-right: 8px;
+    }
+  }
+}
+
+.no-students {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  color: #666;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .attendance-marking-container {
+    padding: 16px;
+  }
+
+  .table-container {
+    .attendance-table {
+      min-width: 600px;
+      font-size: 14px;
+
+      .status-radio {
+        margin-right: 8px;
+        
+        ::ng-deep .mat-radio-label-content {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+
+  .submit-section button {
+    width: 100%;
+  }
+}
