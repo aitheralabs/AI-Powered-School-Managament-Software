@@ -1,96 +1,234 @@
-<div class="parent-dashboard">
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Loading dashboard...</p>
+<div class="parent-dash fade-in">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="dash-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading your dashboard…</p>
   </div>
 
-  <div *ngIf="!isLoading" class="dashboard-content">
-    <div class="welcome-header">
-      <h1 class="dashboard-title">Welcome back, {{ getUserDisplayName() }}!</h1>
-      <p class="dashboard-subtitle">Parent Dashboard</p>
-    </div>
+  <ng-container *ngIf="!isLoading && data">
 
-    <!-- Child Selector -->
-    <mat-card class="child-selector-card">
-      <h3 class="section-title">
-        <mat-icon>family_restroom</mat-icon>
-        Select Child
-      </h3>
-      <mat-form-field appearance="outline" class="child-select">
-        <mat-label>Select a child</mat-label>
-        <mat-select [(ngModel)]="selectedChildId" (selectionChange)="onChildChange()">
-          <mat-option value="">No children found</mat-option>
-        </mat-select>
-        <mat-icon matPrefix>person</mat-icon>
-      </mat-form-field>
-      <p class="info-text">Select a child to view their information</p>
-    </mat-card>
-
-    <mat-card class="quick-actions-card">
-      <h3 class="section-title">Quick Actions</h3>
-      <div class="quick-actions-grid">
-        <button
-          *ngFor="let action of quickActions"
-          mat-raised-button
-          color="primary"
-          class="quick-action-btn"
-          (click)="navigateTo(action.route)"
-          [disabled]="!selectedChildId"
-        >
-          <mat-icon>{{ action.icon }}</mat-icon>
-          <span>{{ action.label }}</span>
+    <!-- Header -->
+    <div class="dash-header">
+      <div class="dash-greeting">
+        <div class="avatar-lg">{{ (data.parent?.name || userName).charAt(0) }}</div>
+        <div>
+          <h1>{{ greeting }}, {{ (data.parent?.name || userName).split(' ')[0] }}!</h1>
+          <p>{{ today | date:'EEEE, MMMM d' }} &nbsp;&bull;&nbsp; <strong>{{ children.length }}</strong> child{{ children.length !== 1 ? 'ren' : '' }} enrolled</p>
+        </div>
+      </div>
+      <div class="dash-header-actions">
+        <button class="action-btn primary" (click)="navigateTo('/profile')">
+          <mat-icon>person</mat-icon> My Profile
         </button>
       </div>
-    </mat-card>
-
-    <div class="dashboard-grid">
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>how_to_reg</mat-icon>
-          Attendance
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">fact_check</mat-icon>
-          <p>Child's attendance records</p>
-          <p class="placeholder-subtext">Monitor attendance and absences</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>payment</mat-icon>
-          Fees
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">account_balance_wallet</mat-icon>
-          <p>Fee information</p>
-          <p class="placeholder-subtext">View pending and paid fees</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>grade</mat-icon>
-          Grades
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">assessment</mat-icon>
-          <p>Academic performance</p>
-          <p class="placeholder-subtext">Track grades and progress</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>event</mat-icon>
-          Events
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">calendar_today</mat-icon>
-          <p>School events</p>
-          <p class="placeholder-subtext">Stay updated with activities</p>
-        </div>
-      </mat-card>
     </div>
+
+    <!-- No children state -->
+    <div *ngIf="!children.length" class="no-children">
+      <mat-icon>family_restroom</mat-icon>
+      <h3>No children enrolled yet</h3>
+      <p>Your children will appear here once they are enrolled in the school.</p>
+    </div>
+
+    <ng-container *ngIf="children.length">
+
+      <!-- Children selector tabs -->
+      <div class="children-tabs">
+        <button
+          class="child-tab"
+          *ngFor="let child of children; let i = index"
+          [class.active]="selectedChildIndex === i"
+          (click)="selectChild(i)"
+        >
+          <div class="tab-avatar" [style.background]="getAvatarGradient(child.name)">{{ getInitials(child.name) }}</div>
+          <div class="tab-info">
+            <span class="tab-name">{{ child.name.split(' ')[0] }}</span>
+            <span class="tab-class">{{ child.class || 'No class' }}</span>
+          </div>
+          <!-- Fee alert dot -->
+          <div class="tab-dot danger" *ngIf="child.fees?.overdue > 0" matTooltip="Overdue fees"></div>
+          <div class="tab-dot warn"   *ngIf="child.fees?.overdue === 0 && child.fees?.pending > 0" matTooltip="Pending fees"></div>
+        </button>
+      </div>
+
+      <!-- Selected child details -->
+      <ng-container *ngIf="selectedChild">
+
+        <!-- Child Info Strip -->
+        <div class="child-info-strip">
+          <div class="child-avatar-lg" [style.background]="getAvatarGradient(selectedChild.name)">{{ getInitials(selectedChild.name) }}</div>
+          <div>
+            <h2>{{ selectedChild.name }}</h2>
+            <p>
+              <span *ngIf="selectedChild.class">Class: <strong>{{ selectedChild.class }}</strong></span>
+              <span>&nbsp;&bull;&nbsp; ID: <strong>{{ selectedChild.studentId }}</strong></span>
+            </p>
+          </div>
+          <div class="child-badges">
+            <div class="child-badge" [style.background]="getAttendanceColor(selectedChild.attendance?.percentage) + '20'" [style.color]="getAttendanceColor(selectedChild.attendance?.percentage)">
+              <mat-icon>how_to_reg</mat-icon> {{ selectedChild.attendance?.percentage }}% Attendance
+            </div>
+            <div class="child-badge" [style.background]="getFeeStatusColor(selectedChild) + '20'" [style.color]="getFeeStatusColor(selectedChild)">
+              <mat-icon>payment</mat-icon> {{ getFeeStatusLabel(selectedChild) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI row for this child -->
+        <div class="kpi-strip">
+          <div class="kpi-tile">
+            <div class="kpi-icon" [style.background]="getAttendanceColor(selectedChild.attendance?.percentage)">
+              <mat-icon>how_to_reg</mat-icon>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" [style.color]="getAttendanceColor(selectedChild.attendance?.percentage)">{{ selectedChild.attendance?.percentage ?? 0 }}%</span>
+              <span class="kpi-lbl">Attendance</span>
+              <span class="kpi-sub">{{ selectedChild.attendance?.present }} / {{ selectedChild.attendance?.totalDays }} days</span>
+            </div>
+          </div>
+
+          <div class="kpi-tile">
+            <div class="kpi-icon red-bg"><mat-icon>event_busy</mat-icon></div>
+            <div class="kpi-info">
+              <span class="kpi-val">{{ selectedChild.attendance?.absent ?? 0 }}</span>
+              <span class="kpi-lbl">Absent Days</span>
+            </div>
+          </div>
+
+          <div class="kpi-tile">
+            <div class="kpi-icon" [style.background]="getFeeStatusColor(selectedChild)">
+              <mat-icon>payment</mat-icon>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" [style.color]="getFeeStatusColor(selectedChild)">{{ getFeeStatusLabel(selectedChild) }}</span>
+              <span class="kpi-lbl">Fee Status</span>
+              <span class="kpi-sub" *ngIf="selectedChild.fees?.overdue > 0">₹{{ selectedChild.fees.overdue | number:'1.0-0' }} overdue</span>
+              <span class="kpi-sub" *ngIf="selectedChild.fees?.overdue === 0 && selectedChild.fees?.pending > 0">₹{{ selectedChild.fees.pending | number:'1.0-0' }} pending</span>
+              <span class="kpi-sub" *ngIf="selectedChild.fees?.overdue === 0 && selectedChild.fees?.pending === 0">No dues</span>
+            </div>
+          </div>
+
+          <div class="kpi-tile">
+            <div class="kpi-icon green-bg"><mat-icon>payments</mat-icon></div>
+            <div class="kpi-info">
+              <span class="kpi-val green">₹{{ selectedChild.fees?.paid | number:'1.0-0' }}</span>
+              <span class="kpi-lbl">Fees Paid</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fee alert -->
+        <div class="alert-banner danger" *ngIf="selectedChild.fees?.overdue > 0">
+          <mat-icon>warning</mat-icon>
+          <span>{{ selectedChild.name.split(' ')[0] }} has <strong>₹{{ selectedChild.fees.overdue | number:'1.0-0' }}</strong> in overdue fees.</span>
+          <button class="alert-btn" (click)="navigateTo('/fees')">Pay Now</button>
+        </div>
+
+        <!-- Main grid -->
+        <div class="dash-grid">
+
+          <!-- Attendance Detail -->
+          <div class="dash-card">
+            <div class="card-head">
+              <div>
+                <h3>Attendance Overview</h3>
+                <p class="card-sub">{{ selectedChild.name.split(' ')[0] }}'s records</p>
+              </div>
+            </div>
+            <div class="att-breakdown">
+              <div class="att-seg present">
+                <span class="seg-count">{{ selectedChild.attendance?.present ?? 0 }}</span>
+                <span class="seg-lbl">Present</span>
+              </div>
+              <div class="att-seg absent">
+                <span class="seg-count">{{ selectedChild.attendance?.absent ?? 0 }}</span>
+                <span class="seg-lbl">Absent</span>
+              </div>
+              <div class="att-seg total">
+                <span class="seg-count">{{ selectedChild.attendance?.totalDays ?? 0 }}</span>
+                <span class="seg-lbl">Total Days</span>
+              </div>
+            </div>
+            <div class="att-bar-wrap">
+              <div class="att-bar">
+                <div class="att-bar-fill"
+                  [style.width.%]="selectedChild.attendance?.percentage ?? 0"
+                  [style.background]="getAttendanceColor(selectedChild.attendance?.percentage ?? 0)">
+                </div>
+              </div>
+              <span class="att-bar-label">{{ selectedChild.attendance?.percentage ?? 0 }}% attendance rate</span>
+            </div>
+          </div>
+
+          <!-- Fee Summary -->
+          <div class="dash-card">
+            <div class="card-head">
+              <div>
+                <h3>Fee Summary</h3>
+                <p class="card-sub">{{ selectedChild.name.split(' ')[0] }}'s finances</p>
+              </div>
+              <button class="text-btn" (click)="navigateTo('/fees')">View all <mat-icon>arrow_forward</mat-icon></button>
+            </div>
+            <div class="fee-rows">
+              <div class="fee-row">
+                <span class="fee-lbl">Paid</span>
+                <span class="fee-val green">₹{{ selectedChild.fees?.paid | number:'1.0-0' }}</span>
+              </div>
+              <div class="fee-row">
+                <span class="fee-lbl">Pending</span>
+                <span class="fee-val orange">₹{{ selectedChild.fees?.pending | number:'1.0-0' }}</span>
+              </div>
+              <div class="fee-row">
+                <span class="fee-lbl">Overdue</span>
+                <span class="fee-val red">₹{{ selectedChild.fees?.overdue | number:'1.0-0' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Grades -->
+          <div class="dash-card wide">
+            <div class="card-head">
+              <div>
+                <h3>Recent Grades</h3>
+                <p class="card-sub">{{ selectedChild.name.split(' ')[0] }}'s academic performance</p>
+              </div>
+            </div>
+
+            <div *ngIf="!selectedChild.recentGrades?.length" class="empty-msg">
+              <mat-icon>grade</mat-icon><p>No grades recorded yet</p>
+            </div>
+
+            <div class="grades-grid" *ngIf="selectedChild.recentGrades?.length">
+              <div class="grade-card" *ngFor="let g of selectedChild.recentGrades">
+                <div class="grade-subject">{{ g.subject }}</div>
+                <div class="grade-score-ring" [style.border-color]="getGradeColor(g.grade)">
+                  <span [style.color]="getGradeColor(g.grade)">{{ g.grade }}</span>
+                </div>
+                <div class="grade-detail">
+                  <span class="grade-pts">{{ g.score }} pts</span>
+                  <span class="grade-pct">{{ g.percentage }}%</span>
+                </div>
+                <div class="grade-date">{{ g.date | date:'MMM d' }}</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </ng-container>
+
+    </ng-container>
+
+  </ng-container>
+
+  <!-- Error state -->
+  <div *ngIf="!isLoading && !data" class="dash-error">
+    <mat-icon>error_outline</mat-icon>
+    <h3>Could not load dashboard</h3>
+    <p>Please make sure your parent account is configured correctly.</p>
+    <button class="action-btn primary" (click)="ngOnInit()">
+      <mat-icon>refresh</mat-icon> Retry
+    </button>
   </div>
+
 </div>

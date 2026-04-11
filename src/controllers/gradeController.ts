@@ -71,18 +71,15 @@ export const createGrade = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('Grade already exists for this student, subject, assessment type, and semester', 409);
   }
 
-  const percentage = Math.round((gradeData.marksObtained / gradeData.totalMarks) * 100 * 100) / 100;
-  const gradeLetter = calculateGradeLetter(percentage);
-
   const result = await query(
     `INSERT INTO grades
        (student_id, subject_id, assessment_type_id, marks_obtained,
-        total_marks, percentage, grade_letter, semester_id, recorded_by, remarks, school_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        total_marks, semester_id, recorded_by, remarks, school_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       gradeData.studentId, gradeData.subjectId, gradeData.assessmentTypeId,
-      gradeData.marksObtained, gradeData.totalMarks, percentage, gradeLetter,
+      gradeData.marksObtained, gradeData.totalMarks,
       gradeData.semesterId, userId, gradeData.remarks || null, schoolId,
     ]
   );
@@ -186,12 +183,10 @@ export const updateGrade = asyncHandler(async (req: Request, res: Response) => {
   const marksObtained = updateData.marksObtained ?? grade.marks_obtained;
   const totalMarks = updateData.totalMarks ?? grade.total_marks;
   const remarks = updateData.remarks !== undefined ? updateData.remarks : grade.remarks;
-  const percentage = Math.round((marksObtained / totalMarks) * 100 * 100) / 100;
-  const gradeLetter = calculateGradeLetter(percentage);
 
   await query(
-    'UPDATE grades SET marks_obtained = $1, total_marks = $2, percentage = $3, grade_letter = $4, remarks = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 AND school_id = $7',
-    [marksObtained, totalMarks, percentage, gradeLetter, remarks, id, schoolId]
+    'UPDATE grades SET marks_obtained = $1, total_marks = $2, remarks = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND school_id = $5',
+    [marksObtained, totalMarks, remarks, id, schoolId]
   );
 
   const updatedGrade = await getGradeWithRelations(id, schoolId);
@@ -221,6 +216,170 @@ export const deleteGrade = asyncHandler(async (req: Request, res: Response) => {
 
   await query('DELETE FROM grades WHERE id = $1 AND school_id = $2', [id, schoolId]);
   res.json({ success: true, message: 'Grade deleted successfully' });
+});
+
+export const getStudentGrades = asyncHandler(async (req: Request, res: Response) => {
+  const { studentId } = req.params;
+  const schoolId = req.schoolId!;
+  const { semesterId, subjectId } = req.query as Record<string, string | undefined>;
+
+  let whereClause = 'WHERE g.school_id = $1 AND g.student_id = $2';
+  const sqlParams: any[] = [schoolId, studentId];
+
+  if (semesterId) { whereClause += ` AND g.semester_id = $${sqlParams.length + 1}`; sqlParams.push(semesterId); }
+  if (subjectId)  { whereClause += ` AND g.subject_id = $${sqlParams.length + 1}`;  sqlParams.push(subjectId); }
+
+  const result = await query(
+    `SELECT g.*, s.student_id as student_number,
+            su.first_name as student_first_name, su.last_name as student_last_name,
+            subj.name as subject_name, subj.code as subject_code,
+            at.name as assessment_type_name, at.weightage as assessment_weightage,
+            sem.name as semester_name, ay.name as academic_year_name,
+            ru.first_name as recorded_by_first_name, ru.last_name as recorded_by_last_name
+     FROM grades g
+     JOIN students s ON g.student_id = s.id
+     JOIN users su ON s.user_id = su.id
+     JOIN subjects subj ON g.subject_id = subj.id
+     JOIN assessment_types at ON g.assessment_type_id = at.id
+     JOIN semesters sem ON g.semester_id = sem.id
+     JOIN academic_years ay ON sem.academic_year_id = ay.id
+     JOIN users ru ON g.recorded_by = ru.id
+     ${whereClause}
+     ORDER BY g.created_at DESC`,
+    sqlParams
+  );
+
+  res.json({ success: true, data: result.rows.map(formatGradeResponse) });
+});
+
+export const getClassGrades = asyncHandler(async (req: Request, res: Response) => {
+  const { classId } = req.params;
+  const schoolId = req.schoolId!;
+  const { semesterId, subjectId, assessmentTypeId } = req.query as Record<string, string | undefined>;
+
+  let whereClause = 'WHERE g.school_id = $1 AND s.class_id = $2';
+  const sqlParams: any[] = [schoolId, classId];
+
+  if (semesterId)      { whereClause += ` AND g.semester_id = $${sqlParams.length + 1}`;       sqlParams.push(semesterId); }
+  if (subjectId)       { whereClause += ` AND g.subject_id = $${sqlParams.length + 1}`;        sqlParams.push(subjectId); }
+  if (assessmentTypeId){ whereClause += ` AND g.assessment_type_id = $${sqlParams.length + 1}`; sqlParams.push(assessmentTypeId); }
+
+  const result = await query(
+    `SELECT g.*, s.student_id as student_number,
+            su.first_name as student_first_name, su.last_name as student_last_name,
+            subj.name as subject_name, subj.code as subject_code,
+            at.name as assessment_type_name, at.weightage as assessment_weightage,
+            sem.name as semester_name, ay.name as academic_year_name,
+            ru.first_name as recorded_by_first_name, ru.last_name as recorded_by_last_name
+     FROM grades g
+     JOIN students s ON g.student_id = s.id
+     JOIN users su ON s.user_id = su.id
+     JOIN subjects subj ON g.subject_id = subj.id
+     JOIN assessment_types at ON g.assessment_type_id = at.id
+     JOIN semesters sem ON g.semester_id = sem.id
+     JOIN academic_years ay ON sem.academic_year_id = ay.id
+     JOIN users ru ON g.recorded_by = ru.id
+     ${whereClause}
+     ORDER BY su.last_name, su.first_name, g.created_at DESC`,
+    sqlParams
+  );
+
+  res.json({ success: true, data: result.rows.map(formatGradeResponse) });
+});
+
+export const getGradeStats = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const { classId, subjectId, semesterId } = req.query as Record<string, string | undefined>;
+
+  let whereClause = 'WHERE g.school_id = $1';
+  const sqlParams: any[] = [schoolId];
+
+  if (classId)    { whereClause += ` AND s.class_id = $${sqlParams.length + 1}`;   sqlParams.push(classId); }
+  if (subjectId)  { whereClause += ` AND g.subject_id = $${sqlParams.length + 1}`; sqlParams.push(subjectId); }
+  if (semesterId) { whereClause += ` AND g.semester_id = $${sqlParams.length + 1}`; sqlParams.push(semesterId); }
+
+  const [summaryRes, distributionRes] = await Promise.all([
+    query(
+      `SELECT
+         COUNT(*) AS total,
+         AVG(g.percentage) AS avg_percentage,
+         MAX(g.percentage) AS max_percentage,
+         MIN(g.percentage) AS min_percentage,
+         COUNT(*) FILTER (WHERE g.percentage >= 50) AS passing,
+         COUNT(*) FILTER (WHERE g.percentage < 50)  AS failing
+       FROM grades g
+       JOIN students s ON g.student_id = s.id
+       ${whereClause}`,
+      sqlParams
+    ),
+    query(
+      `SELECT g.grade_letter, COUNT(*) AS count
+       FROM grades g
+       JOIN students s ON g.student_id = s.id
+       ${whereClause}
+       GROUP BY g.grade_letter
+       ORDER BY g.grade_letter`,
+      sqlParams
+    ),
+  ]);
+
+  const s = summaryRes.rows[0];
+  const total = parseInt(s.total, 10);
+
+  res.json({
+    success: true,
+    data: {
+      total,
+      avgPercentage: total > 0 ? Math.round(parseFloat(s.avg_percentage) * 100) / 100 : 0,
+      maxPercentage: total > 0 ? parseFloat(s.max_percentage) : 0,
+      minPercentage: total > 0 ? parseFloat(s.min_percentage) : 0,
+      passing: parseInt(s.passing, 10),
+      failing: parseInt(s.failing, 10),
+      passRate: total > 0 ? Math.round((parseInt(s.passing, 10) / total) * 100) : 0,
+      byGradeLetter: distributionRes.rows.map((r: any) => ({
+        grade: r.grade_letter,
+        count: parseInt(r.count, 10),
+      })),
+    },
+  });
+});
+
+export const bulkCreateGrades = asyncHandler(async (req: Request, res: Response) => {
+  const { grades } = req.body as { grades: Array<{
+    studentId: string; subjectId: string; assessmentTypeId: string;
+    marksObtained: number; totalMarks: number; semesterId: string; remarks?: string;
+  }> };
+
+  if (!Array.isArray(grades) || grades.length === 0) {
+    res.status(400).json({ success: false, message: 'grades array is required and must not be empty' });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const schoolId = req.schoolId!;
+  const results: any[] = [];
+
+  for (const g of grades) {
+    const row = await query(
+      `INSERT INTO grades
+         (student_id, subject_id, assessment_type_id, marks_obtained,
+          total_marks, semester_id, recorded_by, remarks, school_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT ON CONSTRAINT unique_grade_per_school
+       DO UPDATE SET marks_obtained=$4, total_marks=$5,
+                     remarks=$8, updated_at=CURRENT_TIMESTAMP
+       RETURNING id`,
+      [g.studentId, g.subjectId, g.assessmentTypeId, g.marksObtained, g.totalMarks,
+       g.semesterId, userId, g.remarks || null, schoolId]
+    );
+    results.push(row.rows[0].id);
+  }
+
+  res.status(201).json({
+    success: true,
+    message: `${results.length} grade(s) saved successfully`,
+    data: { savedIds: results },
+  });
 });
 
 async function getGradeWithRelations(gradeId: string | number, schoolId: string): Promise<GradeResponse | null> {

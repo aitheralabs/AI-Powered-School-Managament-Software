@@ -10,7 +10,8 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "db:migrate": "node dist/database/migrate.js"
+    "db:migrate": "node dist/database/migrate.js",
+    "db:migrate:dev": "ts-node src/database/migrate.ts"
   },
   "keywords": [
     "nodejs",

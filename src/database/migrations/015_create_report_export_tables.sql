@@ -84,4 +84,4 @@ COMMENT ON COLUMN report_history.parameters IS 'JSON object containing the param
 COMMENT ON COLUMN report_history.file_size IS 'Size of the generated report file in bytes';
 COMMENT ON COLUMN report_history.download_url IS 'URL where the generated report can be downloaded';
 COMMENT ON COLUMN report_history.expires_at IS 'When the generated report file will be automatically deleted';
-COMMENT ON COLUMN report_history.error IS 'Error message if report generation failed';"
+COMMENT ON COLUMN report_history.error IS 'Error message if report generation failed';

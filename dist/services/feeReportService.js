@@ -283,9 +283,13 @@ class FeeReportService extends baseService_1.BaseService {
         }
     }
     addAuthorizationFilters(whereClause, queryParams, userId, userRole) {
+        if (this.schoolId) {
+            whereClause += ` AND sf.school_id = $${queryParams.length + 1}`;
+            queryParams.push(this.schoolId);
+        }
         if (userRole === 'teacher') {
             whereClause += ` AND (c.teacher_id = $${queryParams.length + 1} OR EXISTS (
-        SELECT 1 FROM class_subjects cs 
+        SELECT 1 FROM class_subjects cs
         WHERE cs.class_id = c.id AND cs.teacher_id = $${queryParams.length + 1}
       ))`;
             queryParams.push(userId);

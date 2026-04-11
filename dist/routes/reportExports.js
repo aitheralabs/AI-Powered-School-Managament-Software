@@ -4,10 +4,11 @@ const express_1 = require("express");
 const reportExportController_1 = require("../controllers/reportExportController");
 const validation_1 = require("../middleware/validation");
 const auth_1 = require("../middleware/auth");
+const tenant_1 = require("../middleware/tenant");
 const report_1 = require("../types/report");
 const zod_1 = require("zod");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticate);
+router.use(auth_1.authenticate, tenant_1.resolveTenant, tenant_1.requireActiveSubscription);
 router.post('/export/:reportId', (0, validation_1.validateQuery)(zod_1.z.object({
     format: report_1.ReportFormatSchema.optional().default('pdf'),
 })), reportExportController_1.exportReport);

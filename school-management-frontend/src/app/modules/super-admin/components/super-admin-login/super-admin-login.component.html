@@ -1,0 +1,105 @@
+<div class="sa-login-page">
+
+  <!-- Brand Panel -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <mat-icon>shield</mat-icon>
+      </div>
+      <h1>Super Admin Portal</h1>
+      <p>Platform control center for managing all schools, subscriptions and system-wide settings.</p>
+
+      <div class="brand-features">
+        <div class="feat-item">
+          <mat-icon>domain</mat-icon>
+          <span>Manage all schools on the platform</span>
+        </div>
+        <div class="feat-item">
+          <mat-icon>bar_chart</mat-icon>
+          <span>Platform-wide analytics & insights</span>
+        </div>
+        <div class="feat-item">
+          <mat-icon>subscriptions</mat-icon>
+          <span>Subscription & billing management</span>
+        </div>
+        <div class="feat-item">
+          <mat-icon>security</mat-icon>
+          <span>Security and compliance controls</span>
+        </div>
+      </div>
+    </div>
+    <div class="brand-footer">
+      <a routerLink="/auth/login" class="back-link">
+        <mat-icon>arrow_back</mat-icon> Back to school portal
+      </a>
+    </div>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="form-panel">
+    <div class="form-box">
+      <div class="form-header">
+        <div class="form-icon"><mat-icon>admin_panel_settings</mat-icon></div>
+        <h2>Super Admin Login</h2>
+        <p>Restricted access — authorized personnel only</p>
+      </div>
+
+      <div class="alert-error" *ngIf="error">
+        <mat-icon>error_outline</mat-icon> {{ error }}
+      </div>
+
+      <form (ngSubmit)="login()" #loginForm="ngForm">
+
+        <div class="field-group">
+          <label>Email Address</label>
+          <div class="input-wrap" [class.focused]="emailFocused">
+            <mat-icon class="field-icon">email</mat-icon>
+            <input
+              type="email"
+              [(ngModel)]="credentials.email"
+              name="email"
+              placeholder="admin@platform.com"
+              (focus)="emailFocused=true"
+              (blur)="emailFocused=false"
+              autocomplete="email"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Password</label>
+          <div class="input-wrap" [class.focused]="passFocused">
+            <mat-icon class="field-icon">lock</mat-icon>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              [(ngModel)]="credentials.password"
+              name="password"
+              placeholder="Enter your password"
+              (focus)="passFocused=true"
+              (blur)="passFocused=false"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" class="toggle-pass" (click)="showPassword=!showPassword">
+              <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="isLoading">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <mat-icon *ngIf="!isLoading">login</mat-icon>
+          {{ isLoading ? 'Authenticating…' : 'Sign In' }}
+        </button>
+
+      </form>
+
+      <p class="security-note">
+        <mat-icon>lock</mat-icon>
+        This portal uses enhanced security. All access is logged and monitored.
+      </p>
+    </div>
+  </div>
+
+</div>

@@ -4,11 +4,12 @@ const express_1 = require("express");
 const reportCardController_1 = require("../controllers/reportCardController");
 const validation_1 = require("../middleware/validation");
 const auth_1 = require("../middleware/auth");
+const tenant_1 = require("../middleware/tenant");
 const grade_1 = require("../types/grade");
 const common_1 = require("../types/common");
 const zod_1 = require("zod");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticate);
+router.use(auth_1.authenticate, tenant_1.resolveTenant, tenant_1.requireActiveSubscription);
 router.post('/', (0, auth_1.authorize)('admin', 'teacher'), (0, validation_1.validateBody)(grade_1.CreateReportCardSchema), reportCardController_1.generateReportCard);
 router.get('/', (0, validation_1.validateQuery)(zod_1.z.object({
     studentId: common_1.IdSchema.optional(),

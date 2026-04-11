@@ -548,8 +548,8 @@ export declare const FeeReportItemSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     status: "pending" | "overdue" | "partial" | "paid" | "waived";
     studentId: string;
-    studentName: string;
     className: string;
+    studentName: string;
     paidAmount: number;
     pendingAmount: number;
     dueDate: string;
@@ -559,8 +559,8 @@ export declare const FeeReportItemSchema: z.ZodObject<{
 }, {
     status: "pending" | "overdue" | "partial" | "paid" | "waived";
     studentId: string;
-    studentName: string;
     className: string;
+    studentName: string;
     paidAmount: number;
     pendingAmount: number;
     dueDate: string;
@@ -587,8 +587,8 @@ export declare const FeeReportSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         status: "pending" | "overdue" | "partial" | "paid" | "waived";
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         paidAmount: number;
         pendingAmount: number;
         dueDate: string;
@@ -598,8 +598,8 @@ export declare const FeeReportSchema: z.ZodObject<{
     }, {
         status: "pending" | "overdue" | "partial" | "paid" | "waived";
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         paidAmount: number;
         pendingAmount: number;
         dueDate: string;
@@ -632,8 +632,8 @@ export declare const FeeReportSchema: z.ZodObject<{
     data: {
         status: "pending" | "overdue" | "partial" | "paid" | "waived";
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         paidAmount: number;
         pendingAmount: number;
         dueDate: string;
@@ -641,8 +641,8 @@ export declare const FeeReportSchema: z.ZodObject<{
         lastPaymentDate: string | null;
         feeCategoryName: string;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalStudents: number;
         collectionPercentage: number;
@@ -656,8 +656,8 @@ export declare const FeeReportSchema: z.ZodObject<{
     data: {
         status: "pending" | "overdue" | "partial" | "paid" | "waived";
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         paidAmount: number;
         pendingAmount: number;
         dueDate: string;
@@ -665,8 +665,8 @@ export declare const FeeReportSchema: z.ZodObject<{
         lastPaymentDate: string | null;
         feeCategoryName: string;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalStudents: number;
         collectionPercentage: number;

@@ -2,15 +2,23 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
+  // ─── Public landing page ──────────────────────────────────────────────────
   {
     path: '',
-    redirectTo: '/auth/login',
-    pathMatch: 'full'
+    loadComponent: () => import('./components/landing/landing.component').then(c => c.LandingComponent)
   },
+  // ─── Auth ────────────────────────────────────────────────────────────────
   {
     path: 'auth',
     loadChildren: () => import('./modules/auth/auth.module').then(m => m.AuthModule)
   },
+  // ─── Super Admin (standalone, no shell) ─────────────────────────────────
+  {
+    path: 'super-admin',
+    loadChildren: () =>
+      import('./modules/super-admin/super-admin.routes').then(m => m.superAdminRoutes)
+  },
+  // ─── School Portal (guarded) ─────────────────────────────────────────────
   {
     path: 'dashboard',
     loadChildren: () => import('./modules/dashboard/dashboard.module').then(m => m.DashboardModule),
@@ -34,6 +42,21 @@ export const routes: Routes = [
   {
     path: 'classes',
     loadChildren: () => import('./modules/classes/classes.module').then(m => m.ClassesModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'attendance',
+    loadChildren: () => import('./modules/attendance/attendance.module').then(m => m.AttendanceModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'fees',
+    loadChildren: () => import('./modules/fees/fees.routes').then(m => m.feesRoutes),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'grades',
+    loadChildren: () => import('./modules/grades/grades.routes').then(m => m.gradesRoutes),
     canActivate: [AuthGuard]
   },
   {

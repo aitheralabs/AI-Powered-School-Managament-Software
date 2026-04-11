@@ -90,6 +90,45 @@ export declare class PaymentService extends BaseService {
             };
         };
     }>;
+    reversePayment(paymentId: string, reason: string, reversedBy: string): Promise<{
+        reversedPaymentId: string;
+        receiptNumber: any;
+        reversedAmount: number;
+        reason: string;
+        reversedBy: string;
+        updatedFeeStatus: string;
+    }>;
+    getPaymentHistory(studentId: string): Promise<any>;
+    getPaymentReceipt(paymentId: string): Promise<{
+        receiptNumber: any;
+        paymentDate: any;
+        issuedAt: any;
+        school: {
+            name: any;
+            address: any;
+            phone: any;
+        };
+        student: {
+            id: any;
+            name: string;
+            email: any;
+            class: string;
+        };
+        payment: {
+            id: any;
+            amount: number;
+            method: any;
+            transactionId: any;
+        };
+        feeDetails: {
+            category: any;
+            description: any;
+            frequency: any;
+            totalFeeAmount: number;
+            status: any;
+        };
+        processedBy: string;
+    }>;
     private generateReceiptNumber;
     private transformPaymentResponse;
 }

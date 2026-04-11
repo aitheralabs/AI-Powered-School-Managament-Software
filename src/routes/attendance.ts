@@ -8,6 +8,8 @@ import {
   getClassAttendance,
   getStudentAttendanceSummary,
   deleteAttendance,
+  getAttendanceStats,
+  getStudentAttendanceList,
 } from '../controllers/attendanceController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -26,6 +28,13 @@ const router = Router();
 
 // All routes require authentication
 router.use(authenticate, resolveTenant, requireActiveSubscription);
+
+// Attendance statistics — must be before /:id routes
+router.get(
+  '/stats',
+  authorize('admin', 'staff', 'teacher'),
+  getAttendanceStats
+);
 
 // Mark single attendance record
 router.post(
@@ -86,6 +95,17 @@ router.get(
     subjectId: IdSchema.optional(),
   })),
   getClassAttendance
+);
+
+// Get student attendance records list
+router.get(
+  '/student/:studentId',
+  validateParams(z.object({ studentId: IdSchema })),
+  validateQuery(z.object({
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    endDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  })),
+  getStudentAttendanceList
 );
 
 // Get student attendance summary

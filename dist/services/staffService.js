@@ -10,50 +10,28 @@ const baseService_1 = require("./baseService");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 class StaffService extends baseService_1.BaseService {
     async createStaff(staffData, adminUserId) {
+        const schoolId = this.requireSchool();
         const client = await (0, connection_1.getClient)();
         try {
             await client.query('BEGIN');
-            const emailCheck = await client.query('SELECT id FROM users WHERE email = $1', [staffData.email]);
-            if (emailCheck.rows.length > 0) {
+            const emailCheck = await client.query('SELECT id FROM users WHERE email = $1 AND school_id = $2', [staffData.email, schoolId]);
+            if (emailCheck.rows.length > 0)
                 throw new errorHandler_1.AppError('Email already exists', 409);
-            }
-            const employeeIdCheck = await client.query('SELECT id FROM staff WHERE employee_id = $1', [staffData.employeeId]);
-            if (employeeIdCheck.rows.length > 0) {
+            const employeeIdCheck = await client.query('SELECT id FROM staff WHERE employee_id = $1 AND school_id = $2', [staffData.employeeId, schoolId]);
+            if (employeeIdCheck.rows.length > 0)
                 throw new errorHandler_1.AppError('Employee ID already exists', 409);
-            }
             const hashedPassword = await bcrypt_1.default.hash(staffData.password, 10);
-            const userResult = await client.query(`INSERT INTO users (
-           first_name, last_name, email, password_hash, role, phone, 
-           date_of_birth, address, is_active
-         ) VALUES ($1, $2, $3, $4, 'staff', $5, $6, $7, true)
-         RETURNING *`, [
-                staffData.firstName,
-                staffData.lastName,
-                staffData.email,
-                hashedPassword,
-                staffData.phone || null,
-                staffData.dateOfBirth || null,
-                staffData.address || null
-            ]);
+            const userResult = await client.query(`INSERT INTO users (first_name, last_name, email, password_hash, role, phone, date_of_birth, address, is_active, school_id)
+         VALUES ($1, $2, $3, $4, 'staff', $5, $6, $7, true, $8)
+         RETURNING *`, [staffData.firstName, staffData.lastName, staffData.email, hashedPassword, staffData.phone || null, staffData.dateOfBirth || null, staffData.address || null, schoolId]);
             const user = userResult.rows[0];
-            const staffResult = await client.query(`INSERT INTO staff (
-           user_id, employee_id, department, position, joining_date, 
-           salary, responsibilities, is_active
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, true)
-         RETURNING *`, [
-                user.id,
-                staffData.employeeId,
-                staffData.department,
-                staffData.position,
-                staffData.joiningDate,
-                staffData.salary || null,
-                staffData.responsibilities || null
-            ]);
+            const staffResult = await client.query(`INSERT INTO staff (user_id, employee_id, department, position, joining_date, salary, responsibilities, is_active, school_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+         RETURNING *`, [user.id, staffData.employeeId, staffData.department, staffData.position, staffData.joiningDate, staffData.salary || null, staffData.responsibilities || null, schoolId]);
             await client.query('COMMIT');
-            const completeStaff = await this.getStaffWithUser(staffResult.rows[0].id);
-            if (!completeStaff) {
+            const completeStaff = await this.getStaffWithUser(staffResult.rows[0].id, schoolId);
+            if (!completeStaff)
                 throw new errorHandler_1.AppError('Failed to retrieve created staff member', 500);
-            }
             return completeStaff;
         }
         catch (error) {
@@ -65,8 +43,9 @@ class StaffService extends baseService_1.BaseService {
         }
     }
     async getStaff(queryParams, userRole, userId) {
-        let whereClause = 'WHERE s.is_active = true';
-        const sqlParams = [];
+        const schoolId = this.requireSchool();
+        let whereClause = 'WHERE s.school_id = $1 AND s.is_active = true';
+        const sqlParams = [schoolId];
         if (userRole === 'staff' && userId) {
             whereClause += ` AND u.id = $${sqlParams.length + 1}`;
             sqlParams.push(userId);
@@ -92,52 +71,35 @@ class StaffService extends baseService_1.BaseService {
             sqlParams.push(queryParams.joiningDateTo);
         }
         if (queryParams.search) {
-            whereClause += ` AND (
-        u.first_name ILIKE $${sqlParams.length + 1} OR 
-        u.last_name ILIKE $${sqlParams.length + 1} OR 
-        u.email ILIKE $${sqlParams.length + 1} OR 
-        s.employee_id ILIKE $${sqlParams.length + 1}
-      )`;
+            whereClause += ` AND (u.first_name ILIKE $${sqlParams.length + 1} OR u.last_name ILIKE $${sqlParams.length + 1} OR u.email ILIKE $${sqlParams.length + 1} OR s.employee_id ILIKE $${sqlParams.length + 1})`;
             sqlParams.push(`%${queryParams.search}%`);
         }
-        const countResult = await (0, connection_1.query)(`SELECT COUNT(*) as total
-       FROM staff s
-       JOIN users u ON s.user_id = u.id
-       ${whereClause}`, sqlParams);
+        const countResult = await (0, connection_1.query)(`SELECT COUNT(*) as total FROM staff s JOIN users u ON s.user_id = u.id ${whereClause}`, sqlParams);
         const total = parseInt(countResult.rows[0].total);
         const offset = (queryParams.page - 1) * queryParams.limit;
         const sortColumn = this.getSortColumn(queryParams.sortBy);
-        const result = await (0, connection_1.query)(`SELECT 
-         s.*,
-         u.first_name,
-         u.last_name,
-         u.email,
-         u.phone,
-         u.date_of_birth,
-         u.address
-       FROM staff s
-       JOIN users u ON s.user_id = u.id
+        const result = await (0, connection_1.query)(`SELECT s.*, u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address
+       FROM staff s JOIN users u ON s.user_id = u.id
        ${whereClause}
        ORDER BY ${sortColumn} ${queryParams.sortOrder}
        LIMIT $${sqlParams.length + 1} OFFSET $${sqlParams.length + 2}`, [...sqlParams, queryParams.limit, offset]);
-        const staff = result.rows.map(this.formatStaffResponse);
-        return { staff, total };
+        return { staff: result.rows.map(this.formatStaffResponse), total };
     }
     async getStaffById(staffId, userRole, userId) {
-        const staff = await this.getStaffWithUser(staffId);
-        if (!staff) {
+        const schoolId = this.requireSchool();
+        const staff = await this.getStaffWithUser(staffId, schoolId);
+        if (!staff)
             throw new errorHandler_1.AppError('Staff member not found', 404);
-        }
-        if (userRole === 'staff' && staff.userId !== userId?.toString()) {
+        if (userRole === 'staff' && staff.userId !== userId) {
             throw new errorHandler_1.AppError('You can only view your own profile', 403);
         }
         return staff;
     }
     async updateStaff(staffId, updateData, userRole, userId) {
-        const existingStaff = await (0, connection_1.query)('SELECT s.*, u.id as user_id FROM staff s JOIN users u ON s.user_id = u.id WHERE s.id = $1', [staffId]);
-        if (existingStaff.rows.length === 0) {
+        const schoolId = this.requireSchool();
+        const existingStaff = await (0, connection_1.query)('SELECT s.*, u.id as user_db_id FROM staff s JOIN users u ON s.user_id = u.id WHERE s.id = $1 AND s.school_id = $2', [staffId, schoolId]);
+        if (existingStaff.rows.length === 0)
             throw new errorHandler_1.AppError('Staff member not found', 404);
-        }
         const staff = existingStaff.rows[0];
         if (userRole === 'staff' && staff.user_id !== userId) {
             throw new errorHandler_1.AppError('You can only update your own profile', 403);
@@ -170,10 +132,8 @@ class StaffService extends baseService_1.BaseService {
             }
             if (userUpdateFields.length > 0) {
                 userUpdateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-                userUpdateValues.push(staff.user_id);
-                await client.query(`UPDATE users 
-           SET ${userUpdateFields.join(', ')}
-           WHERE id = $${userParamIndex}`, userUpdateValues);
+                userUpdateValues.push(staff.user_db_id);
+                await client.query(`UPDATE users SET ${userUpdateFields.join(', ')} WHERE id = $${userParamIndex}`, userUpdateValues);
             }
             const staffUpdateFields = [];
             const staffUpdateValues = [];
@@ -197,15 +157,12 @@ class StaffService extends baseService_1.BaseService {
             if (staffUpdateFields.length > 0) {
                 staffUpdateFields.push(`updated_at = CURRENT_TIMESTAMP`);
                 staffUpdateValues.push(staffId);
-                await client.query(`UPDATE staff 
-           SET ${staffUpdateFields.join(', ')}
-           WHERE id = $${staffParamIndex}`, staffUpdateValues);
+                await client.query(`UPDATE staff SET ${staffUpdateFields.join(', ')} WHERE id = $${staffParamIndex} AND school_id = '${schoolId}'`, staffUpdateValues);
             }
             await client.query('COMMIT');
-            const updatedStaff = await this.getStaffWithUser(staffId);
-            if (!updatedStaff) {
+            const updatedStaff = await this.getStaffWithUser(staffId, schoolId);
+            if (!updatedStaff)
                 throw new errorHandler_1.AppError('Failed to retrieve updated staff member', 500);
-            }
             return updatedStaff;
         }
         catch (error) {
@@ -217,10 +174,10 @@ class StaffService extends baseService_1.BaseService {
         }
     }
     async deactivateStaff(staffId) {
-        const existingStaff = await (0, connection_1.query)('SELECT * FROM staff WHERE id = $1', [staffId]);
-        if (existingStaff.rows.length === 0) {
+        const schoolId = this.requireSchool();
+        const existingStaff = await (0, connection_1.query)('SELECT * FROM staff WHERE id = $1 AND school_id = $2', [staffId, schoolId]);
+        if (existingStaff.rows.length === 0)
             throw new errorHandler_1.AppError('Staff member not found', 404);
-        }
         const client = await (0, connection_1.getClient)();
         try {
             await client.query('BEGIN');
@@ -237,20 +194,19 @@ class StaffService extends baseService_1.BaseService {
         }
     }
     async reactivateStaff(staffId) {
-        const existingStaff = await (0, connection_1.query)('SELECT * FROM staff WHERE id = $1 AND is_active = false', [staffId]);
-        if (existingStaff.rows.length === 0) {
+        const schoolId = this.requireSchool();
+        const existingStaff = await (0, connection_1.query)('SELECT * FROM staff WHERE id = $1 AND school_id = $2 AND is_active = false', [staffId, schoolId]);
+        if (existingStaff.rows.length === 0)
             throw new errorHandler_1.AppError('Staff member not found or already active', 404);
-        }
         const client = await (0, connection_1.getClient)();
         try {
             await client.query('BEGIN');
             await client.query('UPDATE staff SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [staffId]);
             await client.query('UPDATE users SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [existingStaff.rows[0].user_id]);
             await client.query('COMMIT');
-            const updatedStaff = await this.getStaffWithUser(staffId);
-            if (!updatedStaff) {
+            const updatedStaff = await this.getStaffWithUser(staffId, schoolId);
+            if (!updatedStaff)
                 throw new errorHandler_1.AppError('Failed to retrieve reactivated staff member', 500);
-            }
             return updatedStaff;
         }
         catch (error) {
@@ -262,44 +218,22 @@ class StaffService extends baseService_1.BaseService {
         }
     }
     async getStaffSummary() {
-        const overallStats = await (0, connection_1.query)(`SELECT 
-         COUNT(*) as total_staff,
-         COUNT(CASE WHEN is_active = true THEN 1 END) as active_staff,
-         COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_staff
-       FROM staff`);
-        const departmentStats = await (0, connection_1.query)(`SELECT 
-         department,
-         COUNT(*) as total_staff,
-         COUNT(CASE WHEN is_active = true THEN 1 END) as active_staff,
-         json_agg(
-           json_build_object(
-             'position', position,
-             'count', position_count
-           )
-         ) as positions
-       FROM (
-         SELECT 
-           department,
-           position,
-           is_active,
-           COUNT(*) OVER (PARTITION BY department, position) as position_count
-         FROM staff
-       ) dept_pos
-       GROUP BY department
-       ORDER BY department`);
-        const recentJoinings = await (0, connection_1.query)(`SELECT 
-         s.id,
-         u.first_name || ' ' || u.last_name as name,
-         s.department,
-         s.position,
-         s.joining_date
-       FROM staff s
-       JOIN users u ON s.user_id = u.id
-       WHERE s.joining_date >= CURRENT_DATE - INTERVAL '30 days'
-       ORDER BY s.joining_date DESC
-       LIMIT 10`);
+        const schoolId = this.requireSchool();
+        const overallStats = await (0, connection_1.query)(`SELECT COUNT(*) as total_staff,
+              COUNT(CASE WHEN is_active = true THEN 1 END) as active_staff,
+              COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_staff
+       FROM staff WHERE school_id = $1`, [schoolId]);
+        const departmentStats = await (0, connection_1.query)(`SELECT department,
+              COUNT(*) as total_staff,
+              COUNT(CASE WHEN is_active = true THEN 1 END) as active_staff
+       FROM staff WHERE school_id = $1
+       GROUP BY department ORDER BY department`, [schoolId]);
+        const recentJoinings = await (0, connection_1.query)(`SELECT s.id, u.first_name || ' ' || u.last_name as name, s.department, s.position, s.joining_date
+       FROM staff s JOIN users u ON s.user_id = u.id
+       WHERE s.school_id = $1 AND s.joining_date >= CURRENT_DATE - INTERVAL '30 days'
+       ORDER BY s.joining_date DESC LIMIT 10`, [schoolId]);
         const stats = overallStats.rows[0];
-        const summary = {
+        return {
             totalStaff: parseInt(stats.total_staff),
             activeStaff: parseInt(stats.active_staff),
             inactiveStaff: parseInt(stats.inactive_staff),
@@ -307,67 +241,39 @@ class StaffService extends baseService_1.BaseService {
                 department: row.department,
                 totalStaff: parseInt(row.total_staff),
                 activeStaff: parseInt(row.active_staff),
-                positions: row.positions || []
+                positions: [],
             })),
             recentJoinings: recentJoinings.rows.map((row) => ({
-                staffId: row.id.toString(),
-                name: row.name,
-                department: row.department,
-                position: row.position,
-                joiningDate: row.joining_date
-            }))
+                staffId: row.id.toString(), name: row.name, department: row.department,
+                position: row.position, joiningDate: row.joining_date,
+            })),
         };
-        return summary;
     }
-    async getStaffWithUser(staffId) {
-        const result = await (0, connection_1.query)(`SELECT 
-         s.*,
-         u.first_name,
-         u.last_name,
-         u.email,
-         u.phone,
-         u.date_of_birth,
-         u.address
-       FROM staff s
-       JOIN users u ON s.user_id = u.id
-       WHERE s.id = $1`, [staffId]);
-        if (result.rows.length === 0) {
+    async getStaffWithUser(staffId, schoolId) {
+        const result = await (0, connection_1.query)(`SELECT s.*, u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address
+       FROM staff s JOIN users u ON s.user_id = u.id
+       WHERE s.id = $1 AND s.school_id = $2`, [staffId, schoolId]);
+        if (result.rows.length === 0)
             return null;
-        }
         return this.formatStaffResponse(result.rows[0]);
     }
     formatStaffResponse(row) {
         return {
-            id: row.id.toString(),
-            altId: null,
-            userId: row.user_id.toString(),
-            employeeId: row.employee_id,
-            department: row.department,
-            position: row.position,
-            joiningDate: row.joining_date,
-            salary: row.salary ? parseFloat(row.salary) : null,
-            responsibilities: row.responsibilities,
-            isActive: row.is_active,
-            createdAt: row.created_at.toISOString(),
-            updatedAt: row.updated_at.toISOString(),
+            id: row.id.toString(), altId: null, userId: row.user_id.toString(),
+            employeeId: row.employee_id, department: row.department, position: row.position,
+            joiningDate: row.joining_date, salary: row.salary ? parseFloat(row.salary) : null,
+            responsibilities: row.responsibilities, isActive: row.is_active,
+            createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(),
             user: {
-                firstName: row.first_name,
-                lastName: row.last_name,
-                email: row.email,
-                phone: row.phone,
-                dateOfBirth: row.date_of_birth,
-                address: row.address,
+                firstName: row.first_name, lastName: row.last_name, email: row.email,
+                phone: row.phone, dateOfBirth: row.date_of_birth, address: row.address,
             },
         };
     }
     getSortColumn(sortBy) {
         const columnMap = {
-            firstName: 'u.first_name',
-            lastName: 'u.last_name',
-            employeeId: 's.employee_id',
-            department: 's.department',
-            position: 's.position',
-            joiningDate: 's.joining_date',
+            firstName: 'u.first_name', lastName: 'u.last_name', employeeId: 's.employee_id',
+            department: 's.department', position: 's.position', joiningDate: 's.joining_date',
         };
         return columnMap[sortBy] || 'u.first_name';
     }

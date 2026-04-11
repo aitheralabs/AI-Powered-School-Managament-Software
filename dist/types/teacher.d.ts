@@ -262,7 +262,7 @@ export declare const TeacherWorkloadSchema: z.ZodObject<{
     totalStudents: number;
     weeklyHours?: number | undefined;
     workloadIntensity?: number | undefined;
-    workloadStatus?: "light" | "normal" | "high" | "overloaded" | undefined;
+    workloadStatus?: "high" | "light" | "normal" | "overloaded" | undefined;
 }, {
     teacherId: string;
     totalClasses: number;
@@ -270,7 +270,7 @@ export declare const TeacherWorkloadSchema: z.ZodObject<{
     totalStudents: number;
     weeklyHours?: number | undefined;
     workloadIntensity?: number | undefined;
-    workloadStatus?: "light" | "normal" | "high" | "overloaded" | undefined;
+    workloadStatus?: "high" | "light" | "normal" | "overloaded" | undefined;
 }>;
 export declare const AssignmentConflictCheckSchema: z.ZodObject<{
     teacherId: z.ZodEffects<z.ZodString, string, string>;

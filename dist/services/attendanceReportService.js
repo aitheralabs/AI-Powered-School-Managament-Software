@@ -189,6 +189,10 @@ class AttendanceReportService extends baseService_1.BaseService {
         }
     }
     addAuthorizationFilters(whereClause, queryParams, userId, userRole) {
+        if (this.schoolId) {
+            whereClause += ` AND a.school_id = $${queryParams.length + 1}`;
+            queryParams.push(this.schoolId);
+        }
         if (userRole === 'teacher') {
             whereClause += ` AND (c.teacher_id = $${queryParams.length + 1} OR EXISTS (
         SELECT 1 FROM class_subjects cs 

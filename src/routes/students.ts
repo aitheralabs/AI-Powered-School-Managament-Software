@@ -9,6 +9,7 @@ import {
   getStudentClassHistory,
   getStudentsByClass,
   bulkUpdateStudents,
+  getStudentStats,
 } from '../controllers/studentController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -34,6 +35,13 @@ router.post(
   validateBody(CreateStudentSchema),
   invalidateCache(['students:*', 'classes:*', 'stats:*']),
   createStudent
+);
+
+// Get student statistics (admin only) — must be before /:id
+router.get(
+  '/stats',
+  authorize('admin', 'staff'),
+  getStudentStats
 );
 
 // Get all students

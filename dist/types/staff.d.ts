@@ -447,8 +447,8 @@ export declare const StaffReportSchema: z.ZodObject<{
         department: string | null;
         position: string | null;
     };
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalStaff: number;
         activeStaff: number;
@@ -472,8 +472,8 @@ export declare const StaffReportSchema: z.ZodObject<{
         department: string | null;
         position: string | null;
     };
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalStaff: number;
         activeStaff: number;

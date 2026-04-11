@@ -1,0 +1,257 @@
+<div class="landing">
+
+  <!-- ─── Nav ──────────────────────────────────────────────────────────────── -->
+  <nav class="landing-nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <div class="nav-logo"><mat-icon>school</mat-icon></div>
+        <span>EduSaaS</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#testimonials">Reviews</a>
+      </div>
+      <div class="nav-actions">
+        <a routerLink="/auth/login" class="nav-btn outline">Sign In</a>
+        <a routerLink="/auth/login" class="nav-btn primary">Get Started Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────────────── -->
+  <section class="hero-section">
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <mat-icon>auto_awesome</mat-icon> Trusted by 500+ schools across India
+      </div>
+      <h1>
+        The Modern School<br>
+        Management Platform
+      </h1>
+      <p>
+        Streamline attendance, fees, grades, and communication for your entire school.
+        Built for administrators, teachers, students, and parents.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/auth/login" class="hero-btn primary">
+          <mat-icon>rocket_launch</mat-icon> Start Free Trial
+        </a>
+        <a href="#features" class="hero-btn outline">
+          <mat-icon>play_circle</mat-icon> See How It Works
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat" *ngFor="let s of stats">
+          <span class="stat-val">{{ s.value }}</span>
+          <span class="stat-lbl">{{ s.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero visual -->
+    <div class="hero-visual">
+      <div class="mock-dashboard">
+        <div class="mock-header">
+          <div class="mock-dot red"></div>
+          <div class="mock-dot yellow"></div>
+          <div class="mock-dot green"></div>
+          <span class="mock-title">Admin Dashboard</span>
+        </div>
+        <div class="mock-kpis">
+          <div class="mock-kpi purple">
+            <mat-icon>people</mat-icon>
+            <div><span class="mk-val">1,240</span><span class="mk-lbl">Students</span></div>
+          </div>
+          <div class="mock-kpi blue">
+            <mat-icon>school</mat-icon>
+            <div><span class="mk-val">86</span><span class="mk-lbl">Teachers</span></div>
+          </div>
+          <div class="mock-kpi green">
+            <mat-icon>how_to_reg</mat-icon>
+            <div><span class="mk-val">94%</span><span class="mk-lbl">Attendance</span></div>
+          </div>
+          <div class="mock-kpi orange">
+            <mat-icon>payments</mat-icon>
+            <div><span class="mk-val">₹8.2M</span><span class="mk-lbl">Collected</span></div>
+          </div>
+        </div>
+        <div class="mock-chart">
+          <div class="mock-bar" style="height:60%"></div>
+          <div class="mock-bar" style="height:80%"></div>
+          <div class="mock-bar" style="height:55%"></div>
+          <div class="mock-bar" style="height:95%"></div>
+          <div class="mock-bar" style="height:70%"></div>
+          <div class="mock-bar" style="height:88%"></div>
+          <div class="mock-bar" style="height:72%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Features ─────────────────────────────────────────────────────────── -->
+  <section class="features-section" id="features">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-badge">Features</div>
+        <h2>Everything your school needs</h2>
+        <p>A complete suite of tools designed to reduce administrative burden and improve outcomes.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card" *ngFor="let f of features">
+          <div class="feature-icon">
+            <mat-icon>{{ f.icon }}</mat-icon>
+          </div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.desc }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Role Showcase ─────────────────────────────────────────────────────── -->
+  <section class="roles-section">
+    <div class="section-inner">
+      <div class="section-header light">
+        <div class="section-badge light">Role-Based Dashboards</div>
+        <h2>Built for every stakeholder</h2>
+        <p>Each user gets a personalized dashboard tailored to their role and responsibilities.</p>
+      </div>
+
+      <div class="roles-grid">
+        <div class="role-card">
+          <div class="role-icon admin"><mat-icon>admin_panel_settings</mat-icon></div>
+          <h3>Admin</h3>
+          <ul>
+            <li><mat-icon>check</mat-icon> School-wide analytics</li>
+            <li><mat-icon>check</mat-icon> Fee collection overview</li>
+            <li><mat-icon>check</mat-icon> Staff management</li>
+            <li><mat-icon>check</mat-icon> Enrollment tracking</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-icon teacher"><mat-icon>person</mat-icon></div>
+          <h3>Teacher</h3>
+          <ul>
+            <li><mat-icon>check</mat-icon> Class management</li>
+            <li><mat-icon>check</mat-icon> Attendance marking</li>
+            <li><mat-icon>check</mat-icon> Grade entry</li>
+            <li><mat-icon>check</mat-icon> Student performance</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-icon student"><mat-icon>school</mat-icon></div>
+          <h3>Student</h3>
+          <ul>
+            <li><mat-icon>check</mat-icon> Attendance record</li>
+            <li><mat-icon>check</mat-icon> Fee status & history</li>
+            <li><mat-icon>check</mat-icon> Grades & reports</li>
+            <li><mat-icon>check</mat-icon> Announcements</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-icon parent"><mat-icon>family_restroom</mat-icon></div>
+          <h3>Parent</h3>
+          <ul>
+            <li><mat-icon>check</mat-icon> Child's attendance</li>
+            <li><mat-icon>check</mat-icon> Fee payment & dues</li>
+            <li><mat-icon>check</mat-icon> Academic progress</li>
+            <li><mat-icon>check</mat-icon> Multiple children</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Pricing ──────────────────────────────────────────────────────────── -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-badge">Pricing</div>
+        <h2>Simple, transparent pricing</h2>
+        <p>No hidden fees. Start free, scale as you grow.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="pricing-card" *ngFor="let p of plans" [class.highlighted]="p.highlight">
+          <div class="popular-badge" *ngIf="p.highlight">Most Popular</div>
+          <h3>{{ p.name }}</h3>
+          <div class="price-row">
+            <span class="price">{{ p.price }}</span>
+            <span class="price-period">{{ p.period }}</span>
+          </div>
+          <ul class="plan-features">
+            <li *ngFor="let f of p.features">
+              <mat-icon>check_circle</mat-icon> {{ f }}
+            </li>
+          </ul>
+          <a routerLink="/auth/login" class="plan-cta" [class.primary]="p.highlight">
+            {{ p.highlight ? 'Get Started' : 'Choose Plan' }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Testimonials ─────────────────────────────────────────────────────── -->
+  <section class="testimonials-section" id="testimonials">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-badge">Testimonials</div>
+        <h2>Loved by school leaders</h2>
+        <p>Here's what educators and administrators say about EduSaaS.</p>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card" *ngFor="let t of testimonials">
+          <div class="testimonial-quote">
+            <mat-icon>format_quote</mat-icon>
+          </div>
+          <p class="testimonial-text">{{ t.text }}</p>
+          <div class="testimonial-author">
+            <div class="author-avatar">{{ t.avatar }}</div>
+            <div>
+              <span class="author-name">{{ t.name }}</span>
+              <span class="author-role">{{ t.role }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ──────────────────────────────────────────────────────────────── -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>Ready to transform your school?</h2>
+      <p>Join 500+ schools already using EduSaaS to save time and improve outcomes.</p>
+      <div class="cta-actions">
+        <a routerLink="/auth/login" class="cta-btn primary">
+          <mat-icon>rocket_launch</mat-icon> Start Free Trial
+        </a>
+        <a routerLink="/auth/login" class="cta-btn outline">
+          <mat-icon>login</mat-icon> Sign In to Your School
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ───────────────────────────────────────────────────────────── -->
+  <footer class="landing-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo"><mat-icon>school</mat-icon></div>
+        <span>EduSaaS</span>
+      </div>
+      <p>© 2025 EduSaaS. Built with ❤️ for educators.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+        <a routerLink="/super-admin/login">Super Admin</a>
+      </div>
+    </div>
+  </footer>
+
+</div>

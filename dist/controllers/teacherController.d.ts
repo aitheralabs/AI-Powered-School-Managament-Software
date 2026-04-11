@@ -14,4 +14,7 @@ export declare const removeTeacherFromClassSubject: (req: Request, res: Response
 export declare const getAllTeacherAssignments: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const checkAssignmentConflicts: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getOptimalTeacherSuggestions: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getTeacherStats: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getTeacherClasses: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getTeacherSubjects: (req: Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=teacherController.d.ts.map

@@ -5,63 +5,27 @@ const errorHandler_1 = require("../middleware/errorHandler");
 const academicYearService_1 = require("../services/academicYearService");
 const academicYearService = new academicYearService_1.AcademicYearService();
 exports.createAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const academicYearData = req.body;
-    const academicYear = await academicYearService.createAcademicYear(academicYearData);
-    res.status(201).json({
-        success: true,
-        message: 'Academic year created successfully',
-        data: {
-            academicYear: academicYear,
-        },
-    });
+    const academicYear = await academicYearService.forSchool(req.schoolId).createAcademicYear(req.body);
+    res.status(201).json({ success: true, message: 'Academic year created successfully', data: { academicYear } });
 });
 exports.getAcademicYears = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const result = await academicYearService.getAcademicYears(req);
-    res.json({
-        success: true,
-        data: {
-            academicYears: result.academicYears,
-            pagination: result.pagination,
-        },
-    });
+    const result = await academicYearService.forSchool(req.schoolId).getAcademicYears(req);
+    res.json({ success: true, data: { academicYears: result.academicYears, pagination: result.pagination } });
 });
 exports.getAcademicYearById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { id } = req.params;
-    const academicYear = await academicYearService.getAcademicYearById(id);
-    res.json({
-        success: true,
-        data: {
-            academicYear: academicYear,
-        },
-    });
+    const academicYear = await academicYearService.forSchool(req.schoolId).getAcademicYearById(req.params.id);
+    res.json({ success: true, data: { academicYear } });
 });
 exports.updateAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    const academicYear = await academicYearService.updateAcademicYear(id, updateData);
-    res.json({
-        success: true,
-        message: 'Academic year updated successfully',
-        data: {
-            academicYear: academicYear,
-        },
-    });
+    const academicYear = await academicYearService.forSchool(req.schoolId).updateAcademicYear(req.params.id, req.body);
+    res.json({ success: true, message: 'Academic year updated successfully', data: { academicYear } });
 });
 exports.deleteAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { id } = req.params;
-    await academicYearService.deleteAcademicYear(id);
-    res.json({
-        success: true,
-        message: 'Academic year deleted successfully',
-    });
+    await academicYearService.forSchool(req.schoolId).deleteAcademicYear(req.params.id);
+    res.json({ success: true, message: 'Academic year deleted successfully' });
 });
 exports.getActiveAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const academicYear = await academicYearService.getActiveAcademicYear();
-    res.json({
-        success: true,
-        data: {
-            academicYear: academicYear,
-        },
-    });
+    const academicYear = await academicYearService.forSchool(req.schoolId).getActiveAcademicYear();
+    res.json({ success: true, data: { academicYear } });
 });
 //# sourceMappingURL=academicYearController.js.map

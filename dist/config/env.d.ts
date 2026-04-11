@@ -16,7 +16,20 @@ export declare const env: {
     REDIS_DB: number;
     CACHE_TTL_SECONDS: number;
     REDIS_ENABLED: boolean;
+    SMTP_PORT: number;
+    SMTP_SECURE: boolean;
     REDIS_PASSWORD?: string | undefined;
+    SMTP_HOST?: string | undefined;
+    SMTP_USER?: string | undefined;
+    SMTP_PASS?: string | undefined;
+    SUPER_ADMIN_JWT_SECRET?: string | undefined;
+    ANTHROPIC_API_KEY?: string | undefined;
+    RAZORPAY_KEY_ID?: string | undefined;
+    RAZORPAY_KEY_SECRET?: string | undefined;
+    RAZORPAY_WEBHOOK_SECRET?: string | undefined;
+    STRIPE_SECRET_KEY?: string | undefined;
+    STRIPE_WEBHOOK_SECRET?: string | undefined;
+    SENTRY_DSN?: string | undefined;
 };
 export default env;
 //# sourceMappingURL=env.d.ts.map

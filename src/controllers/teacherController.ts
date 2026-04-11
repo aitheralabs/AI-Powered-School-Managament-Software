@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { TeacherService } from '../services/teacherService';
+import { query } from '../database/connection';
 
 const teacherService = new TeacherService();
 
@@ -87,4 +88,73 @@ export const getOptimalTeacherSuggestions = asyncHandler(async (req: Request, re
   const { classId, subjectId } = req.params;
   const suggestions = await (teacherService.forSchool(req.schoolId!) as any).getOptimalTeacherSuggestions(classId, subjectId);
   res.json({ success: true, data: suggestions });
+});
+
+export const getTeacherStats = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const [totalRes, specializationRes, classLoadRes] = await Promise.all([
+    query(
+      `SELECT COUNT(*) AS total,
+              COUNT(*) FILTER (WHERE is_active = true) AS active,
+              COUNT(*) FILTER (WHERE is_active = false) AS inactive
+       FROM teachers WHERE school_id = $1`,
+      [schoolId]
+    ),
+    query(
+      `SELECT specialization AS spec, COUNT(*) AS count
+       FROM teachers
+       WHERE school_id = $1 AND is_active = true AND specialization IS NOT NULL AND specialization <> ''
+       GROUP BY specialization ORDER BY count DESC LIMIT 5`,
+      [schoolId]
+    ),
+    query(
+      `SELECT AVG(class_count) AS avg_classes FROM (
+         SELECT COUNT(c.id) AS class_count
+         FROM teachers t
+         LEFT JOIN classes c ON c.teacher_id = t.id AND c.is_active = true
+         WHERE t.school_id = $1 AND t.is_active = true
+         GROUP BY t.id
+       ) sub`,
+      [schoolId]
+    ),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      total: parseInt(totalRes.rows[0].total, 10),
+      active: parseInt(totalRes.rows[0].active, 10),
+      inactive: parseInt(totalRes.rows[0].inactive, 10),
+      avgClassLoad: parseFloat(classLoadRes.rows[0].avg_classes ?? '0').toFixed(1),
+      bySpecialization: specializationRes.rows.map((r: any) => ({ spec: r.spec, count: parseInt(r.count, 10) })),
+    },
+  });
+});
+
+export const getTeacherClasses = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const { id } = req.params;
+  const result = await query(
+    `SELECT c.id, c.name, c.grade_level, c.section,
+            COUNT(DISTINCT s.id) AS student_count
+     FROM classes c
+     LEFT JOIN students s ON s.class_id = c.id AND s.is_active = true
+     WHERE c.teacher_id = $1 AND c.school_id = $2 AND c.is_active = true
+     GROUP BY c.id, c.name, c.grade_level, c.section`,
+    [id, schoolId]
+  );
+  res.json({ success: true, data: result.rows });
+});
+
+export const getTeacherSubjects = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const { id } = req.params;
+  const result = await query(
+    `SELECT s.id, s.name, s.code, s.description
+     FROM teacher_subjects ts
+     JOIN subjects s ON s.id = ts.subject_id
+     WHERE ts.teacher_id = $1 AND s.school_id = $2 AND s.is_active = true`,
+    [id, schoolId]
+  );
+  res.json({ success: true, data: result.rows });
 });

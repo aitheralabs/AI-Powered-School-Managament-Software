@@ -10,6 +10,9 @@ import {
   getStudentFees,
   getStudentFeeById,
   updateStudentFee,
+  deleteStudentFee,
+  getFeeStats,
+  getStudentFeesByStudentId,
 } from '../controllers/feeController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -30,6 +33,20 @@ const router = Router();
 
 // All routes require authentication
 router.use(authenticate, resolveTenant, requireActiveSubscription);
+
+// Fee statistics — must be before parameterized routes
+router.get(
+  '/stats',
+  authorize('admin', 'staff'),
+  getFeeStats
+);
+
+// Get fees for a specific student by student ID
+router.get(
+  '/student/:studentId',
+  validateParams(z.object({ studentId: IdSchema })),
+  getStudentFeesByStudentId
+);
 
 // Fee Category Management Routes
 
@@ -121,6 +138,14 @@ router.put(
   validateParams(z.object({ id: IdSchema })),
   validateBody(UpdateStudentFeeSchema),
   updateStudentFee
+);
+
+// Delete student fee (admin only)
+router.delete(
+  '/student-fees/:id',
+  authorize('admin'),
+  validateParams(z.object({ id: IdSchema })),
+  deleteStudentFee
 );
 
 export default router;

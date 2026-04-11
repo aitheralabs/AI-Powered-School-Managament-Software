@@ -4,6 +4,20 @@ exports.BaseService = void 0;
 const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 class BaseService {
+    constructor() {
+        this.schoolId = '';
+    }
+    forSchool(id) {
+        const scoped = Object.create(this);
+        scoped.schoolId = id;
+        return scoped;
+    }
+    requireSchool() {
+        if (!this.schoolId) {
+            throw new errorHandler_1.AppError('Tenant context missing — call forSchool(schoolId) before using this service', 500);
+        }
+        return this.schoolId;
+    }
     async executeQuery(sql, params = []) {
         try {
             return await (0, connection_1.query)(sql, params);
@@ -11,7 +25,7 @@ class BaseService {
         catch (error) {
             const code = error?.code || error?.original?.code;
             if (code === '22P02') {
-                throw new errorHandler_1.AppError('Invalid token', 401);
+                throw new errorHandler_1.AppError('Invalid ID format', 400);
             }
             if (code === '23505') {
                 throw new errorHandler_1.AppError('Resource already exists', 409);
@@ -44,18 +58,20 @@ class BaseService {
     }
     async checkEntityExists(tableName, id, altIdColumn) {
         const isUUID = this.validateUUID(id);
+        const schoolFilter = this.schoolId ? ` AND school_id = '${this.schoolId}'` : '';
         let result;
         if (isUUID) {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id = $1${schoolFilter}`, [id]);
         }
         else if (altIdColumn) {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE ${altIdColumn} = $1 OR id::text = $1`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolFilter}`, [id]);
         }
         else {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id::text = $1`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id::text = $1${schoolFilter}`, [id]);
         }
         if (result.rows.length === 0) {
-            throw new errorHandler_1.AppError(`${tableName.slice(0, -1)} not found`, 404);
+            const entityName = tableName.replace(/_/g, ' ').slice(0, -1);
+            throw new errorHandler_1.AppError(`${entityName} not found`, 404);
         }
         return result.rows[0];
     }

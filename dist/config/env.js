@@ -26,6 +26,19 @@ const envSchema = zod_1.z.object({
     REDIS_DB: zod_1.z.string().default('0').transform(Number),
     CACHE_TTL_SECONDS: zod_1.z.string().default('300').transform(Number),
     REDIS_ENABLED: zod_1.z.string().default('false').transform(val => val === 'true'),
+    SMTP_HOST: zod_1.z.string().optional(),
+    SMTP_PORT: zod_1.z.string().default('587').transform(Number),
+    SMTP_SECURE: zod_1.z.string().default('false').transform(val => val === 'true'),
+    SMTP_USER: zod_1.z.string().optional(),
+    SMTP_PASS: zod_1.z.string().optional(),
+    SUPER_ADMIN_JWT_SECRET: zod_1.z.string().optional(),
+    ANTHROPIC_API_KEY: zod_1.z.string().optional(),
+    RAZORPAY_KEY_ID: zod_1.z.string().optional(),
+    RAZORPAY_KEY_SECRET: zod_1.z.string().optional(),
+    RAZORPAY_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    STRIPE_SECRET_KEY: zod_1.z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    SENTRY_DSN: zod_1.z.string().optional(),
 });
 const validateEnv = () => {
     try {

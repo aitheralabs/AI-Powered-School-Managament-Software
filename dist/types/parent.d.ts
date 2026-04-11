@@ -277,10 +277,10 @@ export declare const ParentDashboardSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         studentId: string;
         relationshipType: "father" | "mother" | "guardian" | "other";
-        studentName: string;
         isPrimary: boolean;
         className: string;
         studentIdNumber: string;
+        studentName: string;
         recentAttendance?: {
             percentage: number;
             lastWeekPresent: number;
@@ -301,10 +301,10 @@ export declare const ParentDashboardSchema: z.ZodObject<{
     }, {
         studentId: string;
         relationshipType: "father" | "mother" | "guardian" | "other";
-        studentName: string;
         isPrimary: boolean;
         className: string;
         studentIdNumber: string;
+        studentName: string;
         recentAttendance?: {
             percentage: number;
             lastWeekPresent: number;
@@ -353,10 +353,10 @@ export declare const ParentDashboardSchema: z.ZodObject<{
     children: {
         studentId: string;
         relationshipType: "father" | "mother" | "guardian" | "other";
-        studentName: string;
         isPrimary: boolean;
         className: string;
         studentIdNumber: string;
+        studentName: string;
         recentAttendance?: {
             percentage: number;
             lastWeekPresent: number;
@@ -389,10 +389,10 @@ export declare const ParentDashboardSchema: z.ZodObject<{
     children: {
         studentId: string;
         relationshipType: "father" | "mother" | "guardian" | "other";
-        studentName: string;
         isPrimary: boolean;
         className: string;
         studentIdNumber: string;
+        studentName: string;
         recentAttendance?: {
             percentage: number;
             lastWeekPresent: number;

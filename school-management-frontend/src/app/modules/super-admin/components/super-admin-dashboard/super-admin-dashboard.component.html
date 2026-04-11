@@ -1,0 +1,196 @@
+<div class="sa-dash">
+
+  <!-- Top bar -->
+  <header class="sa-header">
+    <div class="sa-brand">
+      <div class="sa-brand-icon"><mat-icon>shield</mat-icon></div>
+      <div>
+        <span class="sa-brand-name">EduSaaS</span>
+        <span class="sa-brand-tag">Super Admin</span>
+      </div>
+    </div>
+    <div class="sa-header-right">
+      <span class="sa-date">{{ today | date:'EEE, MMM d, y' }}</span>
+      <button class="sa-logout-btn" (click)="logout()" matTooltip="Sign out">
+        <mat-icon>logout</mat-icon> Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="dash-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading platform overview…</p>
+  </div>
+
+  <main *ngIf="!isLoading && data" class="sa-main">
+
+    <!-- Page title -->
+    <div class="page-title-row">
+      <div>
+        <h1>Platform Dashboard</h1>
+        <p>Real-time overview of all schools on the EduSaaS platform</p>
+      </div>
+    </div>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+      <div class="kpi-tile purple">
+        <div class="kpi-icon"><mat-icon>domain</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.platformStats?.totalSchools ?? 0 }}</span>
+          <span class="kpi-lbl">Total Schools</span>
+          <span class="kpi-sub">{{ data.platformStats?.activeSchools }} active</span>
+        </div>
+      </div>
+      <div class="kpi-tile blue">
+        <div class="kpi-icon"><mat-icon>people</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.platformStats?.totalStudents ?? 0 }}</span>
+          <span class="kpi-lbl">Total Students</span>
+          <span class="kpi-sub">Across all schools</span>
+        </div>
+      </div>
+      <div class="kpi-tile teal">
+        <div class="kpi-icon"><mat-icon>school</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.platformStats?.totalTeachers ?? 0 }}</span>
+          <span class="kpi-lbl">Total Teachers</span>
+          <span class="kpi-sub">Across all schools</span>
+        </div>
+      </div>
+      <div class="kpi-tile green">
+        <div class="kpi-icon"><mat-icon>payments</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ formatRevenue(data.platformStats?.totalRevenue ?? 0) }}</span>
+          <span class="kpi-lbl">Total Revenue</span>
+          <span class="kpi-sub">All time collections</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="sa-grid">
+
+      <!-- Recent Schools -->
+      <div class="sa-card wide">
+        <div class="card-head">
+          <div>
+            <h3>Recently Joined Schools</h3>
+            <p class="card-sub">Newest {{ data.recentSchools?.length }} schools on platform</p>
+          </div>
+        </div>
+
+        <div *ngIf="!data.recentSchools?.length" class="empty-msg">
+          <mat-icon>domain</mat-icon><p>No schools yet</p>
+        </div>
+
+        <div class="schools-table" *ngIf="data.recentSchools?.length">
+          <div class="school-row header">
+            <span>School</span><span>Plan</span><span>Status</span><span>Students</span><span>Joined</span>
+          </div>
+          <div class="school-row" *ngFor="let s of data.recentSchools">
+            <span class="school-nm">
+              <div class="school-avatar">{{ s.name?.charAt(0) }}</div>
+              {{ s.name }}
+            </span>
+            <span>
+              <span class="plan-badge" [style.background]="getPlanColor(s.plan) + '20'" [style.color]="getPlanColor(s.plan)">
+                {{ s.plan | titlecase }}
+              </span>
+            </span>
+            <span>
+              <span class="status-dot" [style.background]="getStatusColor(s.status)"></span>
+              <span [style.color]="getStatusColor(s.status)" style="font-weight:600; font-size:13px;">
+                {{ s.status | titlecase }}
+              </span>
+            </span>
+            <span class="students-count">{{ s.studentCount }}</span>
+            <span class="date-sm">{{ s.createdAt | date:'MMM d, y' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription Breakdown -->
+      <div class="sa-card">
+        <div class="card-head">
+          <div>
+            <h3>Subscription Plans</h3>
+            <p class="card-sub">Schools by plan type</p>
+          </div>
+        </div>
+
+        <div *ngIf="!data.subscriptionBreakdown?.length" class="empty-msg">
+          <mat-icon>subscriptions</mat-icon><p>No data yet</p>
+        </div>
+
+        <div class="plan-list" *ngIf="data.subscriptionBreakdown?.length">
+          <div class="plan-item" *ngFor="let p of data.subscriptionBreakdown">
+            <div class="plan-icon" [style.background]="getPlanColor(p.plan) + '20'">
+              <mat-icon [style.color]="getPlanColor(p.plan)">workspace_premium</mat-icon>
+            </div>
+            <div class="plan-info">
+              <span class="plan-name">{{ p.plan | titlecase }}</span>
+              <span class="plan-count">{{ p.count }} school{{ p.count !== 1 ? 's' : '' }}</span>
+            </div>
+            <div class="plan-bar">
+              <div class="plan-bar-fill" [style.width.%]="(p.count / data.platformStats?.totalSchools) * 100" [style.background]="getPlanColor(p.plan)"></div>
+            </div>
+            <span class="plan-pct" [style.color]="getPlanColor(p.plan)">{{ ((p.count / data.platformStats?.totalSchools) * 100) | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Growth -->
+      <div class="sa-card">
+        <div class="card-head">
+          <div>
+            <h3>School Growth</h3>
+            <p class="card-sub">New schools per month (last 12 months)</p>
+          </div>
+        </div>
+
+        <div *ngIf="!data.monthlyGrowth?.length" class="empty-msg">
+          <mat-icon>trending_up</mat-icon><p>No growth data yet</p>
+        </div>
+
+        <div class="growth-chart" *ngIf="data.monthlyGrowth?.length">
+          <div class="growth-bar-wrap" *ngFor="let m of data.monthlyGrowth">
+            <div class="growth-bar-col">
+              <span class="growth-count">{{ m.count }}</span>
+              <div class="growth-bar" [style.height.px]="m.count * 18 + 4"></div>
+            </div>
+            <span class="growth-month">{{ m.month?.split(' ')[0] }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- School vs Student metric -->
+    <div class="platform-summary">
+      <div class="summary-item">
+        <mat-icon>bar_chart</mat-icon>
+        <span>Avg students per school: <strong>{{ data.platformStats?.totalSchools > 0 ? (data.platformStats?.totalStudents / data.platformStats?.totalSchools | number:'1.0-0') : 0 }}</strong></span>
+      </div>
+      <div class="summary-item">
+        <mat-icon>people_outline</mat-icon>
+        <span>Avg teachers per school: <strong>{{ data.platformStats?.totalSchools > 0 ? (data.platformStats?.totalTeachers / data.platformStats?.totalSchools | number:'1.0-1') : 0 }}</strong></span>
+      </div>
+      <div class="summary-item">
+        <mat-icon>check_circle</mat-icon>
+        <span>Platform uptime: <strong>99.9%</strong></span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Error -->
+  <div *ngIf="!isLoading && !data" class="dash-error">
+    <mat-icon>error_outline</mat-icon>
+    <h3>Could not load platform data</h3>
+    <p>Please try logging in again.</p>
+    <button class="retry-btn" (click)="ngOnInit()"><mat-icon>refresh</mat-icon> Retry</button>
+  </div>
+
+</div>

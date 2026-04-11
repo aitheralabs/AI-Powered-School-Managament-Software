@@ -13,6 +13,8 @@ import {
   transferStudent,
   getClassStudents,
   getClassSubjects,
+  getClassStats,
+  removeStudentFromClass,
 } from '../controllers/classController';
 import { authenticate, authorize } from '../middleware/auth';
 import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
@@ -22,6 +24,9 @@ const router = Router();
 
 // All routes require authentication
 router.use(authenticate, resolveTenant, requireActiveSubscription);
+
+// Class-level statistics (admin/staff) — must be before /:id
+router.get('/stats', authorize('admin', 'staff'), getClassStats);
 
 // Get all classes with filtering and pagination
 router.get('/', cacheResponse(300), getClasses); // Cache for 5 minutes
@@ -55,6 +60,9 @@ router.post('/transfer', authorize('admin'), invalidateCache(['class*', 'student
 
 // Update class (admin only)
 router.put('/:id', authorize('admin'), invalidateCache(['class*', 'classes:*']), updateClass);
+
+// Remove student from class (admin only)
+router.delete('/:id/students/:studentId', authorize('admin'), invalidateCache(['class*', 'students:*']), removeStudentFromClass);
 
 // Remove subject from class (admin only)
 router.delete('/:id/subjects/:subjectId', authorize('admin'), invalidateCache(['class*', 'classes:*']), removeSubjectFromClass);

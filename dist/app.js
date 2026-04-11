@@ -15,6 +15,10 @@ const rateLimiting_1 = require("./middleware/rateLimiting");
 const sqlInjectionPrevention_1 = require("./middleware/sqlInjectionPrevention");
 const auth_1 = __importDefault(require("./routes/auth"));
 const users_1 = __importDefault(require("./routes/users"));
+const schools_1 = __importDefault(require("./routes/schools"));
+const aiInsights_1 = __importDefault(require("./routes/aiInsights"));
+const superadmin_1 = __importDefault(require("./routes/superadmin"));
+const webhooks_1 = __importDefault(require("./routes/webhooks"));
 const academicYears_1 = __importDefault(require("./routes/academicYears"));
 const semesters_1 = __importDefault(require("./routes/semesters"));
 const subjects_1 = __importDefault(require("./routes/subjects"));
@@ -37,6 +41,7 @@ const cache_1 = __importDefault(require("./routes/cache"));
 const files_1 = __importDefault(require("./routes/files"));
 const monitoring_1 = __importDefault(require("./routes/monitoring"));
 const settings_1 = __importDefault(require("./routes/settings"));
+const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const monitoringService_1 = require("./services/monitoringService");
 const requestTiming_1 = require("./middleware/requestTiming");
 const express_status_monitor_1 = __importDefault(require("express-status-monitor"));
@@ -94,6 +99,8 @@ app.use((err, _req, res, next) => {
 app.use(sanitization_1.validateContentType);
 app.use(sanitization_1.sanitizeInputs);
 app.use(sqlInjectionPrevention_1.preventSQLInjection);
+app.use('/api/v1/webhooks/stripe', express_1.default.raw({ type: 'application/json' }));
+app.use('/api/v1/webhooks', webhooks_1.default);
 app.use('/health', health_1.default);
 app.use('/api/v1/health', health_1.default);
 app.post('/test', (req, res) => {
@@ -129,6 +136,10 @@ app.use('/api/v1/cache', cache_1.default);
 app.use('/api/v1/files', files_1.default);
 app.use('/api/v1/monitoring', monitoring_1.default);
 app.use('/api/v1/settings', settings_1.default);
+app.use('/api/v1/dashboard', dashboard_1.default);
+app.use('/api/v1/schools', schools_1.default);
+app.use('/api/v1/ai', aiInsights_1.default);
+app.use('/api/v1/superadmin', superadmin_1.default);
 app.use('/uploads', (req, res, next) => {
     if (req.path.includes('/exports/') && (req.path.endsWith('.json') || req.path.endsWith('.pdf'))) {
         const filename = req.path.split('/').pop();

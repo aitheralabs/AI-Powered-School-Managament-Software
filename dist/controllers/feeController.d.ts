@@ -9,4 +9,7 @@ export declare const getStudentFees: (req: Request, res: Response, next: import(
 export declare const assignFeesToClass: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getStudentFeeById: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const updateStudentFee: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const deleteStudentFee: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getFeeStats: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getStudentFeesByStudentId: (req: Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=feeController.d.ts.map

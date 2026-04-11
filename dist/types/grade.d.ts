@@ -441,12 +441,12 @@ export declare const ReportCardResponseSchema: z.ZodObject<{
     createdAt: string;
     updatedAt: string;
     studentId: string;
+    generatedAt: string;
     altId: string | null;
     overallGrade: "D" | "A+" | "A" | "B+" | "B" | "C+" | "C" | "F" | null;
     overallPercentage: number | null;
     totalStudents: number | null;
     remarks: string | null;
-    generatedAt: string;
     semesterId: string;
     generatedBy: string;
     rankInClass: number | null;
@@ -486,12 +486,12 @@ export declare const ReportCardResponseSchema: z.ZodObject<{
     createdAt: string;
     updatedAt: string;
     studentId: string;
+    generatedAt: string;
     altId: string | null;
     overallGrade: "D" | "A+" | "A" | "B+" | "B" | "C+" | "C" | "F" | null;
     overallPercentage: number | null;
     totalStudents: number | null;
     remarks: string | null;
-    generatedAt: string;
     semesterId: string;
     generatedBy: string;
     rankInClass: number | null;
@@ -783,8 +783,8 @@ export declare const GradeReportItemSchema: z.ZodObject<{
     gradeLetter: z.ZodEnum<["A+", "A", "B+", "B", "C+", "C", "D", "F"]>;
 }, "strip", z.ZodTypeAny, {
     studentId: string;
-    studentName: string;
     className: string;
+    studentName: string;
     percentage: number;
     subjectName: string;
     assessmentType: string;
@@ -793,8 +793,8 @@ export declare const GradeReportItemSchema: z.ZodObject<{
     totalMarks: number;
 }, {
     studentId: string;
-    studentName: string;
     className: string;
+    studentName: string;
     percentage: number;
     subjectName: string;
     assessmentType: string;
@@ -818,8 +818,8 @@ export declare const GradeReportSchema: z.ZodObject<{
         gradeLetter: z.ZodEnum<["A+", "A", "B+", "B", "C+", "C", "D", "F"]>;
     }, "strip", z.ZodTypeAny, {
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         percentage: number;
         subjectName: string;
         assessmentType: string;
@@ -828,8 +828,8 @@ export declare const GradeReportSchema: z.ZodObject<{
         totalMarks: number;
     }, {
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         percentage: number;
         subjectName: string;
         assessmentType: string;
@@ -856,8 +856,8 @@ export declare const GradeReportSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     data: {
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         percentage: number;
         subjectName: string;
         assessmentType: string;
@@ -865,8 +865,8 @@ export declare const GradeReportSchema: z.ZodObject<{
         marksObtained: number;
         totalMarks: number;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         averagePercentage: number;
         totalStudents: number;
@@ -877,8 +877,8 @@ export declare const GradeReportSchema: z.ZodObject<{
 }, {
     data: {
         studentId: string;
-        studentName: string;
         className: string;
+        studentName: string;
         percentage: number;
         subjectName: string;
         assessmentType: string;
@@ -886,8 +886,8 @@ export declare const GradeReportSchema: z.ZodObject<{
         marksObtained: number;
         totalMarks: number;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         averagePercentage: number;
         totalStudents: number;

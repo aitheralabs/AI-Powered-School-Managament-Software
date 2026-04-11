@@ -6,10 +6,10 @@ export declare class StaffService extends BaseService {
         staff: StaffResponse[];
         total: number;
     }>;
-    getStaffById(staffId: number, userRole: string, userId?: number): Promise<StaffResponse>;
-    updateStaff(staffId: number, updateData: UpdateStaff, userRole: string, userId?: number): Promise<StaffResponse>;
-    deactivateStaff(staffId: number): Promise<void>;
-    reactivateStaff(staffId: number): Promise<StaffResponse>;
+    getStaffById(staffId: string, userRole: string, userId?: string): Promise<StaffResponse>;
+    updateStaff(staffId: string, updateData: UpdateStaff, userRole: string, userId?: string): Promise<StaffResponse>;
+    deactivateStaff(staffId: string): Promise<void>;
+    reactivateStaff(staffId: string): Promise<StaffResponse>;
     getStaffSummary(): Promise<StaffSummary>;
     private getStaffWithUser;
     private formatStaffResponse;

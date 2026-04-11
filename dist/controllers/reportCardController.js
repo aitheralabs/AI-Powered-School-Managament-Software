@@ -26,12 +26,13 @@ exports.generateReportCard = (0, errorHandler_1.asyncHandler)(async (req, res) =
     const reportCardData = grade_1.CreateReportCardSchema.parse(req.body);
     const userId = req.user.id;
     const userRole = req.user.role;
+    const schoolId = req.schoolId;
     const studentCheck = await (0, connection_1.query)(`SELECT s.id, s.student_id, s.class_id, u.first_name, u.last_name,
             c.name as class_name, c.grade, c.section
      FROM students s
      JOIN users u ON s.user_id = u.id
      JOIN classes c ON s.class_id = c.id
-     WHERE s.id = $1 AND s.is_active = true`, [reportCardData.studentId]);
+     WHERE s.id = $1 AND s.school_id = $2 AND s.is_active = true`, [reportCardData.studentId, schoolId]);
     if (studentCheck.rows.length === 0) {
         throw new errorHandler_1.AppError('Student not found or inactive', 404);
     }
@@ -39,12 +40,12 @@ exports.generateReportCard = (0, errorHandler_1.asyncHandler)(async (req, res) =
     const semesterCheck = await (0, connection_1.query)(`SELECT sem.id, sem.name, ay.name as academic_year_name
      FROM semesters sem
      JOIN academic_years ay ON sem.academic_year_id = ay.id
-     WHERE sem.id = $1 AND sem.is_active = true`, [reportCardData.semesterId]);
+     WHERE sem.id = $1 AND sem.school_id = $2 AND sem.is_active = true`, [reportCardData.semesterId, schoolId]);
     if (semesterCheck.rows.length === 0) {
         throw new errorHandler_1.AppError('Semester not found or inactive', 404);
     }
     const semester = semesterCheck.rows[0];
-    const existingReportCard = await (0, connection_1.query)('SELECT id FROM report_cards WHERE student_id = $1 AND semester_id = $2', [reportCardData.studentId, reportCardData.semesterId]);
+    const existingReportCard = await (0, connection_1.query)('SELECT id FROM report_cards WHERE student_id = $1 AND semester_id = $2 AND school_id = $3', [reportCardData.studentId, reportCardData.semesterId, schoolId]);
     if (existingReportCard.rows.length > 0) {
         throw new errorHandler_1.AppError('Report card already exists for this student and semester', 409);
     }
@@ -72,9 +73,9 @@ exports.generateReportCard = (0, errorHandler_1.asyncHandler)(async (req, res) =
     const idResult = await (0, connection_1.query)('SELECT nextval(\'report_cards_id_seq\') as id');
     const sequentialId = idResult.rows[0].id;
     const reportCardResult = await (0, connection_1.query)(`INSERT INTO report_cards (
-       id, student_id, semester_id, overall_percentage, overall_grade, 
-       rank_in_class, total_students, remarks, generated_by, generated_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+       id, student_id, semester_id, overall_percentage, overall_grade,
+       rank_in_class, total_students, remarks, generated_by, generated_at, school_id
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, $10)
      RETURNING *`, [
         sequentialId,
         reportCardData.studentId,
@@ -84,7 +85,8 @@ exports.generateReportCard = (0, errorHandler_1.asyncHandler)(async (req, res) =
         rankInClass,
         totalStudents,
         reportCardData.remarks || null,
-        userId
+        userId,
+        schoolId
     ]);
     const reportCard = await getReportCardWithDetails(reportCardResult.rows[0].id);
     res.status(201).json({
@@ -97,9 +99,10 @@ exports.getReportCards = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { studentId, semesterId, classId } = req.query;
     const userId = req.user.id;
     const userRole = req.user.role;
+    const schoolId = req.schoolId;
     const { offset, limit } = (0, pagination_1.getPaginationParams)(req);
-    let whereClause = 'WHERE 1=1';
-    const queryParams = [];
+    let whereClause = 'WHERE rc.school_id = $1';
+    const queryParams = [schoolId];
     if (userRole === 'teacher') {
         whereClause += ` AND EXISTS (
       SELECT 1 FROM class_subjects cs

@@ -15,6 +15,9 @@ import {
   getAllTeacherAssignments,
   checkAssignmentConflicts,
   getOptimalTeacherSuggestions,
+  getTeacherStats,
+  getTeacherClasses,
+  getTeacherSubjects,
 } from '../controllers/teacherController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -55,6 +58,13 @@ router.get(
   getTeachers
 );
 
+// Get teacher statistics (admin only) — must be before /:id routes
+router.get(
+  '/stats',
+  authorize('admin', 'staff'),
+  getTeacherStats
+);
+
 // Teacher assignment routes (must come before /:id routes)
 
 // Get all teacher assignments overview (admin only)
@@ -75,6 +85,20 @@ router.get(
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // Cache for 10 minutes
   getTeacherById
+);
+
+// Get classes taught by a teacher
+router.get(
+  '/:id/classes',
+  validateParams(z.object({ id: IdSchema })),
+  getTeacherClasses
+);
+
+// Get subjects taught by a teacher
+router.get(
+  '/:id/subjects',
+  validateParams(z.object({ id: IdSchema })),
+  getTeacherSubjects
 );
 
 // Update teacher (admin only)

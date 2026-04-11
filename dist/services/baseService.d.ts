@@ -1,4 +1,7 @@
 export declare abstract class BaseService {
+    protected schoolId: string;
+    forSchool(id: string): this;
+    protected requireSchool(): string;
     protected executeQuery(sql: string, params?: any[]): Promise<any>;
     protected executeTransaction<T>(callback: (client: any) => Promise<T>): Promise<T>;
     protected validateUUID(id: string): boolean;

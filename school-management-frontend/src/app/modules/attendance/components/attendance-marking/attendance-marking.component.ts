@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +14,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
 
 import { AttendanceService } from '../../../../services/attendance.service';
 import { ClassService } from '../../../../services/class.service';
@@ -39,6 +40,7 @@ interface StudentAttendanceRow {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -51,7 +53,8 @@ interface StudentAttendanceRow {
     MatRadioModule,
     MatInputModule,
     MatCheckboxModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatChipsModule
   ],
   templateUrl: './attendance-marking.component.html',
   styleUrl: './attendance-marking.component.scss'
@@ -66,11 +69,11 @@ export class AttendanceMarkingComponent implements OnInit {
   isSubmitting = false;
   
   displayedColumns: string[] = ['select', 'studentNumber', 'studentName', 'status', 'remarks'];
-  attendanceStatuses: { value: AttendanceStatus; label: string; color: string }[] = [
+  attendanceStatuses: { value: AttendanceStatus; label: string; color: 'primary' | 'accent' | 'warn' | undefined }[] = [
     { value: 'present', label: 'Present', color: 'primary' },
     { value: 'absent', label: 'Absent', color: 'warn' },
     { value: 'late', label: 'Late', color: 'accent' },
-    { value: 'excused', label: 'Excused', color: 'basic' }
+    { value: 'excused', label: 'Excused', color: undefined }
   ];
 
   maxDate = new Date(); // Cannot mark attendance for future dates
@@ -292,6 +295,10 @@ export class AttendanceMarkingComponent implements OnInit {
   getStatusColor(status: AttendanceStatus): string {
     const statusConfig = this.attendanceStatuses.find(s => s.value === status);
     return statusConfig?.color || 'basic';
+  }
+
+  countByStatus(status: string): number {
+    return this.students.filter(s => s.status === status).length;
   }
 
   canMarkAttendance(): boolean {

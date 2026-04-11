@@ -138,16 +138,16 @@
           <div class="summary-chips">
             <mat-chip-set>
               <mat-chip color="primary" selected>
-                Present: {{ (students | filter: 'status': 'present').length }}
+                Present: {{ countByStatus('present') }}
               </mat-chip>
               <mat-chip color="warn" selected>
-                Absent: {{ (students | filter: 'status': 'absent').length }}
+                Absent: {{ countByStatus('absent') }}
               </mat-chip>
               <mat-chip color="accent" selected>
-                Late: {{ (students | filter: 'status': 'late').length }}
+                Late: {{ countByStatus('late') }}
               </mat-chip>
               <mat-chip selected>
-                Excused: {{ (students | filter: 'status': 'excused').length }}
+                Excused: {{ countByStatus('excused') }}
               </mat-chip>
             </mat-chip-set>
           </div>

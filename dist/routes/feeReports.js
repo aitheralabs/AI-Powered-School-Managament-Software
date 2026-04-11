@@ -4,11 +4,12 @@ const express_1 = require("express");
 const feeReportController_1 = require("../controllers/feeReportController");
 const validation_1 = require("../middleware/validation");
 const auth_1 = require("../middleware/auth");
+const tenant_1 = require("../middleware/tenant");
 const fee_1 = require("../types/fee");
 const common_1 = require("../types/common");
 const zod_1 = require("zod");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticate);
+router.use(auth_1.authenticate, tenant_1.resolveTenant, tenant_1.requireActiveSubscription);
 router.get('/collection', (0, validation_1.validateQuery)(fee_1.FeeReportQuerySchema), feeReportController_1.generateFeeCollectionReport);
 router.get('/outstanding', (0, validation_1.validateQuery)(zod_1.z.object({
     classId: common_1.IdSchema.optional(),

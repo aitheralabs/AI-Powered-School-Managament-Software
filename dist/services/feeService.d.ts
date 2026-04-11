@@ -98,6 +98,62 @@ export declare class FeeService extends BaseService {
             totalPages: number;
         };
     }>;
+    getStudentFeeById(id: string): Promise<{
+        student: {
+            id: any;
+            studentId: any;
+            name: string;
+        };
+        feeCategory: {
+            id: any;
+            name: any;
+            frequency: any;
+        };
+        paidAmount: number;
+        remainingAmount: number;
+        id: any;
+        studentId: any;
+        feeCategoryId: any;
+        amount: number;
+        dueDate: any;
+        status: any;
+        createdAt: any;
+        updatedAt: any;
+    }>;
+    updateStudentFee(id: string, updateData: {
+        dueDate?: string;
+        amount?: number;
+        status?: string;
+    }): Promise<{
+        id: any;
+        studentId: any;
+        feeCategoryId: any;
+        amount: number;
+        dueDate: any;
+        status: any;
+        createdAt: any;
+        updatedAt: any;
+    }>;
+    assignFeesToClass(assignmentData: {
+        classId: string;
+        feeCategoryId: string;
+        dueDate: string;
+        discountAmount?: number;
+    }): Promise<{
+        class: {
+            id: any;
+            name: any;
+            grade: any;
+            section: any;
+        };
+        feeCategory: {
+            id: any;
+            name: any;
+        };
+        totalStudents: any;
+        assigned: number;
+        skipped: number;
+    }>;
     private transformFeeCategoryResponse;
     private transformStudentFeeResponse;
 }

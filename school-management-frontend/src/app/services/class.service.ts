@@ -117,7 +117,7 @@ export class ClassService {
   }
 
   assignStudentToClass(classId: string, studentId: string): Observable<any> {
-    return this.apiService.post<any>(`${this.endpoint}/${classId}/students`, { studentId });
+    return this.apiService.post<any>(`${this.endpoint}/${classId}/enroll`, { studentId });
   }
 
   removeStudentFromClass(classId: string, studentId: string): Observable<any> {

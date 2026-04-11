@@ -11,7 +11,32 @@
       "Bash(npx tsc:*)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(grep -E \"\\\\.ts$\")",
-      "Bash(ls -la school-management-frontend/src/app/modules/dashboard/components/*/)"
+      "Bash(ls -la school-management-frontend/src/app/modules/dashboard/components/*/)",
+      "Bash(npx ng:*)",
+      "Bash(ls src/database/)",
+      "Bash(ls src/migrations/)",
+      "Bash(grep \"\\\\.sql$\")",
+      "Bash(npm run:*)",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d grades\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\dt\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d student_class_history\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d payments\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d student_fees\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d fee_categories\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -U postgres -d SMS -c \"\\\\d assessment_types\")",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl:*)",
+      "Bash(npm start:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4200/)",
+      "Bash(cat src/environments/environment.ts)",
+      "Bash(cat src/environments/environment.development.ts)",
+      "Bash(npx ts-node:*)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(node -e \"require\\('./src/index.ts'\\)\")",
+      "Bash(node dist/index.js)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"CORS_ORIGIN\\\\|cors\" src/config/env.ts src/middleware/*.ts)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")"
     ]
   }
 }

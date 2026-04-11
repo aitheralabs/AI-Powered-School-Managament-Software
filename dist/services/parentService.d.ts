@@ -92,6 +92,28 @@ export declare class ParentService extends BaseService {
         children: any;
         totalChildren: any;
     }>;
+    getParentDashboard(parentId: string): Promise<{
+        parent: {
+            id: any;
+            altId: any;
+            firstName: any;
+            lastName: any;
+            email: any;
+            role: any;
+            phone: any;
+            address: any;
+            isActive: any;
+            createdAt: any;
+            updatedAt: any;
+        };
+        children: any;
+        feeSummary: {
+            totalDue: number;
+            totalPaid: number;
+            overdueFees: number;
+        };
+        attendanceSummary: any[];
+    }>;
     private transformParentResponse;
 }
 //# sourceMappingURL=parentService.d.ts.map

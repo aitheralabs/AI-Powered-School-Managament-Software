@@ -265,8 +265,8 @@ export declare const ClassEnrollmentHistorySchema: z.ZodObject<{
     endDate: string | null;
     id: string;
     studentId: string;
-    studentNumber: string;
     studentName: string;
+    studentNumber: string;
     isCurrentlyEnrolled: boolean;
 }, {
     academicYear: {
@@ -278,8 +278,8 @@ export declare const ClassEnrollmentHistorySchema: z.ZodObject<{
     endDate: string | null;
     id: string;
     studentId: string;
-    studentNumber: string;
     studentName: string;
+    studentNumber: string;
     isCurrentlyEnrolled: boolean;
 }>;
 export declare const ClassEnrollmentHistoryQuerySchema: z.ZodObject<{

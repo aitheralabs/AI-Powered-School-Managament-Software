@@ -1,79 +1,214 @@
-<div class="student-dashboard">
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Loading dashboard...</p>
+<div class="student-dash fade-in">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="dash-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading your dashboard…</p>
   </div>
 
-  <div *ngIf="!isLoading" class="dashboard-content">
-    <div class="welcome-header">
-      <h1 class="dashboard-title">Welcome back, {{ getUserDisplayName() }}!</h1>
-      <p class="dashboard-subtitle">Student Dashboard</p>
-    </div>
+  <ng-container *ngIf="!isLoading && data">
 
-    <mat-card class="quick-actions-card">
-      <h3 class="section-title">Quick Actions</h3>
-      <div class="quick-actions-grid">
-        <button
-          *ngFor="let action of quickActions"
-          mat-raised-button
-          color="primary"
-          class="quick-action-btn"
-          (click)="navigateTo(action.route)"
-        >
-          <mat-icon>{{ action.icon }}</mat-icon>
-          <span>{{ action.label }}</span>
+    <!-- Header -->
+    <div class="dash-header">
+      <div class="dash-greeting">
+        <div class="avatar-lg">{{ (data.student?.name || userName).charAt(0) }}</div>
+        <div>
+          <h1>{{ greeting }}, {{ (data.student?.name || userName).split(' ')[0] }}!</h1>
+          <p>
+            {{ today | date:'EEEE, MMMM d' }}
+            <span *ngIf="data.student?.class">&nbsp;&bull;&nbsp; Class: <strong>{{ data.student.class }}</strong></span>
+            <span *ngIf="data.student?.studentId">&nbsp;&bull;&nbsp; ID: <strong>{{ data.student.studentId }}</strong></span>
+          </p>
+        </div>
+      </div>
+      <div class="dash-header-actions">
+        <button class="action-btn primary" (click)="navigateTo('/profile')">
+          <mat-icon>person</mat-icon> My Profile
         </button>
       </div>
-    </mat-card>
-
-    <div class="dashboard-grid">
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>how_to_reg</mat-icon>
-          My Attendance
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">fact_check</mat-icon>
-          <p>Your attendance records</p>
-          <p class="placeholder-subtext">View your attendance percentage and history</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>payment</mat-icon>
-          Fee Status
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">account_balance_wallet</mat-icon>
-          <p>Your fee information</p>
-          <p class="placeholder-subtext">View pending and paid fees</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>grade</mat-icon>
-          My Grades
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">assessment</mat-icon>
-          <p>Your academic performance</p>
-          <p class="placeholder-subtext">View your grades and progress</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>event</mat-icon>
-          Upcoming Events
-        </h3>
-        <div class="placeholder-content">
-          <mat-icon class="placeholder-icon">calendar_today</mat-icon>
-          <p>School events and activities</p>
-          <p class="placeholder-subtext">Stay updated with school calendar</p>
-        </div>
-      </mat-card>
     </div>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+      <!-- Attendance Donut -->
+      <div class="kpi-tile att-tile">
+        <div class="donut-wrap">
+          <svg viewBox="0 0 36 36" class="donut-svg">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" stroke-width="3.5"/>
+            <circle cx="18" cy="18" r="15.9" fill="none"
+              [attr.stroke]="attendanceColor" stroke-width="3.5"
+              [attr.stroke-dasharray]="attendancePct + ', 100'"
+              stroke-linecap="round"
+              transform="rotate(-90 18 18)"/>
+          </svg>
+          <span class="donut-label" [style.color]="attendanceColor">{{ attendancePct }}%</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-val-lg" [style.color]="attendanceColor">{{ attendancePct }}%</span>
+          <span class="kpi-lbl">Attendance</span>
+          <span class="kpi-sub">{{ data.attendance?.present }} / {{ data.attendance?.totalDays }} days present</span>
+        </div>
+      </div>
+
+      <!-- Fee Status -->
+      <div class="kpi-tile fee-tile">
+        <div class="kpi-icon" [style.background]="feeStatusColor === '#16a34a' ? 'linear-gradient(135deg,#43e97b,#38f9d7)' : feeStatusColor === '#d97706' ? 'linear-gradient(135deg,#f7b733,#fa8231)' : 'linear-gradient(135deg,#f5576c,#f093fb)'">
+          <mat-icon>{{ feeStatusColor === '#16a34a' ? 'check_circle' : 'payment' }}</mat-icon>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-val-lg" [style.color]="feeStatusColor">{{ feeStatusLabel }}</span>
+          <span class="kpi-lbl">Fee Status</span>
+          <span class="kpi-sub" *ngIf="data.fees?.pending > 0">₹{{ data.fees.pending | number:'1.0-0' }} pending</span>
+          <span class="kpi-sub" *ngIf="data.fees?.overdue > 0">₹{{ data.fees.overdue | number:'1.0-0' }} overdue</span>
+          <span class="kpi-sub" *ngIf="data.fees?.pending === 0 && data.fees?.overdue === 0">No dues</span>
+        </div>
+      </div>
+
+      <!-- Absent Days -->
+      <div class="kpi-tile">
+        <div class="kpi-icon orange-bg"><mat-icon>event_busy</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val-lg">{{ data.attendance?.absent ?? 0 }}</span>
+          <span class="kpi-lbl">Absent Days</span>
+          <span class="kpi-sub" *ngIf="data.attendance?.late > 0">{{ data.attendance.late }} late arrivals</span>
+          <span class="kpi-sub" *ngIf="!data.attendance?.late">No late arrivals</span>
+        </div>
+      </div>
+
+      <!-- Grades Count -->
+      <div class="kpi-tile">
+        <div class="kpi-icon purple-bg"><mat-icon>grade</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val-lg">{{ data.recentGrades?.length ?? 0 }}</span>
+          <span class="kpi-lbl">Recent Grades</span>
+          <span class="kpi-sub">Assessments recorded</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fee Alert Banner -->
+    <div class="alert-banner danger" *ngIf="data.fees?.overdue > 0">
+      <mat-icon>warning</mat-icon>
+      <span>You have <strong>₹{{ data.fees.overdue | number:'1.0-0' }}</strong> in overdue fees. Please clear them immediately.</span>
+      <button class="alert-btn" (click)="navigateTo('/fees')">Pay Now</button>
+    </div>
+    <div class="alert-banner warn" *ngIf="data.fees?.overdue === 0 && data.fees?.pending > 0">
+      <mat-icon>info</mat-icon>
+      <span>You have <strong>₹{{ data.fees.pending | number:'1.0-0' }}</strong> in pending fees
+        <ng-container *ngIf="data.fees?.nextDueDate"> due on {{ data.fees.nextDueDate | date:'MMM d, y' }}</ng-container>.</span>
+      <button class="alert-btn" (click)="navigateTo('/fees')">View Fees</button>
+    </div>
+    <div class="alert-banner low" *ngIf="data.attendance?.percentage < 75 && data.attendance?.totalDays > 0">
+      <mat-icon>warning_amber</mat-icon>
+      <span>Your attendance is <strong>{{ data.attendance.percentage }}%</strong> — below the required 75%. Please attend classes regularly.</span>
+    </div>
+
+    <!-- Main grid -->
+    <div class="dash-grid">
+
+      <!-- Attendance Detail -->
+      <div class="dash-card">
+        <div class="card-head">
+          <div>
+            <h3>Attendance Overview</h3>
+            <p class="card-sub">All time records</p>
+          </div>
+        </div>
+        <div class="att-breakdown">
+          <div class="att-seg present">
+            <span class="seg-count">{{ data.attendance?.present ?? 0 }}</span>
+            <span class="seg-lbl">Present</span>
+          </div>
+          <div class="att-seg absent">
+            <span class="seg-count">{{ data.attendance?.absent ?? 0 }}</span>
+            <span class="seg-lbl">Absent</span>
+          </div>
+          <div class="att-seg late">
+            <span class="seg-count">{{ data.attendance?.late ?? 0 }}</span>
+            <span class="seg-lbl">Late</span>
+          </div>
+          <div class="att-seg total">
+            <span class="seg-count">{{ data.attendance?.totalDays ?? 0 }}</span>
+            <span class="seg-lbl">Total</span>
+          </div>
+        </div>
+        <div class="att-bar-wrap">
+          <div class="att-bar">
+            <div class="att-bar-fill" [style.width.%]="attendancePct" [style.background]="attendanceColor"></div>
+          </div>
+          <span class="att-bar-label">{{ attendancePct }}% attendance rate</span>
+        </div>
+      </div>
+
+      <!-- Fee Summary -->
+      <div class="dash-card">
+        <div class="card-head">
+          <div>
+            <h3>Fee Summary</h3>
+            <p class="card-sub">Financial overview</p>
+          </div>
+          <button class="text-btn" (click)="navigateTo('/fees')">View all <mat-icon>arrow_forward</mat-icon></button>
+        </div>
+        <div class="fee-rows">
+          <div class="fee-row">
+            <span class="fee-lbl">Paid</span>
+            <span class="fee-val green">₹{{ data.fees?.paid | number:'1.0-0' }}</span>
+          </div>
+          <div class="fee-row">
+            <span class="fee-lbl">Pending</span>
+            <span class="fee-val orange">₹{{ data.fees?.pending | number:'1.0-0' }}</span>
+          </div>
+          <div class="fee-row">
+            <span class="fee-lbl">Overdue</span>
+            <span class="fee-val red">₹{{ data.fees?.overdue | number:'1.0-0' }}</span>
+          </div>
+          <div class="fee-row total-row" *ngIf="data.fees?.nextDueDate">
+            <span class="fee-lbl">Next due date</span>
+            <span class="fee-val">{{ data.fees.nextDueDate | date:'MMM d, y' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Grades -->
+      <div class="dash-card wide">
+        <div class="card-head">
+          <div>
+            <h3>Recent Grades</h3>
+            <p class="card-sub">Latest assessments</p>
+          </div>
+        </div>
+
+        <div *ngIf="!data.recentGrades?.length" class="empty-msg">
+          <mat-icon>grade</mat-icon><p>No grades recorded yet</p>
+        </div>
+
+        <div class="grades-grid" *ngIf="data.recentGrades?.length">
+          <div class="grade-card" *ngFor="let g of data.recentGrades">
+            <div class="grade-subject">{{ g.subject }}</div>
+            <div class="grade-score-ring" [style.border-color]="getGradeColor(g.grade)">
+              <span [style.color]="getGradeColor(g.grade)">{{ g.grade }}</span>
+            </div>
+            <div class="grade-detail">
+              <span class="grade-pts">{{ g.score }} pts</span>
+              <span class="grade-pct">{{ g.percentage }}%</span>
+            </div>
+            <div class="grade-date">{{ g.date | date:'MMM d' }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </ng-container>
+
+  <!-- Error -->
+  <div *ngIf="!isLoading && !data" class="dash-error">
+    <mat-icon>error_outline</mat-icon>
+    <h3>Could not load dashboard</h3>
+    <p>Please make sure your student profile is configured correctly.</p>
+    <button class="action-btn primary" (click)="ngOnInit()">
+      <mat-icon>refresh</mat-icon> Retry
+    </button>
   </div>
+
 </div>

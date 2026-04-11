@@ -4,10 +4,11 @@ const express_1 = require("express");
 const attendanceReportController_1 = require("../controllers/attendanceReportController");
 const validation_1 = require("../middleware/validation");
 const auth_1 = require("../middleware/auth");
+const tenant_1 = require("../middleware/tenant");
 const report_1 = require("../types/report");
 const zod_1 = require("zod");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticate);
+router.use(auth_1.authenticate, tenant_1.resolveTenant, tenant_1.requireActiveSubscription);
 router.get('/report', (0, validation_1.validateQuery)(report_1.AttendanceReportQuerySchema), attendanceReportController_1.generateAttendanceReport);
 router.get('/trends', (0, validation_1.validateQuery)(zod_1.z.object({
     startDate: zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format'),

@@ -318,9 +318,9 @@ export declare const AttendanceReportItemSchema: z.ZodObject<{
     attendancePercentage: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     studentId: string;
-    studentName: string;
     className: string;
     attendancePercentage: number;
+    studentName: string;
     totalDays: number;
     presentDays: number;
     absentDays: number;
@@ -328,9 +328,9 @@ export declare const AttendanceReportItemSchema: z.ZodObject<{
     excusedDays: number;
 }, {
     studentId: string;
-    studentName: string;
     className: string;
     attendancePercentage: number;
+    studentName: string;
     totalDays: number;
     presentDays: number;
     absentDays: number;
@@ -354,9 +354,9 @@ export declare const AttendanceReportSchema: z.ZodObject<{
         attendancePercentage: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         studentId: string;
-        studentName: string;
         className: string;
         attendancePercentage: number;
+        studentName: string;
         totalDays: number;
         presentDays: number;
         absentDays: number;
@@ -364,9 +364,9 @@ export declare const AttendanceReportSchema: z.ZodObject<{
         excusedDays: number;
     }, {
         studentId: string;
-        studentName: string;
         className: string;
         attendancePercentage: number;
+        studentName: string;
         totalDays: number;
         presentDays: number;
         absentDays: number;
@@ -391,17 +391,17 @@ export declare const AttendanceReportSchema: z.ZodObject<{
     endDate: string;
     data: {
         studentId: string;
-        studentName: string;
         className: string;
         attendancePercentage: number;
+        studentName: string;
         totalDays: number;
         presentDays: number;
         absentDays: number;
         lateDays: number;
         excusedDays: number;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalDays: number;
         totalStudents: number;
@@ -412,17 +412,17 @@ export declare const AttendanceReportSchema: z.ZodObject<{
     endDate: string;
     data: {
         studentId: string;
-        studentName: string;
         className: string;
         attendancePercentage: number;
+        studentName: string;
         totalDays: number;
         presentDays: number;
         absentDays: number;
         lateDays: number;
         excusedDays: number;
     }[];
-    reportType: string;
     generatedAt: string;
+    reportType: string;
     summary: {
         totalDays: number;
         totalStudents: number;

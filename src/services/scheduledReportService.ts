@@ -16,8 +16,8 @@ export class ScheduledReportService {
   private scheduledJobs: Map<string, cron.ScheduledTask> = new Map();
 
   private constructor() {
-    // Initialize scheduled reports on startup
-    this.initializeScheduledReports();
+    // Delay initialization to allow DB pool to warm up
+    setTimeout(() => this.initializeScheduledReports(), 3000);
   }
 
   public static getInstance(): ScheduledReportService {

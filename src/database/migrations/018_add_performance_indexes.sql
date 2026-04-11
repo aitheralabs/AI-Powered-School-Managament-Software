@@ -165,42 +165,30 @@ CREATE INDEX IF NOT EXISTS idx_grades_percentage ON grades(percentage);
 -- Index for recorded_by (audit trail)
 CREATE INDEX IF NOT EXISTS idx_grades_recorded_by ON grades(recorded_by);
 
--- Index for assessment_date
-CREATE INDEX IF NOT EXISTS idx_grades_assessment_date ON grades(assessment_date);
-
 
 -- ============================================================================
--- FEES TABLE (Fee Categories) INDEXES
+-- FEE_CATEGORIES TABLE INDEXES
 -- ============================================================================
 
 -- Index for academic_year_id
-CREATE INDEX IF NOT EXISTS idx_fees_academic_year_id ON fees(academic_year_id);
+CREATE INDEX IF NOT EXISTS idx_fee_categories_academic_year_id ON fee_categories(academic_year_id);
 
 -- Index for active status
-CREATE INDEX IF NOT EXISTS idx_fees_is_active ON fees(is_active);
+CREATE INDEX IF NOT EXISTS idx_fee_categories_is_active ON fee_categories(is_active);
 
 -- Index for fee name searches
-CREATE INDEX IF NOT EXISTS idx_fees_name_lower ON fees(LOWER(name));
+CREATE INDEX IF NOT EXISTS idx_fee_categories_name_lower ON fee_categories(LOWER(name));
 
 -- Composite index for academic year + active
-CREATE INDEX IF NOT EXISTS idx_fees_year_active ON fees(academic_year_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_fee_categories_year_active ON fee_categories(academic_year_id, is_active);
 
 
 -- ============================================================================
--- PAYMENTS TABLE INDEXES
+-- PAYMENTS TABLE INDEXES (payments reference student_fees via student_fee_id)
 -- ============================================================================
 
--- Index for student_id (fee history queries)
-CREATE INDEX IF NOT EXISTS idx_payments_student_id ON payments(student_id);
-
--- Index for fee_category_id
-CREATE INDEX IF NOT EXISTS idx_payments_fee_category_id ON payments(fee_category_id);
-
--- Index for status (pending, partial, paid, overdue)
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-
--- Index for due_date (overdue detection)
-CREATE INDEX IF NOT EXISTS idx_payments_due_date ON payments(due_date);
+-- Index for student_fee_id foreign key
+CREATE INDEX IF NOT EXISTS idx_payments_student_fee_id ON payments(student_fee_id);
 
 -- Index for payment_date
 CREATE INDEX IF NOT EXISTS idx_payments_payment_date ON payments(payment_date);
@@ -208,17 +196,31 @@ CREATE INDEX IF NOT EXISTS idx_payments_payment_date ON payments(payment_date);
 -- Index for payment_method
 CREATE INDEX IF NOT EXISTS idx_payments_payment_method ON payments(payment_method);
 
--- Composite index for student + status (fee summary)
-CREATE INDEX IF NOT EXISTS idx_payments_student_status ON payments(student_id, status);
-
--- Composite index for date range + status (collection reports)
-CREATE INDEX IF NOT EXISTS idx_payments_date_status ON payments(payment_date, status);
-
 -- Index for processed_by (audit trail)
 CREATE INDEX IF NOT EXISTS idx_payments_processed_by ON payments(processed_by);
 
 -- Index for transaction_id
 CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments(transaction_id);
+
+
+-- ============================================================================
+-- STUDENT_FEES TABLE INDEXES
+-- ============================================================================
+
+-- Index for student_id
+CREATE INDEX IF NOT EXISTS idx_student_fees_student_id ON student_fees(student_id);
+
+-- Index for fee_category_id
+CREATE INDEX IF NOT EXISTS idx_student_fees_fee_category_id ON student_fees(fee_category_id);
+
+-- Index for status
+CREATE INDEX IF NOT EXISTS idx_student_fees_status ON student_fees(status);
+
+-- Index for due_date (overdue detection)
+CREATE INDEX IF NOT EXISTS idx_student_fees_due_date ON student_fees(due_date);
+
+-- Composite index for student + status
+CREATE INDEX IF NOT EXISTS idx_student_fees_student_status ON student_fees(student_id, status);
 
 
 -- ============================================================================
@@ -325,31 +327,11 @@ CREATE INDEX IF NOT EXISTS idx_student_class_history_student_dates ON student_cl
 -- ASSESSMENT_TYPES TABLE INDEXES
 -- ============================================================================
 
--- Index for academic_year_id
-CREATE INDEX IF NOT EXISTS idx_assessment_types_academic_year_id ON assessment_types(academic_year_id);
-
 -- Index for active status
 CREATE INDEX IF NOT EXISTS idx_assessment_types_is_active ON assessment_types(is_active);
 
 -- Index for weightage (grade calculation)
 CREATE INDEX IF NOT EXISTS idx_assessment_types_weightage ON assessment_types(weightage);
-
-
--- ============================================================================
--- AUDIT_LOGS TABLE INDEXES (if exists)
--- ============================================================================
-
--- Index for user_id
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-
--- Index for action type
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
-
--- Index for timestamp (time-based queries)
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
-
--- Composite index for user + action
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_action ON audit_logs(user_id, action);
 
 
 -- ============================================================================
@@ -364,7 +346,8 @@ ANALYZE classes;
 ANALYZE attendance;
 ANALYZE grades;
 ANALYZE payments;
-ANALYZE fees;
+ANALYZE student_fees;
+ANALYZE fee_categories;
 ANALYZE academic_years;
 ANALYZE semesters;
 ANALYZE subjects;

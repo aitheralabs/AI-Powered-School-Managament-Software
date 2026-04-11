@@ -206,8 +206,8 @@ export declare const ReportMetadataSchema: z.ZodObject<{
     downloadUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     title: string;
-    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     generatedAt: string;
+    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     reportId: string;
     generatedBy: string;
@@ -217,8 +217,8 @@ export declare const ReportMetadataSchema: z.ZodObject<{
     downloadUrl?: string | undefined;
 }, {
     title: string;
-    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     generatedAt: string;
+    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     reportId: string;
     generatedBy: string;
@@ -272,8 +272,8 @@ export declare const ReportResponseSchema: z.ZodObject<{
         downloadUrl: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         title: string;
-        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         generatedAt: string;
+        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         format: "json" | "csv" | "pdf" | "excel";
         reportId: string;
         generatedBy: string;
@@ -283,8 +283,8 @@ export declare const ReportResponseSchema: z.ZodObject<{
         downloadUrl?: string | undefined;
     }, {
         title: string;
-        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         generatedAt: string;
+        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         format: "json" | "csv" | "pdf" | "excel";
         reportId: string;
         generatedBy: string;
@@ -345,8 +345,8 @@ export declare const ReportResponseSchema: z.ZodObject<{
     data: Record<string, any>[];
     metadata: {
         title: string;
-        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         generatedAt: string;
+        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         format: "json" | "csv" | "pdf" | "excel";
         reportId: string;
         generatedBy: string;
@@ -374,8 +374,8 @@ export declare const ReportResponseSchema: z.ZodObject<{
     data: Record<string, any>[];
     metadata: {
         title: string;
-        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         generatedAt: string;
+        reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
         format: "json" | "csv" | "pdf" | "excel";
         reportId: string;
         generatedBy: string;
@@ -416,7 +416,7 @@ export declare const CreateScheduledReportSchema: z.ZodObject<{
     reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     parameters: Record<string, any>;
-    frequency: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual";
+    frequency: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual";
     recipients: string[];
     description?: string | undefined;
     nextRunDate?: string | undefined;
@@ -425,7 +425,7 @@ export declare const CreateScheduledReportSchema: z.ZodObject<{
     reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     parameters: Record<string, any>;
-    frequency: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual";
+    frequency: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual";
     recipients: string[];
     description?: string | undefined;
     isActive?: boolean | undefined;
@@ -448,7 +448,7 @@ export declare const UpdateScheduledReportSchema: z.ZodObject<{
     reportType?: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress" | undefined;
     format?: "json" | "csv" | "pdf" | "excel" | undefined;
     parameters?: Record<string, any> | undefined;
-    frequency?: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | undefined;
+    frequency?: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual" | undefined;
     recipients?: string[] | undefined;
     nextRunDate?: string | undefined;
 }, {
@@ -458,7 +458,7 @@ export declare const UpdateScheduledReportSchema: z.ZodObject<{
     reportType?: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress" | undefined;
     format?: "json" | "csv" | "pdf" | "excel" | undefined;
     parameters?: Record<string, any> | undefined;
-    frequency?: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | undefined;
+    frequency?: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual" | undefined;
     recipients?: string[] | undefined;
     nextRunDate?: string | undefined;
 }>;
@@ -497,7 +497,7 @@ export declare const ScheduledReportResponseSchema: z.ZodObject<{
     reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     parameters: Record<string, any>;
-    frequency: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual";
+    frequency: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual";
     recipients: string[];
     nextRunDate: string | null;
     lastRunDate: string | null;
@@ -516,7 +516,7 @@ export declare const ScheduledReportResponseSchema: z.ZodObject<{
     reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     parameters: Record<string, any>;
-    frequency: "custom" | "semester" | "daily" | "weekly" | "monthly" | "quarterly" | "annual";
+    frequency: "custom" | "semester" | "monthly" | "daily" | "weekly" | "quarterly" | "annual";
     recipients: string[];
     nextRunDate: string | null;
     lastRunDate: string | null;
@@ -545,8 +545,8 @@ export declare const ReportHistorySchema: z.ZodObject<{
     error: string | null;
     id: string;
     title: string;
-    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     generatedAt: string;
+    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     generatedBy: string;
     parameters: Record<string, any>;
@@ -559,8 +559,8 @@ export declare const ReportHistorySchema: z.ZodObject<{
     error: string | null;
     id: string;
     title: string;
-    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     generatedAt: string;
+    reportType: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress";
     format: "json" | "csv" | "pdf" | "excel";
     generatedBy: string;
     parameters: Record<string, any>;
@@ -647,12 +647,12 @@ export declare const DashboardReportSchema: z.ZodObject<{
             enrollmentDate: z.ZodString;
         }, "strip", z.ZodTypeAny, {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }, {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }>, "many">;
         recentPayments: z.ZodArray<z.ZodObject<{
             studentName: z.ZodString;
@@ -688,8 +688,8 @@ export declare const DashboardReportSchema: z.ZodObject<{
         }[];
         newEnrollments: {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }[];
         upcomingEvents: {
             type: string;
@@ -704,8 +704,8 @@ export declare const DashboardReportSchema: z.ZodObject<{
         }[];
         newEnrollments: {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }[];
         upcomingEvents: {
             type: string;
@@ -748,8 +748,8 @@ export declare const DashboardReportSchema: z.ZodObject<{
         }[];
         newEnrollments: {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }[];
         upcomingEvents: {
             type: string;
@@ -792,8 +792,8 @@ export declare const DashboardReportSchema: z.ZodObject<{
         }[];
         newEnrollments: {
             enrollmentDate: string;
-            studentName: string;
             className: string;
+            studentName: string;
         }[];
         upcomingEvents: {
             type: string;
@@ -815,7 +815,7 @@ export declare const ReportQuerySchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     limit: number;
     page: number;
-    sortBy: "title" | "reportType" | "generatedAt";
+    sortBy: "title" | "generatedAt" | "reportType";
     sortOrder: "asc" | "desc";
     status?: "pending" | "failed" | "generating" | "completed" | undefined;
     startDate?: string | undefined;
@@ -828,7 +828,7 @@ export declare const ReportQuerySchema: z.ZodObject<{
     startDate?: string | undefined;
     endDate?: string | undefined;
     page?: string | undefined;
-    sortBy?: "title" | "reportType" | "generatedAt" | undefined;
+    sortBy?: "title" | "generatedAt" | "reportType" | undefined;
     sortOrder?: "asc" | "desc" | undefined;
     reportType?: "custom" | "attendance" | "academic" | "financial" | "enrollment" | "teacher_workload" | "class_performance" | "fee_collection" | "student_progress" | undefined;
     generatedBy?: string | undefined;

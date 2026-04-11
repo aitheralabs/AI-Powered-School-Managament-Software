@@ -2,12 +2,12 @@
   <!-- Loading Spinner Overlay -->
   <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
 
-  <!-- Public Routes (Login, Register, etc.) -->
+  <!-- ① Public / no-shell routes: landing, auth, super-admin, unauthorized -->
   <div *ngIf="isPublicRoute()" class="public-route-container">
     <router-outlet></router-outlet>
   </div>
 
-  <!-- Authenticated Routes with Layout -->
+  <!-- ② Authenticated shell: header + sidebar + content -->
   <mat-sidenav-container *ngIf="!isPublicRoute() && isAuthenticated" class="main-container">
     <!-- Sidebar -->
     <mat-sidenav
@@ -21,13 +21,17 @@
 
     <!-- Main Content -->
     <mat-sidenav-content class="main-content">
-      <!-- Header -->
       <app-header (toggleSidenav)="toggleSidenav()"></app-header>
-
-      <!-- Content Area -->
       <div class="content-wrapper">
         <router-outlet></router-outlet>
       </div>
     </mat-sidenav-content>
   </mat-sidenav-container>
+
+  <!-- ③ Fallback: protected route visited while unauthenticated.
+       AuthGuard will redirect to /auth/login; we still need an outlet
+       mounted so the router can perform the redirect. -->
+  <div *ngIf="!isPublicRoute() && !isAuthenticated" class="public-route-container">
+    <router-outlet></router-outlet>
+  </div>
 </div>

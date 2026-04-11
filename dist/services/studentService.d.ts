@@ -113,9 +113,6 @@ export declare class StudentService extends BaseService {
             totalPages: number;
         };
     }>;
-    private generateDefaultPassword;
-    private transformStudentResponse;
-    private transformUserResponse;
     getStudentSummary(id: string): Promise<{
         studentId: any;
         personalInfo: {
@@ -138,7 +135,7 @@ export declare class StudentService extends BaseService {
             emergencyContact: any;
         };
         currentStats: {
-            attendancePercentage: number;
+            attendancePercentage: any;
             overallGpa: string | null;
             pendingFees: number;
             nextDueDate: any;
@@ -150,5 +147,8 @@ export declare class StudentService extends BaseService {
         updatedCount: number;
         failedUpdates: any[];
     }>;
+    private generateDefaultPassword;
+    private transformStudentResponse;
+    private transformUserResponse;
 }
 //# sourceMappingURL=studentService.d.ts.map

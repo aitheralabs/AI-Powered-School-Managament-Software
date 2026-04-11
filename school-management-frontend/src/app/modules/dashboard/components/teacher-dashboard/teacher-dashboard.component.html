@@ -1,96 +1,188 @@
-<div class="teacher-dashboard">
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Loading dashboard...</p>
+<div class="teacher-dash fade-in">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="dash-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading your dashboard…</p>
   </div>
 
-  <!-- Dashboard Content -->
-  <div *ngIf="!isLoading" class="dashboard-content">
-    <!-- Welcome Header -->
-    <div class="welcome-header">
-      <h1 class="dashboard-title">Welcome back, {{ getUserDisplayName() }}!</h1>
-      <p class="dashboard-subtitle">Teacher Dashboard</p>
-    </div>
+  <ng-container *ngIf="!isLoading && data">
 
-    <!-- Quick Actions -->
-    <mat-card class="quick-actions-card">
-      <h3 class="section-title">Quick Actions</h3>
-      <div class="quick-actions-grid">
-        <button
-          *ngFor="let action of quickActions"
-          mat-raised-button
-          color="primary"
-          class="quick-action-btn"
-          (click)="navigateTo(action.route)"
-        >
-          <mat-icon>{{ action.icon }}</mat-icon>
-          <span>{{ action.label }}</span>
+    <!-- Header -->
+    <div class="dash-header">
+      <div class="dash-greeting">
+        <div class="avatar-lg">{{ (data.teacher?.name || userName).charAt(0) }}</div>
+        <div>
+          <h1>{{ greeting }}, {{ (data.teacher?.name || userName).split(' ')[0] }}!</h1>
+          <p>{{ today | date:'EEEE, MMMM d' }} &nbsp;&bull;&nbsp; Employee ID: <strong>{{ data.teacher?.employeeId }}</strong></p>
+        </div>
+      </div>
+      <div class="dash-header-actions">
+        <button class="action-btn primary" (click)="navigateTo('/attendance/mark')">
+          <mat-icon>how_to_reg</mat-icon> Mark Attendance
+        </button>
+        <button class="action-btn outline" (click)="navigateTo('/classes')">
+          <mat-icon>class</mat-icon> My Classes
         </button>
       </div>
-    </mat-card>
-
-    <!-- Dashboard Grid -->
-    <div class="dashboard-grid">
-      <!-- Assigned Classes -->
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>class</mat-icon>
-          My Classes
-        </h3>
-        <div class="card-content">
-          <div class="placeholder-content">
-            <mat-icon class="placeholder-icon">school</mat-icon>
-            <p>Your assigned classes will appear here</p>
-            <p class="placeholder-subtext">View and manage your teaching assignments</p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Today's Schedule -->
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>schedule</mat-icon>
-          Today's Schedule
-        </h3>
-        <div class="card-content">
-          <div class="placeholder-content">
-            <mat-icon class="placeholder-icon">event</mat-icon>
-            <p>Your teaching schedule for today</p>
-            <p class="placeholder-subtext">View your classes and timings</p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Upcoming Classes -->
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>upcoming</mat-icon>
-          Upcoming Classes
-        </h3>
-        <div class="card-content">
-          <div class="placeholder-content">
-            <mat-icon class="placeholder-icon">access_time</mat-icon>
-            <p>Your next classes</p>
-            <p class="placeholder-subtext">Prepare for upcoming sessions</p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Recent Attendance -->
-      <mat-card class="info-card">
-        <h3 class="card-title">
-          <mat-icon>how_to_reg</mat-icon>
-          Recent Attendance
-        </h3>
-        <div class="card-content">
-          <div class="placeholder-content">
-            <mat-icon class="placeholder-icon">fact_check</mat-icon>
-            <p>Recently marked attendance</p>
-            <p class="placeholder-subtext">View your attendance records</p>
-          </div>
-        </div>
-      </mat-card>
     </div>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+      <div class="kpi-tile purple">
+        <div class="kpi-icon"><mat-icon>class</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.stats?.classesCount ?? 0 }}</span>
+          <span class="kpi-lbl">Classes</span>
+        </div>
+      </div>
+      <div class="kpi-tile blue">
+        <div class="kpi-icon"><mat-icon>people</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.stats?.totalStudents ?? 0 }}</span>
+          <span class="kpi-lbl">Students</span>
+        </div>
+      </div>
+      <div class="kpi-tile teal">
+        <div class="kpi-icon"><mat-icon>book</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.stats?.subjectsCount ?? 0 }}</span>
+          <span class="kpi-lbl">Subjects</span>
+        </div>
+      </div>
+      <div class="kpi-tile green">
+        <div class="kpi-icon"><mat-icon>trending_up</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.stats?.avgAttendance ?? 0 }}%</span>
+          <span class="kpi-lbl">Avg Attendance</span>
+        </div>
+      </div>
+      <div class="kpi-tile" [class.orange]="data.attendanceSummary?.pendingClasses > 0" [class.green]="data.attendanceSummary?.pendingClasses === 0">
+        <div class="kpi-icon"><mat-icon>{{ data.attendanceSummary?.pendingClasses > 0 ? 'warning' : 'check_circle' }}</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-val">{{ data.attendanceSummary?.pendingClasses ?? 0 }}</span>
+          <span class="kpi-lbl">Pending Today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="dash-grid">
+
+      <!-- My Classes -->
+      <div class="dash-card">
+        <div class="card-head">
+          <div>
+            <h3>My Classes</h3>
+            <p class="card-sub">{{ data.myClasses?.length ?? 0 }} active class{{ (data.myClasses?.length ?? 0) !== 1 ? 'es' : '' }}</p>
+          </div>
+          <button class="text-btn" (click)="navigateTo('/classes')">View all <mat-icon>arrow_forward</mat-icon></button>
+        </div>
+
+        <div *ngIf="!data.myClasses?.length" class="empty-msg">
+          <mat-icon>school</mat-icon><p>No classes assigned yet</p>
+        </div>
+
+        <div class="item-list">
+          <div class="list-item" *ngFor="let cls of data.myClasses">
+            <div class="item-badge purple">{{ cls.gradeLevel || cls.name?.charAt(0) }}</div>
+            <div class="item-info">
+              <span class="item-title">{{ cls.name }}</span>
+              <span class="item-sub">{{ cls.studentCount }} student{{ cls.studentCount !== 1 ? 's' : '' }}</span>
+            </div>
+            <button class="icon-btn" (click)="navigateTo('/attendance/mark')" matTooltip="Mark attendance">
+              <mat-icon>how_to_reg</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance Summary -->
+      <div class="dash-card">
+        <div class="card-head">
+          <div>
+            <h3>Attendance</h3>
+            <p class="card-sub">Today's status</p>
+          </div>
+          <div class="status-badge" [class.done]="data.attendanceSummary?.markedToday" [class.warn]="!data.attendanceSummary?.markedToday">
+            <mat-icon>{{ data.attendanceSummary?.markedToday ? 'check_circle' : 'pending' }}</mat-icon>
+            {{ data.attendanceSummary?.markedToday ? 'Marked' : 'Pending' }}
+          </div>
+        </div>
+
+        <div class="stat-rows">
+          <div class="stat-row">
+            <span class="stat-lbl">Today's attendance</span>
+            <span class="stat-val" [class.green]="data.attendanceSummary?.markedToday" [class.orange]="!data.attendanceSummary?.markedToday">
+              {{ data.attendanceSummary?.markedToday ? 'Completed ✓' : 'Not marked yet' }}
+            </span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-lbl">This week (entries)</span>
+            <span class="stat-val">{{ data.attendanceSummary?.thisWeek ?? 0 }}</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-lbl">Classes pending today</span>
+            <span class="stat-val orange" *ngIf="data.attendanceSummary?.pendingClasses > 0">{{ data.attendanceSummary?.pendingClasses }}</span>
+            <span class="stat-val green" *ngIf="data.attendanceSummary?.pendingClasses === 0">All done ✓</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-lbl">30-day avg</span>
+            <span class="stat-val">{{ data.stats?.avgAttendance ?? 0 }}%</span>
+          </div>
+        </div>
+
+        <button class="full-btn" (click)="navigateTo('/attendance/mark')">
+          <mat-icon>how_to_reg</mat-icon> Mark Today's Attendance
+        </button>
+      </div>
+
+      <!-- Recent Grades -->
+      <div class="dash-card wide">
+        <div class="card-head">
+          <div>
+            <h3>Recent Grades Entered</h3>
+            <p class="card-sub">Latest graded assessments</p>
+          </div>
+          <button class="text-btn" (click)="navigateTo('/grades')">Grade students <mat-icon>arrow_forward</mat-icon></button>
+        </div>
+
+        <div *ngIf="!data.recentGrades?.length" class="empty-msg">
+          <mat-icon>grade</mat-icon><p>No grades entered recently</p>
+        </div>
+
+        <div class="grades-table" *ngIf="data.recentGrades?.length">
+          <div class="grades-row header">
+            <span>Student</span><span>Subject</span><span>Score</span><span>Grade</span><span>Date</span>
+          </div>
+          <div class="grades-row" *ngFor="let g of data.recentGrades">
+            <span class="student-nm">{{ g.student_name }}</span>
+            <span class="subject-nm">{{ g.subject }}</span>
+            <span>{{ g.score }} <small>({{ g.percentage }}%)</small></span>
+            <span class="grade-badge-sm" [style.background]="getGradeColor(g.grade)">{{ g.grade }}</span>
+            <span class="date-sm">{{ g.date | date:'MMM d' }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Specializations footer -->
+    <div *ngIf="data.teacher?.specialization?.length" class="spec-footer">
+      <span class="spec-lbl">Specializations:</span>
+      <span class="spec-chip" *ngFor="let s of data.teacher.specialization">{{ s }}</span>
+    </div>
+
+  </ng-container>
+
+  <!-- Error state -->
+  <div *ngIf="!isLoading && !data" class="dash-error">
+    <mat-icon>error_outline</mat-icon>
+    <h3>Could not load dashboard</h3>
+    <p>Make sure your teacher profile is set up correctly.</p>
+    <button class="action-btn primary" (click)="ngOnInit()">
+      <mat-icon>refresh</mat-icon> Retry
+    </button>
   </div>
+
 </div>

@@ -22,8 +22,9 @@ export class AppComponent implements OnInit {
   isLoading = false;
   sidenavOpened = true;
   
-  // Routes that should not show the main layout (header + sidebar)
-  publicRoutes = ['/auth/login', '/auth/register', '/unauthorized', '/404'];
+  // Route prefixes that bypass the authenticated shell layout
+  // These render with a full-screen blank canvas (no header/sidebar)
+  private readonly publicPrefixes = ['/', '/auth', '/super-admin', '/unauthorized'];
 
   constructor(
     private authService: AuthService,
@@ -63,8 +64,12 @@ export class AppComponent implements OnInit {
     this.sidenavOpened = !this.isMobile();
   }
 
+  /** True for routes that render without the app shell (header + sidebar). */
   isPublicRoute(): boolean {
-    return this.publicRoutes.some(route => this.router.url.startsWith(route));
+    const url = this.router.url.split('?')[0]; // strip query params
+    return this.publicPrefixes.some(prefix =>
+      prefix === '/' ? url === '/' : url.startsWith(prefix)
+    );
   }
 
   toggleSidenav() {

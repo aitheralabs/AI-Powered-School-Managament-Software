@@ -37,7 +37,7 @@ export class FeeService {
   }
 
   getAllStudentFees(params?: PaginationParams & { status?: string; classId?: string }): Observable<PaginatedResponse<StudentFee>> {
-    return this.apiService.getPaginated<StudentFee>('fees', params);
+    return this.apiService.getPaginated<StudentFee>('fees/student-fees', params);
   }
 
   assignFeeToStudent(data: {
@@ -46,7 +46,7 @@ export class FeeService {
     amount?: number;
     dueDate: string;
   }): Observable<ApiResponse<StudentFee>> {
-    return this.apiService.post<StudentFee>('fees/assign', data);
+    return this.apiService.post<StudentFee>('fees/assign-students', data);
   }
 
   assignFeeToClass(data: {
@@ -58,11 +58,11 @@ export class FeeService {
   }
 
   updateStudentFee(id: string, fee: Partial<StudentFee>): Observable<ApiResponse<StudentFee>> {
-    return this.apiService.put<StudentFee>(`fees/${id}`, fee);
+    return this.apiService.put<StudentFee>(`fees/student-fees/${id}`, fee);
   }
 
   deleteStudentFee(id: string): Observable<ApiResponse<any>> {
-    return this.apiService.delete(`fees/${id}`);
+    return this.apiService.delete(`fees/student-fees/${id}`);
   }
 
   // Payments
@@ -79,7 +79,7 @@ export class FeeService {
   }
 
   getStudentPayments(studentId: string): Observable<ApiResponse<Payment[]>> {
-    return this.apiService.get<Payment[]>(`payments/student/${studentId}`);
+    return this.apiService.get<Payment[]>(`payments/student/${studentId}/history`);
   }
 
   getPaymentReceipt(paymentId: string): Observable<Blob> {

@@ -46,7 +46,7 @@ exports.authenticate = (0, errorHandler_1.asyncHandler)(async (req, res, next) =
         if (!uuidRegex.test(String(userId))) {
             throw new errorHandler_1.AppError('Invalid token payload', 401);
         }
-        const user = await (0, connection_1.query)('SELECT id, first_name, last_name, email, role, is_active FROM users WHERE id = $1 AND is_active = true', [userId]);
+        const user = await (0, connection_1.query)('SELECT id, first_name, last_name, email, role, school_id, is_active FROM users WHERE id = $1 AND is_active = true', [userId]);
         if (user.rows.length === 0) {
             throw new errorHandler_1.AppError('User not found or inactive', 401);
         }
@@ -55,6 +55,7 @@ exports.authenticate = (0, errorHandler_1.asyncHandler)(async (req, res, next) =
             id: userData.id,
             email: userData.email,
             role: userData.role,
+            schoolId: userData.school_id,
         };
         next();
     }
