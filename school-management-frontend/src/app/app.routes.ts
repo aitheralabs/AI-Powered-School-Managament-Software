@@ -60,6 +60,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'timetable',
+    loadChildren: () => import('./modules/timetable/timetable.module').then(m => m.TimetableModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./components/profile/profile.component').then(c => c.ProfileComponent),
     canActivate: [AuthGuard]

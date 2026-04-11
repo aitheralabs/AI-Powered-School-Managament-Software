@@ -1,0 +1,58 @@
+.ex-page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.ex-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
+  .ex-title {
+    display: flex; align-items: center; gap: 14px;
+    mat-icon { font-size: 32px; width: 32px; height: 32px; color: #6366f1; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+    p  { margin: 0; font-size: 13px; color: #64748b; }
+  }
+}
+
+.ex-form-panel {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+  .form-panel-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  }
+}
+
+.exam-form {
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+  mat-form-field, .full-width { width: 100%; }
+  .form-actions {
+    display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;
+    button { display: inline-flex; align-items: center; gap: 6px; }
+  }
+}
+
+.ex-loading, .ex-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 56px 20px; gap: 14px; text-align: center;
+  mat-icon { font-size: 48px; width: 48px; height: 48px; color: #94a3b8; }
+  p { color: #64748b; margin: 0; }
+}
+
+.exams-table {
+  width: 100%; border-radius: 12px; overflow: hidden;
+  th { background: #1e293b; color: #fff; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  td { font-size: 13.5px; }
+  tr:hover td { background: #f1f5f9; }
+  .exam-name { font-weight: 600; }
+  .exam-instructions { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .type-chip {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    background: #ede9fe; color: #6d28d9; font-size: 12px; font-weight: 600;
+  }
+  .status-chip {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600;
+    &.published { background: #d1fae5; color: #065f46; }
+  }
+}

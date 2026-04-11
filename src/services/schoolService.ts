@@ -24,6 +24,7 @@ export interface CreateSchoolInput {
   website?: string;
   timezone?: string;
   // Admin user to create for this school
+  adminEmail?: string;   // if omitted, falls back to school email
   adminFirstName: string;
   adminLastName: string;
   adminPassword: string;
@@ -88,7 +89,7 @@ export class SchoolService {
          RETURNING id, first_name, last_name, email, role, school_id, created_at`,
         [
           input.adminFirstName, input.adminLastName,
-          input.email,
+          input.adminEmail || input.email,
           passwordHash,
           school.id,
         ]

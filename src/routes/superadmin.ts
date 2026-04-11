@@ -16,6 +16,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { query } from '../database/connection';
 import { SchoolService } from '../services/schoolService';
@@ -71,6 +72,53 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
 
 // All routes below require super-admin auth
 router.use(requireSuperAdmin);
+
+/** POST /api/v1/superadmin/schools — create a new tenant/school */
+const CreateSchoolSchema = z.object({
+  name:           z.string().min(2).max(255),
+  slug:           z.string().min(2).max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
+  email:          z.string().email(),
+  phone:          z.string().optional(),
+  address:        z.string().optional(),
+  city:           z.string().optional(),
+  state:          z.string().optional(),
+  country:        z.string().optional(),
+  postalCode:     z.string().optional(),
+  website:        z.string().url().optional().or(z.literal('')),
+  timezone:       z.string().optional(),
+  adminFirstName: z.string().min(1).max(100),
+  adminLastName:  z.string().min(1).max(100),
+  adminEmail:     z.string().email(),
+  adminPassword:  z.string().min(8),
+});
+
+router.post('/schools', asyncHandler(async (req: Request, res: Response) => {
+  const data = CreateSchoolSchema.parse(req.body);
+  const result = await schoolService.createSchool({
+    ...data,
+    email:      data.email,      // school contact email
+    adminEmail: data.adminEmail, // admin user login email
+  });
+
+  res.status(201).json({
+    success: true,
+    message: `School "${data.name}" created successfully.`,
+    data: {
+      school: {
+        id:          result.school.id,
+        name:        result.school.name,
+        slug:        result.school.slug,
+        plan:        result.school.plan,
+        trialEndsAt: result.school.trial_ends_at,
+      },
+      admin: {
+        id:    result.admin.id,
+        email: result.admin.email,
+        role:  result.admin.role,
+      },
+    },
+  });
+}));
 
 /** GET /api/v1/superadmin/schools */
 router.get('/schools', listAllSchools);

@@ -1,0 +1,137 @@
+<div class="ex-page">
+
+  <div class="ex-header">
+    <div class="ex-title">
+      <mat-icon>assignment</mat-icon>
+      <div>
+        <h1>Exams</h1>
+        <p>Schedule and manage school examinations</p>
+      </div>
+    </div>
+    <button mat-raised-button color="primary" (click)="openAdd()">
+      <mat-icon>add</mat-icon> Create Exam
+    </button>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="ex-form-panel" *ngIf="showForm">
+    <div class="form-panel-header">
+      <h3>{{ editingExam ? 'Edit Exam' : 'New Exam' }}</h3>
+      <button mat-icon-button (click)="cancel()"><mat-icon>close</mat-icon></button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="exam-form">
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Exam Name *</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Mid-Term Exam 2026">
+          <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Exam Type *</mat-label>
+          <mat-select formControlName="examType">
+            <mat-option *ngFor="let t of examTypeOptions" [value]="t">{{ formatExamType(t) }}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="form.get('examType')?.hasError('required')">Type is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Start Date *</mat-label>
+          <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+          <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+          <mat-error *ngIf="form.get('startDate')?.hasError('required')">Required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>End Date *</mat-label>
+          <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+          <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+          <mat-error *ngIf="form.get('endDate')?.hasError('required')">Required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Instructions</mat-label>
+        <textarea matInput formControlName="instructions" rows="3"
+                  placeholder="Any instructions for students or teachers…"></textarea>
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button type="button" mat-stroked-button (click)="cancel()">Cancel</button>
+        <button type="submit" mat-raised-button color="primary" [disabled]="isSubmitting">
+          <mat-spinner *ngIf="isSubmitting" diameter="18"></mat-spinner>
+          {{ isSubmitting ? 'Saving…' : (editingExam ? 'Update Exam' : 'Create Exam') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading -->
+  <div class="ex-loading" *ngIf="isLoading">
+    <mat-spinner diameter="44"></mat-spinner>
+  </div>
+
+  <!-- Empty -->
+  <div class="ex-empty" *ngIf="!isLoading && exams.length === 0">
+    <mat-icon>assignment_late</mat-icon>
+    <p>No exams scheduled yet.</p>
+    <button mat-raised-button color="primary" (click)="openAdd()">
+      <mat-icon>add</mat-icon> Create First Exam
+    </button>
+  </div>
+
+  <!-- Table -->
+  <table mat-table [dataSource]="exams" class="exams-table" *ngIf="!isLoading && exams.length > 0">
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Exam Name</th>
+      <td mat-cell *matCellDef="let e">
+        <div class="exam-name">{{ e.name }}</div>
+        <div class="exam-instructions" *ngIf="e.instructions">{{ e.instructions | slice:0:60 }}…</div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let e">
+        <span class="type-chip">{{ formatExamType(e.examType) }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="dates">
+      <th mat-header-cell *matHeaderCellDef>Dates</th>
+      <td mat-cell *matCellDef="let e">
+        {{ e.startDate | date:'MMM d' }} – {{ e.endDate | date:'MMM d, y' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let e">
+        <span class="status-chip" [class.published]="e.isPublished">
+          {{ e.isPublished ? 'Published' : 'Draft' }}
+        </span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let e">
+        <button mat-icon-button color="primary" (click)="openEdit(e)" matTooltip="Edit">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteExam(e)" matTooltip="Delete">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+</div>

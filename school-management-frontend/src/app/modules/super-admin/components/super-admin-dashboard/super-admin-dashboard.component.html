@@ -31,6 +31,9 @@
         <h1>Platform Dashboard</h1>
         <p>Real-time overview of all schools on the EduSaaS platform</p>
       </div>
+      <button class="create-tenant-btn" (click)="openCreateModal()">
+        <mat-icon>add</mat-icon> Create Tenant
+      </button>
     </div>
 
     <!-- KPI Strip -->
@@ -191,6 +194,126 @@
     <h3>Could not load platform data</h3>
     <p>Please try logging in again.</p>
     <button class="retry-btn" (click)="ngOnInit()"><mat-icon>refresh</mat-icon> Retry</button>
+  </div>
+
+  <!-- ── Create Tenant Modal ─────────────────────────────────────────────── -->
+  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()"></div>
+
+  <div class="modal-panel" *ngIf="showCreateModal">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-icon"><mat-icon>domain_add</mat-icon></div>
+        <div>
+          <h2>Create New Tenant</h2>
+          <p>Onboard a new school to the platform</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closeCreateModal()" [disabled]="createLoading">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Success banner -->
+      <div class="form-banner success" *ngIf="createSuccess">
+        <mat-icon>check_circle</mat-icon> {{ createSuccess }}
+      </div>
+
+      <!-- Error banner -->
+      <div class="form-banner error" *ngIf="createError">
+        <mat-icon>error</mat-icon> {{ createError }}
+      </div>
+
+      <form (ngSubmit)="submitCreateTenant()" #tenantFormRef="ngForm">
+
+        <p class="section-label">School Information</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>School Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="tenantForm.name" name="name"
+                   (input)="onNameChange()" placeholder="e.g. St. Mary's School" required>
+          </div>
+          <div class="form-field">
+            <label>Slug (subdomain) <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="tenantForm.slug" name="slug"
+                   placeholder="e.g. st-marys-school" pattern="[a-z0-9-]+" required>
+            <span class="field-hint">Lowercase letters, numbers, hyphens only</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>School Contact Email <span class="req">*</span></label>
+            <input type="email" [(ngModel)]="tenantForm.email" name="email"
+                   placeholder="school@example.com" required>
+          </div>
+          <div class="form-field">
+            <label>Phone</label>
+            <input type="text" [(ngModel)]="tenantForm.phone" name="phone"
+                   placeholder="+91 98765 43210">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>City</label>
+            <input type="text" [(ngModel)]="tenantForm.city" name="city" placeholder="Mumbai">
+          </div>
+          <div class="form-field">
+            <label>State</label>
+            <input type="text" [(ngModel)]="tenantForm.state" name="state" placeholder="Maharashtra">
+          </div>
+        </div>
+
+        <p class="section-label" style="margin-top:20px">Admin Account</p>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="tenantForm.adminFirstName" name="adminFirstName"
+                   placeholder="Ravi" required>
+          </div>
+          <div class="form-field">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="tenantForm.adminLastName" name="adminLastName"
+                   placeholder="Sharma" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label>Admin Login Email <span class="req">*</span></label>
+            <input type="email" [(ngModel)]="tenantForm.adminEmail" name="adminEmail"
+                   placeholder="admin@stmarys.com" required>
+          </div>
+          <div class="form-field">
+            <label>Admin Password <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input [type]="showAdminPwd ? 'text' : 'password'"
+                     [(ngModel)]="tenantForm.adminPassword" name="adminPassword"
+                     placeholder="Min 8 characters" required minlength="8">
+              <button type="button" class="pwd-toggle" (click)="showAdminPwd = !showAdminPwd">
+                <mat-icon>{{ showAdminPwd ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeCreateModal()" [disabled]="createLoading">
+            Cancel
+          </button>
+          <button type="submit" class="btn-create" [disabled]="createLoading">
+            <mat-spinner *ngIf="createLoading" diameter="16"></mat-spinner>
+            <mat-icon *ngIf="!createLoading">domain_add</mat-icon>
+            {{ createLoading ? 'Creating…' : 'Create Tenant' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
   </div>
 
 </div>

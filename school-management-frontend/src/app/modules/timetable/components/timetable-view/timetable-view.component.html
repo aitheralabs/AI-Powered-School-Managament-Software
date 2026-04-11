@@ -1,0 +1,83 @@
+<div class="tt-page">
+  <div class="tt-header">
+    <div class="tt-title">
+      <mat-icon>calendar_view_week</mat-icon>
+      <div>
+        <h1>Class Timetable</h1>
+        <p>Weekly schedule by class</p>
+      </div>
+    </div>
+    <div class="tt-actions">
+      <mat-form-field appearance="outline" class="class-select">
+        <mat-label>Select Class</mat-label>
+        <mat-select [(ngModel)]="selectedClassId" (ngModelChange)="onClassChange()">
+          <mat-option *ngFor="let c of classes" [value]="c.id">
+            {{ c.name }} ({{ c.grade }}-{{ c.section }})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <a routerLink="/timetable/manage" mat-raised-button color="primary" class="manage-btn">
+        <mat-icon>edit_calendar</mat-icon> Manage Slots
+      </a>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="tt-loading" *ngIf="isLoading">
+    <mat-spinner diameter="44"></mat-spinner>
+    <p>Loading timetable…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="tt-empty" *ngIf="!isLoading && error">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-stroked-button (click)="loadTimetable()">Retry</button>
+  </div>
+
+  <!-- Empty -->
+  <div class="tt-empty" *ngIf="!isLoading && !error && weeklyData && totalSlots === 0">
+    <mat-icon>event_busy</mat-icon>
+    <p>No timetable slots set up for this class yet.</p>
+    <a routerLink="/timetable/manage" mat-raised-button color="primary">
+      <mat-icon>add</mat-icon> Add Slots
+    </a>
+  </div>
+
+  <!-- Weekly Grid -->
+  <div class="tt-grid" *ngIf="!isLoading && !error && weeklyData && totalSlots > 0">
+    <div class="day-col" *ngFor="let day of days">
+      <div class="day-header">
+        <span class="day-name">{{ day }}</span>
+        <span class="slot-count">{{ getSlotsForDay(day).length }} slots</span>
+      </div>
+      <div class="day-slots">
+        <div class="slot-empty" *ngIf="getSlotsForDay(day).length === 0">
+          <mat-icon>remove</mat-icon> No class
+        </div>
+        <div
+          class="slot-card"
+          *ngFor="let slot of getSlotsForDay(day)"
+          [style.borderLeftColor]="getSubjectColor(slot.subject.color)"
+          [matTooltip]="(slot.teacher?.name || 'No teacher') + ' · Room: ' + (slot.room || 'N/A')"
+        >
+          <div class="slot-time">
+            <mat-icon>schedule</mat-icon>
+            {{ slot.startTime | slice:0:5 }} – {{ slot.endTime | slice:0:5 }}
+          </div>
+          <div class="slot-subject" [style.color]="getSubjectColor(slot.subject.color)">
+            {{ slot.subject.name }}
+          </div>
+          <div class="slot-meta">
+            <span *ngIf="slot.teacher">
+              <mat-icon>person</mat-icon> {{ slot.teacher.name }}
+            </span>
+            <span *ngIf="slot.room">
+              <mat-icon>room</mat-icon> {{ slot.room }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -36,7 +36,17 @@
       "Bash(node dist/index.js)",
       "Bash(xargs grep:*)",
       "Bash(grep -n \"CORS_ORIGIN\\\\|cors\" src/config/env.ts src/middleware/*.ts)",
-      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")"
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")",
+      "Bash(node:*)",
+      "Bash(netstat -ano)",
+      "Bash(awk '{print $5}')",
+      "Bash(taskkill /PID 35540 /F)",
+      "Bash(taskkill /F /PID 36860)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('data type:', type\\(d.get\\('data'\\)\\).__name__, '| keys:', list\\(d.get\\('data',{}\\).keys\\(\\)\\) if isinstance\\(d.get\\('data'\\),dict\\) else 'list of len '+str\\(len\\(d.get\\('data',[]\\)\\)\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); tt=d.get\\('data',{}\\).get\\('timetable',{}\\); print\\('success:',d.get\\('success'\\),'| Mon:',len\\(tt.get\\('Monday',[]\\)\\),'| Tue:',len\\(tt.get\\('Tuesday',[]\\)\\)\\)\")"
     ]
   }
 }

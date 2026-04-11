@@ -1,0 +1,59 @@
+.tf-page { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+.tf-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+  .tf-title {
+    display: flex; align-items: center; gap: 14px;
+    mat-icon { font-size: 32px; width: 32px; height: 32px; color: #6366f1; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+    p  { margin: 0; font-size: 13px; color: #64748b; }
+  }
+  .tf-actions { display: flex; gap: 10px; align-items: center; }
+}
+
+.tf-filter { margin-bottom: 20px; .class-select { min-width: 220px; } }
+
+.tf-form-panel {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+  .form-panel-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  }
+}
+
+.slot-form {
+  .form-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 12px;
+    @media (max-width: 768px) { grid-template-columns: 1fr; }
+  }
+  mat-form-field { width: 100%; }
+  .req { color: #ef4444; }
+  .form-actions {
+    display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;
+    button { display: inline-flex; align-items: center; gap: 6px; }
+  }
+}
+
+.tf-loading, .tf-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 48px 20px; gap: 12px; text-align: center;
+  mat-icon { font-size: 44px; width: 44px; height: 44px; color: #94a3b8; }
+  p { color: #64748b; margin: 0; }
+}
+
+.slots-table {
+  width: 100%; border-radius: 12px; overflow: hidden;
+  .day-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    background: #ede9fe; color: #6d28d9; font-size: 12px; font-weight: 600;
+  }
+  .subject-chip {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  th { background: #1e293b; color: #fff; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  td { font-size: 13.5px; }
+  tr:hover td { background: #f1f5f9; }
+}

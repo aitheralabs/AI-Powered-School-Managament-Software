@@ -41,7 +41,7 @@ const errorHandler_1 = require("../middleware/errorHandler");
 class ScheduledReportService {
     constructor() {
         this.scheduledJobs = new Map();
-        this.initializeScheduledReports();
+        setTimeout(() => this.initializeScheduledReports(), 3000);
     }
     static getInstance() {
         if (!ScheduledReportService.instance) {

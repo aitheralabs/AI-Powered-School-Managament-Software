@@ -192,6 +192,31 @@ export class SidebarComponent implements OnInit {
       ]
     },
     {
+      title: 'Timetable',
+      icon: 'calendar_view_week',
+      roles: ['admin', 'teacher', 'staff'],
+      children: [
+        {
+          title: 'Class Timetable',
+          icon: 'grid_view',
+          route: '/timetable/view',
+          roles: ['admin', 'teacher', 'staff']
+        },
+        {
+          title: 'Manage Slots',
+          icon: 'edit_calendar',
+          route: '/timetable/manage',
+          roles: ['admin', 'staff']
+        },
+        {
+          title: 'Exams',
+          icon: 'assignment',
+          route: '/timetable/exams',
+          roles: ['admin', 'teacher', 'staff']
+        }
+      ]
+    },
+    {
       title: 'Staff Management',
       icon: 'badge',
       roles: ['admin', 'staff'],
