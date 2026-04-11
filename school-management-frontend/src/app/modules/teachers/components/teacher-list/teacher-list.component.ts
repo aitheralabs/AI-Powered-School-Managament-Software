@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { TeacherService } from '../../../../services/teacher.service';
 import { NotificationService } from '../../../../services/notification.service';
@@ -33,16 +34,18 @@ import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
     MatFormFieldModule,
     MatInputModule,
     MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './teacher-list.component.html',
   styleUrl: './teacher-list.component.scss'
 })
 export class TeacherListComponent implements OnInit {
   teachers: Teacher[] = [];
-  displayedColumns: string[] = ['employeeId', 'name', 'email', 'specialization', 'subjects', 'actions'];
+  displayedColumns: string[] = ['name', 'employeeId', 'specialization', 'subjects', 'actions'];
   isLoading = false;
   searchQuery = '';
+  searchFocused = false;
   
   // Pagination
   totalItems = 0;
@@ -147,5 +150,23 @@ export class TeacherListComponent implements OnInit {
 
   getSubjectCount(teacher: Teacher): number {
     return teacher.subjects?.length || 0;
+  }
+
+  getInitials(teacher: Teacher): string {
+    const f = teacher.user.firstName?.[0] ?? '';
+    const l = teacher.user.lastName?.[0] ?? '';
+    return (f + l).toUpperCase();
+  }
+
+  getAvatarGradient(teacher: Teacher): string {
+    const GRADIENTS = [
+      'linear-gradient(135deg,#6366f1,#8b5cf6)',
+      'linear-gradient(135deg,#ec4899,#f43f5e)',
+      'linear-gradient(135deg,#3b82f6,#06b6d4)',
+      'linear-gradient(135deg,#22c55e,#10b981)',
+      'linear-gradient(135deg,#f59e0b,#ef4444)',
+    ];
+    const code = (teacher.user.firstName?.charCodeAt(0) ?? 0) + (teacher.user.lastName?.charCodeAt(0) ?? 0);
+    return GRADIENTS[code % GRADIENTS.length];
   }
 }

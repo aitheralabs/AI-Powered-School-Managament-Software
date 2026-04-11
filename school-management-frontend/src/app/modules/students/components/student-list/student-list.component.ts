@@ -11,11 +11,21 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { StudentService } from '../../../../services/student.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { Student } from '../../../../models/student.model';
 import { StudentFormComponent } from '../student-form/student-form.component';
+
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  'linear-gradient(135deg,#ec4899,#f43f5e)',
+  'linear-gradient(135deg,#3b82f6,#06b6d4)',
+  'linear-gradient(135deg,#22c55e,#10b981)',
+  'linear-gradient(135deg,#f59e0b,#ef4444)',
+  'linear-gradient(135deg,#8b5cf6,#a855f7)',
+];
 
 @Component({
   selector: 'app-student-list',
@@ -31,17 +41,19 @@ import { StudentFormComponent } from '../student-form/student-form.component';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './student-list.component.html',
   styleUrl: './student-list.component.scss'
 })
 export class StudentListComponent implements OnInit {
   students: Student[] = [];
-  displayedColumns: string[] = ['studentId', 'name', 'email', 'class', 'enrollmentDate', 'actions'];
+  displayedColumns: string[] = ['name', 'studentId', 'class', 'enrollmentDate', 'status', 'actions'];
   isLoading = false;
   searchQuery = '';
-  
+  searchFocused = false;
+
   // Pagination
   totalItems = 0;
   pageSize = 10;
@@ -99,12 +111,7 @@ export class StudentListComponent implements OnInit {
       maxHeight: '90vh',
       data: null
     });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadStudents();
-      }
-    });
+    dialogRef.afterClosed().subscribe(result => { if (result) this.loadStudents(); });
   }
 
   openEditDialog(student: Student) {
@@ -113,12 +120,7 @@ export class StudentListComponent implements OnInit {
       maxHeight: '90vh',
       data: student
     });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadStudents();
-      }
-    });
+    dialogRef.afterClosed().subscribe(result => { if (result) this.loadStudents(); });
   }
 
   viewStudent(student: Student) {
@@ -128,13 +130,8 @@ export class StudentListComponent implements OnInit {
   deleteStudent(student: Student) {
     if (confirm(`Are you sure you want to delete ${student.user.firstName} ${student.user.lastName}?`)) {
       this.studentService.deleteStudent(student.id).subscribe({
-        next: () => {
-          this.notificationService.success('Student deleted successfully');
-          this.loadStudents();
-        },
-        error: () => {
-          this.notificationService.error('Failed to delete student');
-        }
+        next: () => { this.notificationService.success('Student deleted successfully'); this.loadStudents(); },
+        error: () => { this.notificationService.error('Failed to delete student'); }
       });
     }
   }
@@ -145,5 +142,16 @@ export class StudentListComponent implements OnInit {
 
   getClassName(student: Student): string {
     return student.class?.name || 'Not Assigned';
+  }
+
+  getInitials(student: Student): string {
+    const f = student.user.firstName?.[0] ?? '';
+    const l = student.user.lastName?.[0] ?? '';
+    return (f + l).toUpperCase();
+  }
+
+  getAvatarGradient(student: Student): string {
+    const code = (student.user.firstName?.charCodeAt(0) ?? 0) + (student.user.lastName?.charCodeAt(0) ?? 0);
+    return AVATAR_GRADIENTS[code % AVATAR_GRADIENTS.length];
   }
 }

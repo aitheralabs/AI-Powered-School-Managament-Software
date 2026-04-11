@@ -1,45 +1,70 @@
-<mat-toolbar class="header-toolbar">
+<header class="app-header">
+  <!-- Left: Menu toggle + breadcrumb -->
   <div class="header-left">
-    <button mat-icon-button (click)="onToggleSidenav()" class="menu-button">
+    <button class="menu-toggle" (click)="onToggleSidenav()" matRipple>
       <mat-icon>menu</mat-icon>
     </button>
-    <span class="app-title">School Management System</span>
+
+    <div class="breadcrumb">
+      <mat-icon class="breadcrumb-home">home</mat-icon>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-current">{{ getPageTitle() }}</span>
+    </div>
   </div>
 
+  <!-- Right: Actions -->
   <div class="header-right">
+    <!-- Search -->
+    <div class="header-search">
+      <mat-icon>search</mat-icon>
+      <input type="text" placeholder="Search anything…" />
+      <span class="search-shortcut">⌘K</span>
+    </div>
+
     <!-- Notifications -->
-    <button mat-icon-button class="notification-button">
-      <mat-icon [matBadge]="notificationCount" matBadgeColor="warn" matBadgeSize="small">
-        notifications
+    <button class="icon-btn" matTooltip="Notifications">
+      <mat-icon [matBadge]="notificationCount > 0 ? notificationCount : null" matBadgeColor="warn" matBadgeSize="small">
+        notifications_outlined
       </mat-icon>
     </button>
 
-    <!-- User Menu -->
-    <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-button">
-      <div class="user-avatar">
-        <mat-icon>account_circle</mat-icon>
+    <!-- Divider -->
+    <div class="header-divider"></div>
+
+    <!-- User menu -->
+    <button class="user-btn" [matMenuTriggerFor]="userMenu">
+      <div class="user-avatar-wrap">
+        <div class="user-initials">{{ getUserInitials() }}</div>
       </div>
-      <div class="user-info">
+      <div class="user-text">
         <span class="user-name">{{ getUserDisplayName() }}</span>
         <span class="user-role">{{ getUserRole() }}</span>
       </div>
-      <mat-icon>keyboard_arrow_down</mat-icon>
+      <mat-icon class="chevron">expand_more</mat-icon>
     </button>
 
-    <mat-menu #userMenu="matMenu" class="user-menu">
+    <mat-menu #userMenu="matMenu" xPosition="before" class="header-menu">
+      <div class="menu-header">
+        <div class="menu-user-avatar">{{ getUserInitials() }}</div>
+        <div>
+          <p class="menu-user-name">{{ getUserDisplayName() }}</p>
+          <p class="menu-user-role">{{ getUserRole() }}</p>
+        </div>
+      </div>
+      <mat-divider></mat-divider>
       <button mat-menu-item (click)="onProfile()">
-        <mat-icon>person</mat-icon>
-        <span>Profile</span>
+        <mat-icon>person_outline</mat-icon>
+        <span>My Profile</span>
       </button>
       <button mat-menu-item (click)="onSettings()">
-        <mat-icon>settings</mat-icon>
+        <mat-icon>settings_outlined</mat-icon>
         <span>Settings</span>
       </button>
       <mat-divider></mat-divider>
-      <button mat-menu-item (click)="onLogout()" class="logout-button">
+      <button mat-menu-item (click)="onLogout()" class="menu-logout">
         <mat-icon>logout</mat-icon>
-        <span>Logout</span>
+        <span>Sign Out</span>
       </button>
     </mat-menu>
   </div>
-</mat-toolbar>
+</header>

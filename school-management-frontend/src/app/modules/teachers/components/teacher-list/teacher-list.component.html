@@ -1,102 +1,145 @@
-<div class="teacher-list-container">
-  <mat-card>
-    <div class="header">
-      <h2>Teachers</h2>
-      <div class="header-actions">
-        <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Search teachers</mat-label>
-          <input
-            matInput
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="onSearch()"
-            placeholder="Name, email, or employee ID"
-          />
-          <mat-icon matPrefix>search</mat-icon>
-          <button
-            mat-icon-button
-            matSuffix
-            *ngIf="searchQuery"
-            (click)="searchQuery = ''; onSearch()"
-          >
-            <mat-icon>clear</mat-icon>
-          </button>
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="openCreateDialog()">
-          <mat-icon>add</mat-icon>
-          Add Teacher
+<div class="teacher-list fade-in">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Teachers</h1>
+      <p class="page-subtitle">Manage faculty members and their assignments</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline" (click)="loadTeachers()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button class="btn btn-primary" (click)="openCreateDialog()">
+        <mat-icon>person_add</mat-icon>
+        Add Teacher
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Card -->
+  <div class="content-card">
+
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <div class="search-box" [class.focused]="searchFocused">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          (focus)="searchFocused=true"
+          (blur)="searchFocused=false"
+          placeholder="Search by name, email or employee ID…"
+        />
+        <button class="clear-btn" *ngIf="searchQuery" (click)="searchQuery=''; onSearch()">
+          <mat-icon>close</mat-icon>
         </button>
+      </div>
+      <div class="toolbar-right">
+        <button class="icon-action-btn" matTooltip="Filter"><mat-icon>tune</mat-icon></button>
+        <button class="icon-action-btn" matTooltip="Export"><mat-icon>download</mat-icon></button>
       </div>
     </div>
 
-    <div class="table-container">
-      <table mat-table [dataSource]="teachers" class="teacher-table">
-        <ng-container matColumnDef="employeeId">
-          <th mat-header-cell *matHeaderCellDef>Employee ID</th>
-          <td mat-cell *matCellDef="let teacher">{{ teacher.employeeId }}</td>
-        </ng-container>
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="page-loading">
+      <mat-spinner diameter="44"></mat-spinner>
+      <p>Loading teachers…</p>
+    </div>
 
+    <!-- Table -->
+    <div *ngIf="!isLoading" class="table-wrapper">
+      <table mat-table [dataSource]="teachers" class="data-table">
+
+        <!-- Name -->
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let teacher">{{ getTeacherName(teacher) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>Email</th>
-          <td mat-cell *matCellDef="let teacher">{{ teacher.user.email }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="specialization">
-          <th mat-header-cell *matHeaderCellDef>Specialization</th>
-          <td mat-cell *matCellDef="let teacher">{{ teacher.specialization.join(', ') }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="subjects">
-          <th mat-header-cell *matHeaderCellDef>Subjects</th>
-          <td mat-cell *matCellDef="let teacher">
-            <mat-chip-set>
-              <mat-chip *ngIf="getSubjectCount(teacher) > 0">
-                {{ getSubjectCount(teacher) }} subject(s)
-              </mat-chip>
-              <mat-chip *ngIf="getSubjectCount(teacher) === 0" class="no-subjects">
-                No subjects
-              </mat-chip>
-            </mat-chip-set>
+          <th mat-header-cell *matHeaderCellDef>Teacher</th>
+          <td mat-cell *matCellDef="let t">
+            <div class="person-cell">
+              <div class="person-avatar" [style.background]="getAvatarGradient(t)">
+                {{ getInitials(t) }}
+              </div>
+              <div class="person-info">
+                <span class="person-name">{{ getTeacherName(t) }}</span>
+                <span class="person-email">{{ t.user.email }}</span>
+              </div>
+            </div>
           </td>
         </ng-container>
 
+        <!-- Employee ID -->
+        <ng-container matColumnDef="employeeId">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let t">
+            <span class="id-badge">{{ t.employeeId }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Specialization -->
+        <ng-container matColumnDef="specialization">
+          <th mat-header-cell *matHeaderCellDef>Specialization</th>
+          <td mat-cell *matCellDef="let t">
+            <div class="spec-chips">
+              <span class="spec-chip" *ngFor="let s of (t.specialization || []).slice(0,2)">{{ s }}</span>
+              <span class="spec-chip more" *ngIf="(t.specialization || []).length > 2">+{{ (t.specialization || []).length - 2 }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Subjects -->
+        <ng-container matColumnDef="subjects">
+          <th mat-header-cell *matHeaderCellDef>Subjects</th>
+          <td mat-cell *matCellDef="let t">
+            <span class="class-chip" *ngIf="getSubjectCount(t) > 0">
+              <mat-icon>book</mat-icon>
+              {{ getSubjectCount(t) }} subject{{ getSubjectCount(t) !== 1 ? 's' : '' }}
+            </span>
+            <span class="class-chip unassigned" *ngIf="getSubjectCount(t) === 0">
+              <mat-icon>book</mat-icon>
+              Unassigned
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let teacher">
-            <button mat-icon-button (click)="viewTeacher(teacher)" matTooltip="View Details">
-              <mat-icon>visibility</mat-icon>
-            </button>
-            <button mat-icon-button (click)="openEditDialog(teacher)" matTooltip="Edit">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button (click)="deleteTeacher(teacher)" matTooltip="Delete" color="warn">
-              <mat-icon>delete</mat-icon>
-            </button>
+          <td mat-cell *matCellDef="let t">
+            <div class="row-actions">
+              <button class="row-btn view" (click)="viewTeacher(t)" matTooltip="View Profile">
+                <mat-icon>open_in_new</mat-icon>
+              </button>
+              <button class="row-btn edit" (click)="openEditDialog(t)" matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="row-btn delete" (click)="deleteTeacher(t)" matTooltip="Delete">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="teacher-row"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
       </table>
+
+      <div *ngIf="teachers.length === 0" class="empty-state">
+        <mat-icon>person</mat-icon>
+        <h4>No teachers found</h4>
+        <p>{{ searchQuery ? 'Try a different search term' : 'Add your first teacher to get started' }}</p>
+      </div>
     </div>
 
     <mat-paginator
+      *ngIf="!isLoading && teachers.length > 0"
       [length]="totalItems"
       [pageSize]="pageSize"
       [pageIndex]="pageIndex"
       [pageSizeOptions]="pageSizeOptions"
       (page)="onPageChange($event)"
-      showFirstLastButtons
-    ></mat-paginator>
-
-    <div *ngIf="teachers.length === 0 && !isLoading" class="no-data">
-      <mat-icon>person</mat-icon>
-      <p>No teachers found</p>
-      <p class="hint">Click "Add Teacher" to create a new teacher record</p>
-    </div>
-  </mat-card>
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
 </div>

@@ -1,93 +1,171 @@
-<div class="student-list-container">
-  <mat-card>
-    <div class="header">
-      <h2>Students</h2>
-      <div class="header-actions">
-        <mat-form-field appearance="outline" class="search-field">
-          <mat-label>Search students</mat-label>
-          <input
-            matInput
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="onSearch()"
-            placeholder="Name, email, or student ID"
-          />
-          <mat-icon matPrefix>search</mat-icon>
-          <button
-            mat-icon-button
-            matSuffix
-            *ngIf="searchQuery"
-            (click)="searchQuery = ''; onSearch()"
-          >
-            <mat-icon>clear</mat-icon>
-          </button>
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="openCreateDialog()">
-          <mat-icon>add</mat-icon>
-          Add Student
+<div class="student-list fade-in">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Students</h1>
+      <p class="page-subtitle">Manage enrolled students across all classes</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-outline" (click)="loadStudents()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button class="btn btn-primary" (click)="openCreateDialog()">
+        <mat-icon>person_add</mat-icon>
+        Add Student
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" *ngIf="!isLoading">
+    <div class="stat-pill">
+      <mat-icon>group</mat-icon>
+      <span><strong>{{ totalItems }}</strong> Total Students</span>
+    </div>
+    <div class="stat-pill success">
+      <mat-icon>check_circle</mat-icon>
+      <span>Active Enrollment</span>
+    </div>
+  </div>
+
+  <!-- Main Card -->
+  <div class="content-card">
+
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <!-- Search -->
+      <div class="search-box" [class.focused]="searchFocused">
+        <mat-icon>search</mat-icon>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+          (focus)="searchFocused=true"
+          (blur)="searchFocused=false"
+          placeholder="Search by name, email or student ID…"
+        />
+        <button class="clear-btn" *ngIf="searchQuery" (click)="searchQuery=''; onSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Right actions -->
+      <div class="toolbar-right">
+        <button class="icon-action-btn" matTooltip="Filter">
+          <mat-icon>tune</mat-icon>
+        </button>
+        <button class="icon-action-btn" matTooltip="Export">
+          <mat-icon>download</mat-icon>
         </button>
       </div>
     </div>
 
-    <div class="table-container">
-      <table mat-table [dataSource]="students" class="student-table">
-        <ng-container matColumnDef="studentId">
-          <th mat-header-cell *matHeaderCellDef>Student ID</th>
-          <td mat-cell *matCellDef="let student">{{ student.studentId }}</td>
-        </ng-container>
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="page-loading">
+      <mat-spinner diameter="44"></mat-spinner>
+      <p>Loading students…</p>
+    </div>
 
+    <!-- Table -->
+    <div *ngIf="!isLoading" class="table-wrapper">
+      <table mat-table [dataSource]="students" class="data-table">
+
+        <!-- Avatar + Name -->
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let student">{{ getStudentName(student) }}</td>
+          <th mat-header-cell *matHeaderCellDef>Student</th>
+          <td mat-cell *matCellDef="let s">
+            <div class="student-cell">
+              <div class="student-avatar" [style.background]="getAvatarGradient(s)">
+                {{ getInitials(s) }}
+              </div>
+              <div class="student-info">
+                <span class="student-name">{{ getStudentName(s) }}</span>
+                <span class="student-email">{{ s.user.email }}</span>
+              </div>
+            </div>
+          </td>
         </ng-container>
 
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>Email</th>
-          <td mat-cell *matCellDef="let student">{{ student.user.email }}</td>
+        <!-- Student ID -->
+        <ng-container matColumnDef="studentId">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let s">
+            <span class="id-badge">{{ s.studentId }}</span>
+          </td>
         </ng-container>
 
+        <!-- Class -->
         <ng-container matColumnDef="class">
           <th mat-header-cell *matHeaderCellDef>Class</th>
-          <td mat-cell *matCellDef="let student">{{ getClassName(student) }}</td>
+          <td mat-cell *matCellDef="let s">
+            <span class="class-chip" [class.unassigned]="!s.class">
+              <mat-icon>class</mat-icon>
+              {{ getClassName(s) }}
+            </span>
+          </td>
         </ng-container>
 
+        <!-- Enrollment Date -->
         <ng-container matColumnDef="enrollmentDate">
-          <th mat-header-cell *matHeaderCellDef>Enrollment Date</th>
-          <td mat-cell *matCellDef="let student">{{ student.enrollmentDate | date:'mediumDate' }}</td>
+          <th mat-header-cell *matHeaderCellDef>Enrolled</th>
+          <td mat-cell *matCellDef="let s">
+            <span class="date-text">{{ s.enrollmentDate | date:'MMM d, y' }}</span>
+          </td>
         </ng-container>
 
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let s">
+            <span class="status-badge active">
+              <span class="status-dot"></span>
+              Active
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let student">
-            <button mat-icon-button (click)="viewStudent(student)" matTooltip="View Details">
-              <mat-icon>visibility</mat-icon>
-            </button>
-            <button mat-icon-button (click)="openEditDialog(student)" matTooltip="Edit">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button (click)="deleteStudent(student)" matTooltip="Delete" color="warn">
-              <mat-icon>delete</mat-icon>
-            </button>
+          <td mat-cell *matCellDef="let s">
+            <div class="row-actions">
+              <button class="row-btn view" (click)="viewStudent(s)" matTooltip="View Profile">
+                <mat-icon>open_in_new</mat-icon>
+              </button>
+              <button class="row-btn edit" (click)="openEditDialog(s)" matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="row-btn delete" (click)="deleteStudent(s)" matTooltip="Delete">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="student-row"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
       </table>
+
+      <!-- Empty state -->
+      <div *ngIf="students.length === 0" class="empty-state">
+        <mat-icon>school</mat-icon>
+        <h4>No students found</h4>
+        <p>{{ searchQuery ? 'Try a different search term' : 'Add your first student to get started' }}</p>
+      </div>
     </div>
 
+    <!-- Paginator -->
     <mat-paginator
+      *ngIf="!isLoading && students.length > 0"
       [length]="totalItems"
       [pageSize]="pageSize"
       [pageIndex]="pageIndex"
       [pageSizeOptions]="pageSizeOptions"
       (page)="onPageChange($event)"
-      showFirstLastButtons
-    ></mat-paginator>
+      showFirstLastButtons>
+    </mat-paginator>
 
-    <div *ngIf="students.length === 0 && !isLoading" class="no-data">
-      <mat-icon>school</mat-icon>
-      <p>No students found</p>
-      <p class="hint">Click "Add Student" to create a new student record</p>
-    </div>
-  </mat-card>
+  </div>
 </div>

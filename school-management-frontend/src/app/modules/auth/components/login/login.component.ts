@@ -36,6 +36,15 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   hidePassword = true;
   returnUrl = '/dashboard';
+  emailFocused = false;
+  passFocused = false;
+
+  features = [
+    { icon: 'school',       title: 'Student Management',   desc: 'Complete student lifecycle tracking and records' },
+    { icon: 'how_to_reg',   title: 'Smart Attendance',      desc: 'Automated attendance with real-time analytics' },
+    { icon: 'payments',     title: 'Fee Management',        desc: 'Seamless fee collection and payment tracking' },
+    { icon: 'psychology',   title: 'AI-Powered Insights',   desc: 'Intelligent reports and predictive analytics' },
+  ];
 
   constructor(
     private fb: FormBuilder,
