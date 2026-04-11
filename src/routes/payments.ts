@@ -10,6 +10,7 @@ import {
 } from '../controllers/paymentController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreatePaymentSchema,
@@ -21,7 +22,7 @@ import { z } from 'zod';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Record a payment (admin and staff only)
 router.post(
@@ -55,10 +56,10 @@ router.get(
   getPaymentReceipt
 );
 
-// Get payment history for a student fee
+// Get payment history for a student
 router.get(
-  '/student-fee/:studentFeeId/history',
-  validateParams(z.object({ studentFeeId: IdSchema })),
+  '/student/:studentId/history',
+  validateParams(z.object({ studentId: IdSchema })),
   getPaymentHistory
 );
 

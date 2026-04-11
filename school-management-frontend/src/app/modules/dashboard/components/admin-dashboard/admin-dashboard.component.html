@@ -1,123 +1,169 @@
 <div class="admin-dashboard">
+
   <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-spinner diameter="56"></mat-spinner>
     <p>Loading dashboard...</p>
   </div>
 
   <!-- Dashboard Content -->
   <div *ngIf="!isLoading" class="dashboard-content">
-    <!-- Welcome Header -->
-    <div class="welcome-header">
-      <h1 class="dashboard-title">Welcome back, {{ getUserDisplayName() }}!</h1>
-      <p class="dashboard-subtitle">Administrator Dashboard</p>
-    </div>
 
-    <!-- Statistics Cards -->
-    <div class="stats-grid">
-      <!-- Total Students Card -->
-      <mat-card class="stat-card students-card">
-        <div class="stat-content">
-          <div class="stat-icon">
-            <mat-icon>school</mat-icon>
-          </div>
-          <div class="stat-details">
-            <p class="stat-label">Total Students</p>
-            <h2 class="stat-value">{{ stats.totalStudents }}</h2>
-            <p class="stat-subtext">Enrolled students</p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Total Teachers Card -->
-      <mat-card class="stat-card teachers-card">
-        <div class="stat-content">
-          <div class="stat-icon">
-            <mat-icon>person</mat-icon>
-          </div>
-          <div class="stat-details">
-            <p class="stat-label">Total Teachers</p>
-            <h2 class="stat-value">{{ stats.totalTeachers }}</h2>
-            <p class="stat-subtext">Active teachers</p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Today's Attendance Card -->
-      <mat-card class="stat-card attendance-card">
-        <div class="stat-content">
-          <div class="stat-icon">
-            <mat-icon>how_to_reg</mat-icon>
-          </div>
-          <div class="stat-details">
-            <p class="stat-label">Today's Attendance</p>
-            <h2 class="stat-value">{{ stats.todayAttendance.percentage.toFixed(1) }}%</h2>
-            <p class="stat-subtext">
-              {{ stats.todayAttendance.present }} / {{ stats.todayAttendance.total }} present
-            </p>
-          </div>
-        </div>
-      </mat-card>
-
-      <!-- Fee Collection Card -->
-      <mat-card class="stat-card fees-card">
-        <div class="stat-content">
-          <div class="stat-icon">
-            <mat-icon>payment</mat-icon>
-          </div>
-          <div class="stat-details">
-            <p class="stat-label">Fee Collection</p>
-            <h2 class="stat-value">{{ stats.feeCollection.percentage.toFixed(1) }}%</h2>
-            <p class="stat-subtext">
-              ${{ stats.feeCollection.collected.toLocaleString() }} collected
-            </p>
-          </div>
-        </div>
-      </mat-card>
-    </div>
-
-    <!-- Quick Actions -->
-    <mat-card class="quick-actions-card">
-      <h3 class="section-title">Quick Actions</h3>
-      <div class="quick-actions-grid">
-        <button
-          *ngFor="let action of quickActions"
-          mat-raised-button
-          color="primary"
-          class="quick-action-btn"
-          (click)="navigateTo(action.route)"
-        >
-          <mat-icon>{{ action.icon }}</mat-icon>
-          <span>{{ action.label }}</span>
+    <!-- ===== HEADER ===== -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <h1 class="greeting">Good {{ getGreeting() }}, {{ getUserDisplayName() }} 👋</h1>
+        <p class="date-line">{{ currentDate | date:'EEEE, MMMM d, y' }} &nbsp;·&nbsp; Administrator Dashboard</p>
+      </div>
+      <div class="header-actions">
+        <button mat-stroked-button (click)="loadDashboardData()" matTooltip="Refresh data">
+          <mat-icon>refresh</mat-icon> Refresh
         </button>
+        <button mat-raised-button color="primary" routerLink="/students/add">
+          <mat-icon>person_add</mat-icon> Add Student
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== KPI CARDS ===== -->
+    <div class="kpi-grid">
+      <mat-card *ngFor="let card of kpiCards" class="kpi-card {{ card.colorClass }}">
+        <div class="kpi-body">
+          <div class="kpi-left">
+            <p class="kpi-title">{{ card.title }}</p>
+            <h2 class="kpi-value">{{ card.value }}</h2>
+            <p class="kpi-sub">{{ card.subtitle }}</p>
+            <div *ngIf="card.trend" class="kpi-trend" [class.up]="card.trend.direction === 'up'" [class.down]="card.trend.direction === 'down'">
+              <mat-icon class="trend-icon">
+                {{ card.trend.direction === 'up' ? 'trending_up' : card.trend.direction === 'down' ? 'trending_down' : 'trending_flat' }}
+              </mat-icon>
+              <span *ngIf="card.trend.value > 0">{{ card.trend.value }}% {{ card.trend.label }}</span>
+              <span *ngIf="card.trend.value === 0">{{ card.trend.label }}</span>
+            </div>
+          </div>
+          <div class="kpi-icon-wrap">
+            <mat-icon>{{ card.icon }}</mat-icon>
+          </div>
+        </div>
+        <mat-progress-bar *ngIf="card.progress !== undefined" [value]="card.progress" mode="determinate" class="kpi-bar"></mat-progress-bar>
+      </mat-card>
+    </div>
+
+    <!-- ===== CHARTS ROW 1: Revenue + Attendance ===== -->
+    <div class="charts-row">
+      <mat-card class="chart-card wide">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Fee Collection Trend</h3>
+            <p class="chart-sub">Monthly revenue over the current academic year</p>
+          </div>
+          <mat-chip-set>
+            <mat-chip highlighted color="primary">2024–25</mat-chip>
+          </mat-chip-set>
+        </div>
+        <div class="chart-container" style="height: 240px;">
+          <canvas baseChart
+            [data]="revenueChartData"
+            [options]="revenueChartOptions"
+            type="line">
+          </canvas>
+        </div>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Weekly Attendance</h3>
+            <p class="chart-sub">Present vs absent this week</p>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 240px;">
+          <canvas baseChart
+            [data]="attendanceChartData"
+            [options]="attendanceChartOptions"
+            type="bar">
+          </canvas>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- ===== CHARTS ROW 2: Doughnuts ===== -->
+    <div class="charts-row donut-row">
+      <mat-card class="chart-card donut-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Grade Distribution</h3>
+            <p class="chart-sub">Overall student performance</p>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 220px;">
+          <canvas baseChart
+            [data]="gradeChartData"
+            [options]="gradeChartOptions"
+            type="doughnut">
+          </canvas>
+        </div>
+      </mat-card>
+
+      <mat-card class="chart-card donut-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Fee Status</h3>
+            <p class="chart-sub">Collection breakdown (%)</p>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 220px;">
+          <canvas baseChart
+            [data]="feeStatusChartData"
+            [options]="feeStatusChartOptions"
+            type="doughnut">
+          </canvas>
+        </div>
+      </mat-card>
+
+      <!-- Quick Actions -->
+      <mat-card class="chart-card quick-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Quick Actions</h3>
+            <p class="chart-sub">Common operations</p>
+          </div>
+        </div>
+        <div class="quick-actions-list">
+          <button *ngFor="let action of quickActions"
+            mat-stroked-button
+            class="qa-btn {{ action.color }}"
+            (click)="navigateTo(action.route)">
+            <mat-icon>{{ action.icon }}</mat-icon>
+            <span>{{ action.label }}</span>
+          </button>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- ===== RECENT ACTIVITY ===== -->
+    <mat-card class="activity-card">
+      <div class="chart-header">
+        <div>
+          <h3 class="chart-title">Recent Activity</h3>
+          <p class="chart-sub">Latest actions across the school</p>
+        </div>
+        <button mat-stroked-button routerLink="/reports">View All</button>
+      </div>
+      <mat-divider></mat-divider>
+      <div class="activity-list">
+        <div *ngFor="let item of recentActivity; let last = last" class="activity-item">
+          <div class="activity-icon {{ item.iconClass }}">
+            <mat-icon>{{ item.icon }}</mat-icon>
+          </div>
+          <div class="activity-text">
+            <p class="activity-title">{{ item.title }}</p>
+            <p class="activity-desc">{{ item.description }}</p>
+          </div>
+          <span class="activity-time">{{ item.time }}</span>
+        </div>
       </div>
     </mat-card>
 
-    <!-- Recent Activity Section -->
-    <div class="activity-section">
-      <mat-card class="activity-card">
-        <h3 class="section-title">
-          <mat-icon>history</mat-icon>
-          Recent Activity
-        </h3>
-        <div class="activity-placeholder">
-          <mat-icon class="placeholder-icon">info</mat-icon>
-          <p>Recent activity tracking coming soon</p>
-          <p class="placeholder-subtext">View recent actions and changes in the system</p>
-        </div>
-      </mat-card>
-
-      <mat-card class="announcements-card">
-        <h3 class="section-title">
-          <mat-icon>campaign</mat-icon>
-          Announcements
-        </h3>
-        <div class="activity-placeholder">
-          <mat-icon class="placeholder-icon">notifications</mat-icon>
-          <p>Announcements feature coming soon</p>
-          <p class="placeholder-subtext">Post and manage school-wide announcements</p>
-        </div>
-      </mat-card>
-    </div>
   </div>
 </div>

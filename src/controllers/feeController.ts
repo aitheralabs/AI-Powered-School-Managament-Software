@@ -4,96 +4,52 @@ import { FeeService } from '../services/feeService';
 
 const feeService = new FeeService();
 
-// Create fee category
 export const createFeeCategory = asyncHandler(async (req: Request, res: Response) => {
-  const feeCategoryData = req.body;
-  const feeCategory = await feeService.createFeeCategory(feeCategoryData);
-
-  res.status(201).json({
-    success: true,
-    message: 'Fee category created successfully',
-    data: feeCategory,
-  });
+  const feeCategory = await feeService.forSchool(req.schoolId!).createFeeCategory(req.body);
+  res.status(201).json({ success: true, message: 'Fee category created successfully', data: feeCategory });
 });
 
-// Get all fee categories
 export const getFeeCategories = asyncHandler(async (req: Request, res: Response) => {
-  const result = await feeService.getFeeCategories(req);
-
-  res.json({
-    success: true,
-    data: result.feeCategories,
-    pagination: result.pagination,
-  });
+  const result = await feeService.forSchool(req.schoolId!).getFeeCategories(req);
+  res.json({ success: true, data: result.feeCategories, pagination: result.pagination });
 });
 
-// Get fee category by ID
 export const getFeeCategoryById = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const feeCategory = await feeService.getFeeCategoryById(id);
-
-  res.json({
-    success: true,
-    data: feeCategory,
-  });
+  const feeCategory = await feeService.forSchool(req.schoolId!).getFeeCategoryById(req.params.id);
+  res.json({ success: true, data: feeCategory });
 });
 
-// Update fee category
 export const updateFeeCategory = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updateData = req.body;
-  const feeCategory = await feeService.updateFeeCategory(id, updateData);
-
-  res.json({
-    success: true,
-    message: 'Fee category updated successfully',
-    data: feeCategory,
-  });
+  const feeCategory = await feeService.forSchool(req.schoolId!).updateFeeCategory(req.params.id, req.body);
+  res.json({ success: true, message: 'Fee category updated successfully', data: feeCategory });
 });
 
-// Delete fee category
 export const deleteFeeCategory = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  await feeService.deleteFeeCategory(id);
-
-  res.json({
-    success: true,
-    message: 'Fee category deleted successfully',
-  });
+  await feeService.forSchool(req.schoolId!).deleteFeeCategory(req.params.id);
+  res.json({ success: true, message: 'Fee category deleted successfully' });
 });
 
-// Assign fees to students
 export const assignFeesToStudents = asyncHandler(async (req: Request, res: Response) => {
-  const assignmentData = req.body;
-  const result = await feeService.assignFeesToStudents(assignmentData);
-
-  res.status(201).json({
-    success: true,
-    message: 'Fees assigned to students successfully',
-    data: result,
-  });
+  const result = await feeService.forSchool(req.schoolId!).assignFeesToStudents(req.body);
+  res.status(201).json({ success: true, message: 'Fees assigned to students successfully', data: result });
 });
 
-// Get student fees
 export const getStudentFees = asyncHandler(async (req: Request, res: Response) => {
-  const result = await feeService.getStudentFees(req);
-
-  res.json({
-    success: true,
-    data: result.studentFees,
-    pagination: result.pagination,
-  });
+  const result = await feeService.forSchool(req.schoolId!).getStudentFees(req);
+  res.json({ success: true, data: result.studentFees, pagination: result.pagination });
 });
 
-// Placeholder functions for missing exports
 export const assignFeesToClass = asyncHandler(async (req: Request, res: Response) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
+  const result = await feeService.forSchool(req.schoolId!).assignFeesToClass(req.body);
+  res.status(201).json({ success: true, message: 'Fees assigned to class successfully', data: result });
 });
 
 export const getStudentFeeById = asyncHandler(async (req: Request, res: Response) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
+  const fee = await feeService.forSchool(req.schoolId!).getStudentFeeById(req.params.id);
+  res.json({ success: true, data: fee });
 });
 
 export const updateStudentFee = asyncHandler(async (req: Request, res: Response) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
+  const fee = await feeService.forSchool(req.schoolId!).updateStudentFee(req.params.id, req.body);
+  res.json({ success: true, message: 'Student fee updated successfully', data: fee });
 });

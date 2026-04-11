@@ -192,29 +192,79 @@ export class SidebarComponent implements OnInit {
       ]
     },
     {
+      title: 'Staff Management',
+      icon: 'badge',
+      roles: ['admin', 'staff'],
+      children: [
+        {
+          title: 'All Staff',
+          icon: 'group',
+          route: '/staff',
+          roles: ['admin', 'staff']
+        },
+        {
+          title: 'Add Staff',
+          icon: 'person_add',
+          route: '/staff/add',
+          roles: ['admin']
+        }
+      ]
+    },
+    {
+      title: 'Parents',
+      icon: 'family_restroom',
+      roles: ['admin', 'staff'],
+      children: [
+        {
+          title: 'All Parents',
+          icon: 'group',
+          route: '/parents',
+          roles: ['admin', 'staff']
+        },
+        {
+          title: 'Add Parent',
+          icon: 'person_add',
+          route: '/parents/add',
+          roles: ['admin', 'staff']
+        }
+      ]
+    },
+    {
       title: 'Reports & Analytics',
       icon: 'analytics',
       roles: ['admin', 'teacher', 'staff'],
       children: [
         {
-          title: 'Academic Reports',
-          icon: 'school',
-          route: '/reports/academic',
+          title: 'Attendance Reports',
+          icon: 'how_to_reg',
+          route: '/reports/attendance',
           roles: ['admin', 'teacher', 'staff']
         },
         {
-          title: 'Financial Reports',
+          title: 'Fee Reports',
           icon: 'account_balance',
-          route: '/reports/financial',
+          route: '/reports/fees',
           roles: ['admin', 'staff']
         },
         {
-          title: 'Custom Reports',
-          icon: 'build',
-          route: '/reports/custom',
-          roles: ['admin', 'staff']
+          title: 'Report Cards',
+          icon: 'description',
+          route: '/reports/report-cards',
+          roles: ['admin', 'teacher', 'staff']
         }
       ]
+    },
+    {
+      title: 'AI Insights',
+      icon: 'psychology',
+      route: '/ai-insights',
+      roles: ['admin', 'teacher', 'staff']
+    },
+    {
+      title: 'Settings',
+      icon: 'settings',
+      route: '/settings',
+      roles: ['admin']
     }
   ];
 
