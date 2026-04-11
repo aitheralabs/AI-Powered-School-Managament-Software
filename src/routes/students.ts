@@ -12,6 +12,7 @@ import {
 } from '../controllers/studentController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreateStudentSchema, 
@@ -23,8 +24,8 @@ import { z } from 'zod';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate);
+// All routes require authentication + active subscription
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Create student (admin and staff)
 router.post(

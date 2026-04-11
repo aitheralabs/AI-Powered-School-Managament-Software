@@ -7,6 +7,7 @@ import {
 } from '../controllers/attendanceReportController';
 import { validateQuery } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { AttendanceReportQuerySchema } from '../types/report';
 import { z } from 'zod';
@@ -14,7 +15,7 @@ import { z } from 'zod';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Generate attendance report
 router.get(

@@ -13,6 +13,7 @@ declare global {
         id: string;
         email: string;
         role: UserRole;
+        schoolId?: string;      // set after school lookup
       };
     }
   }
@@ -76,10 +77,10 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
 
     // Verify user exists in database and is active
     const user = await query(
-      'SELECT id, first_name, last_name, email, role, is_active FROM users WHERE id = $1 AND is_active = true', 
+      'SELECT id, first_name, last_name, email, role, school_id, is_active FROM users WHERE id = $1 AND is_active = true',
       [userId]
     );
-    
+
     if (user.rows.length === 0) {
       throw new AppError('User not found or inactive', 401);
     }
@@ -89,6 +90,7 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       id: userData.id,
       email: userData.email,
       role: userData.role,
+      schoolId: userData.school_id,   // attach tenant id from DB
     };
     
     next();

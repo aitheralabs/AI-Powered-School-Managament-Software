@@ -8,12 +8,13 @@ import {
   getCurrentSemester
 } from '../controllers/semesterController';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Get current active semester (public for authenticated users)
 router.get('/current', cacheResponse(3600), getCurrentSemester); // Cache for 1 hour

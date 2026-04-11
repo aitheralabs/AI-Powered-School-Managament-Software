@@ -11,6 +11,7 @@ import {
 } from '../controllers/attendanceController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreateAttendanceSchema, 
@@ -24,7 +25,7 @@ import { z } from 'zod';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Mark single attendance record
 router.post(

@@ -9,12 +9,13 @@ import {
   getSubjectStatistics,
 } from '../controllers/subjectController';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Get all subjects with filtering and pagination
 router.get('/', cacheResponse(3600), getSubjects); // Cache for 1 hour

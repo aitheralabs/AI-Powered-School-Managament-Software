@@ -11,6 +11,10 @@ import { preventSQLInjection } from './middleware/sqlInjectionPrevention';
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import schoolRoutes from './routes/schools';
+import aiInsightsRoutes from './routes/aiInsights';
+import superadminRoutes from './routes/superadmin';
+import webhookRoutes from './routes/webhooks';
 import academicYearRoutes from './routes/academicYears';
 import semesterRoutes from './routes/semesters';
 import subjectRoutes from './routes/subjects';
@@ -122,6 +126,10 @@ app.use(sanitizeInputs);
 // SQL Injection prevention middleware
 app.use(preventSQLInjection);
 
+// Webhook routes — raw body needed for Stripe signature verification
+app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }));
+app.use('/api/v1/webhooks', webhookRoutes);
+
 // Health check endpoints (Phase 3.2.1)
 app.use('/health', healthRoutes);
 app.use('/api/v1/health', healthRoutes);
@@ -163,6 +171,11 @@ app.use('/api/v1/files', fileRoutes);
 app.use('/api/v1/monitoring', monitoringRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 // app.use('/api/v1/audit', auditRoutes);
+
+// Multi-tenant & SaaS routes
+app.use('/api/v1/schools', schoolRoutes);
+app.use('/api/v1/ai', aiInsightsRoutes);
+app.use('/api/v1/superadmin', superadminRoutes);
 
 // Serve static files (uploaded files) with proper download headers
 app.use('/uploads', (req, res, next) => {

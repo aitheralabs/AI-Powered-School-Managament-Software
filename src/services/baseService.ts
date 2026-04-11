@@ -2,13 +2,37 @@ import { query, getClient } from '../database/connection';
 import { AppError } from '../middleware/errorHandler';
 
 export abstract class BaseService {
+  /** The current tenant's school ID. Set via forSchool(). */
+  protected schoolId: string = '';
+
+  /**
+   * Return a school-scoped copy of this service.
+   * Controllers call: service.forSchool(req.schoolId!).method(args)
+   *
+   * Uses Object.create so we get the same class (with all methods) but
+   * with a fresh schoolId assigned — no constructor changes required.
+   */
+  forSchool(id: string): this {
+    const scoped = Object.create(this) as this;
+    scoped.schoolId = id;
+    return scoped;
+  }
+
+  /** Assert that schoolId has been set (call inside methods that need it). */
+  protected requireSchool(): string {
+    if (!this.schoolId) {
+      throw new AppError('Tenant context missing — call forSchool(schoolId) before using this service', 500);
+    }
+    return this.schoolId;
+  }
+
   protected async executeQuery(sql: string, params: any[] = []) {
     try {
       return await query(sql, params);
     } catch (error: any) {
       const code = error?.code || error?.original?.code;
       if (code === '22P02') {
-        throw new AppError('Invalid token', 401);
+        throw new AppError('Invalid ID format', 400);
       }
       if (code === '23505') {
         throw new AppError('Resource already exists', 409);
@@ -42,33 +66,39 @@ export abstract class BaseService {
     return uuidRegex.test(id);
   }
 
+  /**
+   * Check that an entity exists, scoped to the current school.
+   * Adds `AND school_id = <this.schoolId>` automatically when schoolId is set.
+   */
   protected async checkEntityExists(
     tableName: string,
     id: string,
     altIdColumn?: string
   ): Promise<any> {
     const isUUID = this.validateUUID(id);
-    let result;
+    const schoolFilter = this.schoolId ? ` AND school_id = '${this.schoolId}'` : '';
 
+    let result;
     if (isUUID) {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE id = $1`,
+        `SELECT * FROM ${tableName} WHERE id = $1${schoolFilter}`,
         [id]
       );
     } else if (altIdColumn) {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE ${altIdColumn} = $1 OR id::text = $1`,
+        `SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolFilter}`,
         [id]
       );
     } else {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE id::text = $1`,
+        `SELECT * FROM ${tableName} WHERE id::text = $1${schoolFilter}`,
         [id]
       );
     }
 
     if (result.rows.length === 0) {
-      throw new AppError(`${tableName.slice(0, -1)} not found`, 404);
+      const entityName = tableName.replace(/_/g, ' ').slice(0, -1);
+      throw new AppError(`${entityName} not found`, 404);
     }
 
     return result.rows[0];
@@ -103,7 +133,7 @@ export abstract class BaseService {
     }
 
     const queryStr = `UPDATE ${tableName} SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE ${idField} = $${paramCount} RETURNING *`;
-    
+
     return { query: queryStr, values };
   }
 

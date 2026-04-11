@@ -10,6 +10,7 @@ import {
 } from '../controllers/staffController';
 import { validateBody, validateQuery } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreateStaffSchema,
@@ -21,7 +22,7 @@ import { z } from 'zod';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Create staff member (admin only)
 router.post(

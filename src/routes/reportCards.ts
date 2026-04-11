@@ -9,6 +9,7 @@ import {
 } from '../controllers/reportCardController';
 import { validateBody, validateQuery } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreateReportCardSchema,
@@ -20,7 +21,7 @@ import { z } from 'zod';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Generate report card (teachers and admins only)
 router.post(

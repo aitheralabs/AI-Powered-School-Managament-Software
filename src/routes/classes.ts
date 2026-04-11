@@ -15,12 +15,13 @@ import {
   getClassSubjects,
 } from '../controllers/classController';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Get all classes with filtering and pagination
 router.get('/', cacheResponse(300), getClasses); // Cache for 5 minutes

@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { settingsController } from '../controllers/settingsController';
 import { authenticate } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Get user settings
 router.get('/', settingsController.getSettings.bind(settingsController));

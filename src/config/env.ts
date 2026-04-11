@@ -27,13 +27,36 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(Number),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform(Number),
   
-  // Redis Cache (Phase 3.1.2)
+  // Redis Cache
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.string().default('6379').transform(Number),
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.string().default('0').transform(Number),
-  CACHE_TTL_SECONDS: z.string().default('300').transform(Number), // 5 minutes default
+  CACHE_TTL_SECONDS: z.string().default('300').transform(Number),
   REDIS_ENABLED: z.string().default('false').transform(val => val === 'true'),
+
+  // Email / SMTP
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().default('587').transform(Number),
+  SMTP_SECURE: z.string().default('false').transform(val => val === 'true'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+
+  // Super-admin JWT (separate secret for platform operators)
+  SUPER_ADMIN_JWT_SECRET: z.string().optional(),
+
+  // AI
+  ANTHROPIC_API_KEY: z.string().optional(),
+
+  // Payment gateways
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  // Monitoring
+  SENTRY_DSN: z.string().optional(),
 });
 
 // Validate and export environment variables

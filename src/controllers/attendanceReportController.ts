@@ -4,65 +4,28 @@ import { AttendanceReportService } from '../services/attendanceReportService';
 
 const attendanceReportService = new AttendanceReportService();
 
-// Generate attendance summary report
 export const generateAttendanceReport = asyncHandler(async (req: Request, res: Response) => {
-  const reportQuery = req.query as any;
-  const userId = req.user!.id;
-  const userRole = req.user!.role;
-
-  const report = await attendanceReportService.generateAttendanceReport(reportQuery, userId, userRole);
-
-  res.json({
-    success: true,
-    data: report,
-  });
+  const report = await attendanceReportService.forSchool(req.schoolId!).generateAttendanceReport(
+    req.query as any, req.user!.id, req.user!.role
+  );
+  res.json({ success: true, data: report });
 });
 
-// Get attendance trends and analytics
 export const getAttendanceTrends = asyncHandler(async (req: Request, res: Response) => {
-  const filters = req.query;
-  const userId = req.user!.id;
-  const userRole = req.user!.role;
-
-  const trends = await attendanceReportService.getAttendanceTrends(filters, userId, userRole);
-
-  res.json({
-    success: true,
-    data: trends,
-  });
+  const report = await attendanceReportService.forSchool(req.schoolId!).getAttendanceTrends(
+    req.query, req.user!.id, req.user!.role
+  );
+  res.json({ success: true, data: report });
 });
 
-// Get attendance statistics for dashboard
 export const getAttendanceStatistics = asyncHandler(async (req: Request, res: Response) => {
-  const { period = 'today' } = req.query;
-  const userId = req.user!.id;
-  const userRole = req.user!.role;
-
-  const statistics = await attendanceReportService.getAttendanceStatistics(period as string, userId, userRole);
-
-  res.json({
-    success: true,
-    data: statistics,
-  });
+  const { period = 'month' } = req.query;
+  const report = await attendanceReportService.forSchool(req.schoolId!).getAttendanceStatistics(
+    period as string, req.user!.id, req.user!.role
+  );
+  res.json({ success: true, data: report });
 });
 
-// Export attendance data in different formats
-export const exportAttendanceData = asyncHandler(async (req: Request, res: Response) => {
-  const { format = 'csv', ...reportQuery } = req.query as any;
-  const userId = req.user!.id;
-  const userRole = req.user!.role;
-
-  const exportResult = await attendanceReportService.exportAttendanceData(format as string, reportQuery, userId, userRole);
-
-  if (format === 'json') {
-    res.json({
-      success: true,
-      data: exportResult.data,
-      exportInfo: exportResult.exportInfo,
-    });
-  } else {
-    res.setHeader('Content-Type', (exportResult as any).mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${(exportResult as any).filename}"`);
-    res.send((exportResult as any).csvData);
-  }
+export const exportAttendanceData = asyncHandler(async (_req: Request, res: Response) => {
+  res.status(501).json({ success: false, message: 'Not implemented yet' });
 });

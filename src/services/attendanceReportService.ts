@@ -240,6 +240,11 @@ export class AttendanceReportService extends BaseService {
 
   // Private helper methods
   private addAuthorizationFilters(whereClause: string, queryParams: any[], userId: string, userRole: string): string {
+    // Always scope to current school
+    if (this.schoolId) {
+      whereClause += ` AND a.school_id = $${queryParams.length + 1}`;
+      queryParams.push(this.schoolId);
+    }
     if (userRole === 'teacher') {
       whereClause += ` AND (c.teacher_id = $${queryParams.length + 1} OR EXISTS (
         SELECT 1 FROM class_subjects cs 

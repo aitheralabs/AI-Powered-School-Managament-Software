@@ -26,6 +26,7 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
   const reportCardData = CreateReportCardSchema.parse(req.body);
   const userId = req.user!.id;
   const userRole = req.user!.role;
+  const schoolId = req.schoolId!;
 
   // Validate that student exists and is active
   const studentCheck = await query(
@@ -34,8 +35,8 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
      FROM students s
      JOIN users u ON s.user_id = u.id
      JOIN classes c ON s.class_id = c.id
-     WHERE s.id = $1 AND s.is_active = true`,
-    [reportCardData.studentId]
+     WHERE s.id = $1 AND s.school_id = $2 AND s.is_active = true`,
+    [reportCardData.studentId, schoolId]
   );
 
   if (studentCheck.rows.length === 0) {
@@ -49,8 +50,8 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
     `SELECT sem.id, sem.name, ay.name as academic_year_name
      FROM semesters sem
      JOIN academic_years ay ON sem.academic_year_id = ay.id
-     WHERE sem.id = $1 AND sem.is_active = true`,
-    [reportCardData.semesterId]
+     WHERE sem.id = $1 AND sem.school_id = $2 AND sem.is_active = true`,
+    [reportCardData.semesterId, schoolId]
   );
 
   if (semesterCheck.rows.length === 0) {
@@ -61,8 +62,8 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
 
   // Check if report card already exists for this student and semester
   const existingReportCard = await query(
-    'SELECT id FROM report_cards WHERE student_id = $1 AND semester_id = $2',
-    [reportCardData.studentId, reportCardData.semesterId]
+    'SELECT id FROM report_cards WHERE student_id = $1 AND semester_id = $2 AND school_id = $3',
+    [reportCardData.studentId, reportCardData.semesterId, schoolId]
   );
 
   if (existingReportCard.rows.length > 0) {
@@ -118,9 +119,9 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
   // Insert report card
   const reportCardResult = await query(
     `INSERT INTO report_cards (
-       id, student_id, semester_id, overall_percentage, overall_grade, 
-       rank_in_class, total_students, remarks, generated_by, generated_at
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+       id, student_id, semester_id, overall_percentage, overall_grade,
+       rank_in_class, total_students, remarks, generated_by, generated_at, school_id
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, $10)
      RETURNING *`,
     [
       sequentialId,
@@ -131,7 +132,8 @@ export const generateReportCard = asyncHandler(async (req: Request, res: Respons
       rankInClass,
       totalStudents,
       reportCardData.remarks || null,
-      userId
+      userId,
+      schoolId
     ]
   );
 
@@ -150,11 +152,12 @@ export const getReportCards = asyncHandler(async (req: Request, res: Response) =
   const { studentId, semesterId, classId } = req.query;
   const userId = req.user!.id;
   const userRole = req.user!.role;
+  const schoolId = req.schoolId!;
   const { offset, limit } = getPaginationParams(req);
 
   // Build WHERE clause based on filters and authorization
-  let whereClause = 'WHERE 1=1';
-  const queryParams: any[] = [];
+  let whereClause = 'WHERE rc.school_id = $1';
+  const queryParams: any[] = [schoolId];
 
   // Add authorization filters
   if (userRole === 'teacher') {

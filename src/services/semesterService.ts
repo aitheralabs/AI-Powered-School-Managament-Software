@@ -2,23 +2,18 @@ import { BaseService } from './baseService';
 import { AppError } from '../middleware/errorHandler';
 import { CreateSemester, UpdateSemester } from '../types/academic';
 import { getPaginationParams } from '../utils/pagination';
-import cacheService, { CacheKeys, CacheTTL } from './cacheService';
 
 export class SemesterService extends BaseService {
   async createSemester(semesterData: CreateSemester) {
-    // Check if academic year exists
-    const academicYearExists = await this.executeQuery(
-      'SELECT id, name, start_date, end_date FROM academic_years WHERE id = $1',
-      [semesterData.academicYearId]
-    );
+    const schoolId = this.requireSchool();
 
-    if (academicYearExists.rows.length === 0) {
-      throw new AppError('Academic year not found', 404);
-    }
+    const academicYearExists = await this.executeQuery(
+      'SELECT id, name, start_date, end_date FROM academic_years WHERE id = $1 AND school_id = $2',
+      [semesterData.academicYearId, schoolId]
+    );
+    if (academicYearExists.rows.length === 0) throw new AppError('Academic year not found', 404);
 
     const academicYear = academicYearExists.rows[0];
-
-    // Validate semester dates are within academic year
     const semesterStart = new Date(semesterData.startDate);
     const semesterEnd = new Date(semesterData.endDate);
     const yearStart = new Date(academicYear.start_date);
@@ -28,98 +23,60 @@ export class SemesterService extends BaseService {
       throw new AppError('Semester dates must be within the academic year dates', 400);
     }
 
-    // Check if semester with same name already exists for this academic year
     const existingSemester = await this.executeQuery(
-      'SELECT id FROM semesters WHERE academic_year_id = $1 AND name = $2',
-      [semesterData.academicYearId, semesterData.name]
+      'SELECT id FROM semesters WHERE academic_year_id = $1 AND name = $2 AND school_id = $3',
+      [semesterData.academicYearId, semesterData.name, schoolId]
     );
-
     if (existingSemester.rows.length > 0) {
       throw new AppError('Semester with this name already exists for this academic year', 409);
     }
 
     return await this.executeTransaction(async (client) => {
-      // If setting as active, deactivate other active semesters for this academic year
       if (semesterData.isActive) {
         await client.query(
-          'UPDATE semesters SET is_active = false WHERE academic_year_id = $1 AND is_active = true',
-          [semesterData.academicYearId]
+          'UPDATE semesters SET is_active = false WHERE academic_year_id = $1 AND school_id = $2 AND is_active = true',
+          [semesterData.academicYearId, schoolId]
         );
       }
 
-      // Generate sequential ID for alt_id
       const sequentialId = await this.generateSequentialId('semesters');
 
-      // Create semester
       const result = await client.query(
-        `INSERT INTO semesters (academic_year_id, name, start_date, end_date, is_active, alt_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO semesters (academic_year_id, name, start_date, end_date, is_active, alt_id, school_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id, alt_id, academic_year_id, name, start_date, end_date, is_active, created_at, updated_at`,
-        [
-          semesterData.academicYearId,
-          semesterData.name,
-          semesterData.startDate,
-          semesterData.endDate,
-          semesterData.isActive || false,
-          sequentialId
-        ]
+        [semesterData.academicYearId, semesterData.name, semesterData.startDate, semesterData.endDate, semesterData.isActive || false, sequentialId, schoolId]
       );
 
       const semester = result.rows[0];
-
       return {
         ...this.transformSemesterResponse(semester),
-        academicYear: {
-          id: academicYear.id,
-          name: academicYear.name,
-        },
+        academicYear: { id: academicYear.id, name: academicYear.name },
       };
     });
   }
 
   async getSemesters(req: any) {
-    const { page, limit, offset, sortBy, sortOrder } = getPaginationParams(req, 'start_date');
-    const { isActive, academicYearId } = req.query;
-
-    // Create cache key based on query parameters
-    const cacheKey = `${CacheKeys.SEMESTERS_ALL}:${page}:${limit}:${sortBy}:${sortOrder}:${isActive || 'all'}:${academicYearId || 'all'}`;
-
-    return await cacheService.cacheQuery(
-      cacheKey,
-      async () => {
-        return await this.executeSemestersQuery(req);
-      },
-      CacheTTL.ONE_HOUR // Semesters change rarely
-    );
+    return await this.executeSemestersQuery(req);
   }
 
   private async executeSemestersQuery(req: any) {
+    const schoolId = this.requireSchool();
     const { page, limit, offset, sortBy, sortOrder } = getPaginationParams(req, 'start_date');
     const { isActive, academicYearId } = req.query;
 
-    let whereClause = 'WHERE 1=1';
-    const queryParams: any[] = [];
+    let whereClause = 'WHERE s.school_id = $1';
+    const queryParams: any[] = [schoolId];
 
-    if (isActive !== undefined) {
-      whereClause += ` AND s.is_active = $${queryParams.length + 1}`;
-      queryParams.push(isActive === 'true');
-    }
+    if (isActive !== undefined) { whereClause += ` AND s.is_active = $${queryParams.length + 1}`; queryParams.push(isActive === 'true'); }
+    if (academicYearId) { whereClause += ` AND s.academic_year_id = $${queryParams.length + 1}`; queryParams.push(academicYearId); }
 
-    if (academicYearId) {
-      whereClause += ` AND s.academic_year_id = $${queryParams.length + 1}`;
-      queryParams.push(academicYearId);
-    }
-
-    // Get total count
     const countResult = await this.executeQuery(
-      `SELECT COUNT(*) FROM semesters s
-       JOIN academic_years ay ON s.academic_year_id = ay.id
-       ${whereClause}`,
+      `SELECT COUNT(*) FROM semesters s JOIN academic_years ay ON s.academic_year_id = ay.id ${whereClause}`,
       queryParams
     );
     const total = parseInt(countResult.rows[0].count);
 
-    // Get semesters
     const result = await this.executeQuery(
       `SELECT s.id, s.alt_id, s.academic_year_id, s.name, s.start_date, s.end_date, s.is_active, s.created_at, s.updated_at,
               ay.name as academic_year_name
@@ -133,27 +90,15 @@ export class SemesterService extends BaseService {
 
     const semesters = result.rows.map((semester: any) => ({
       ...this.transformSemesterResponse(semester),
-      academicYear: {
-        id: semester.academic_year_id,
-        name: semester.academic_year_name,
-      },
+      academicYear: { id: semester.academic_year_id, name: semester.academic_year_name },
     }));
 
-    return {
-      semesters,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return { semesters, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async getSemesterById(id: string) {
     const semester = await this.checkEntityExists('semesters', id, 'alt_id');
 
-    // Get academic year info
     const academicYearResult = await this.executeQuery(
       'SELECT id, name FROM academic_years WHERE id = $1',
       [semester.academic_year_id]
@@ -161,10 +106,7 @@ export class SemesterService extends BaseService {
 
     return {
       ...this.transformSemesterResponse(semester),
-      academicYear: {
-        id: academicYearResult.rows[0].id,
-        name: academicYearResult.rows[0].name,
-      },
+      academicYear: { id: academicYearResult.rows[0].id, name: academicYearResult.rows[0].name },
     };
   }
 
@@ -173,7 +115,6 @@ export class SemesterService extends BaseService {
     const actualSemesterId = existingSemester.id;
 
     return await this.executeTransaction(async (client) => {
-      // If setting as active, deactivate other active semesters for this academic year
       if (updateData.isActive) {
         await client.query(
           'UPDATE semesters SET is_active = false WHERE academic_year_id = $1 AND is_active = true AND id != $2',
@@ -183,7 +124,6 @@ export class SemesterService extends BaseService {
 
       const { query: updateQuery, values } = this.buildUpdateQuery('semesters', updateData);
       values.push(actualSemesterId);
-
       const result = await client.query(updateQuery, values);
       return this.transformSemesterResponse(result.rows[0]);
     });
@@ -193,9 +133,8 @@ export class SemesterService extends BaseService {
     const existingSemester = await this.checkEntityExists('semesters', id, 'alt_id');
     const actualSemesterId = existingSemester.id;
 
-    // Check for dependencies
     const dependenciesCheck = await this.executeQuery(
-      `SELECT 
+      `SELECT
          (SELECT COUNT(*) FROM grades WHERE semester_id = $1) as grade_records,
          (SELECT COUNT(*) FROM report_cards WHERE semester_id = $1) as report_cards`,
       [actualSemesterId]
@@ -211,17 +150,17 @@ export class SemesterService extends BaseService {
       );
     }
 
-    // Delete the semester
     await this.executeQuery('DELETE FROM semesters WHERE id = $1', [actualSemesterId]);
     return { success: true };
   }
 
   async getActiveSemester(academicYearId?: string) {
-    let whereClause = 'WHERE s.is_active = true';
-    const queryParams: any[] = [];
+    const schoolId = this.requireSchool();
+    let whereClause = 'WHERE s.is_active = true AND s.school_id = $1';
+    const queryParams: any[] = [schoolId];
 
     if (academicYearId) {
-      whereClause += ' AND s.academic_year_id = $1';
+      whereClause += ` AND s.academic_year_id = $${queryParams.length + 1}`;
       queryParams.push(academicYearId);
     }
 
@@ -235,33 +174,22 @@ export class SemesterService extends BaseService {
       queryParams
     );
 
-    if (result.rows.length === 0) {
-      throw new AppError('No active semester found', 404);
-    }
+    if (result.rows.length === 0) throw new AppError('No active semester found', 404);
 
     const semester = result.rows[0];
     return {
       ...this.transformSemesterResponse(semester),
-      academicYear: {
-        id: semester.academic_year_id,
-        name: semester.academic_year_name,
-      },
+      academicYear: { id: semester.academic_year_id, name: semester.academic_year_name },
     };
   }
 
   private transformSemesterResponse(semester: any) {
     return {
-      id: semester.id,
-      altId: semester.alt_id,
-      academicYearId: semester.academic_year_id,
-      name: semester.name,
-      startDate: semester.start_date,
-      endDate: semester.end_date,
-      isActive: semester.is_active,
-      createdAt: semester.created_at,
-      updatedAt: semester.updated_at,
+      id: semester.id, altId: semester.alt_id, academicYearId: semester.academic_year_id,
+      name: semester.name, startDate: semester.start_date, endDate: semester.end_date,
+      isActive: semester.is_active, createdAt: semester.created_at, updatedAt: semester.updated_at,
     };
   }
 }
-export
- const semesterService = new SemesterService();
+
+export const semesterService = new SemesterService();

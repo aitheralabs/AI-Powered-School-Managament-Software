@@ -18,6 +18,7 @@ import {
 } from '../controllers/teacherController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { sanitizeTeacher } from '../middleware/sanitization';
 import { 
@@ -29,8 +30,8 @@ import { z } from 'zod';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate);
+// All routes require authentication + active subscription
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Create teacher (admin only)
 router.post(

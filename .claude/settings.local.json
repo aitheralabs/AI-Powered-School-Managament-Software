@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
+      "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
+      "Bash(ls -la *.md)",
+      "Bash(wc -l src/controllers/*.ts)",
+      "Bash(grep -l \"authorize\\\\|role\" src/middleware/*.ts)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(ls -la school-management-frontend/src/app/modules/dashboard/components/*/)"
+    ]
+  }
+}

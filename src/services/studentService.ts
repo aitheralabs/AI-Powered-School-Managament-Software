@@ -4,106 +4,93 @@ import { CreateStudent, UpdateStudent } from '../types/student';
 import { getPaginationParams } from '../utils/pagination';
 import { hashPassword } from '../utils/auth';
 import cacheService, { CacheKeys, CacheTTL } from './cacheService';
+import { SchoolService } from './schoolService';
+
+const schoolService = new SchoolService();
 
 export class StudentService extends BaseService {
   async createStudent(studentData: CreateStudent) {
+    const schoolId = this.requireSchool();
+
+    // Enforce plan limit
+    await schoolService.checkLimit(schoolId, 'student');
+
     const result = await this.executeTransaction(async (client) => {
-      // Check if user with email already exists
+      // Email must be unique within the school
       const existingUser = await client.query(
-        'SELECT id FROM users WHERE email = $1',
-        [studentData.email]
+        'SELECT id FROM users WHERE email = $1 AND school_id = $2',
+        [studentData.email, schoolId]
       );
-
       if (existingUser.rows.length > 0) {
-        throw new AppError('User with this email already exists', 409);
+        throw new AppError('A user with this email already exists in this school', 409);
       }
 
-      // Check if student ID already exists
+      // Student ID unique within school
       const existingStudentId = await client.query(
-        'SELECT id FROM students WHERE student_id = $1',
-        [studentData.studentId]
+        'SELECT id FROM students WHERE student_id = $1 AND school_id = $2',
+        [studentData.studentId, schoolId]
       );
-
       if (existingStudentId.rows.length > 0) {
-        throw new AppError('Student with this ID already exists', 409);
+        throw new AppError('A student with this ID already exists', 409);
       }
 
-      // Check if class exists and has capacity
+      // Class must belong to this school and be active
       const classResult = await client.query(
-        'SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND is_active = true',
-        [studentData.classId]
+        'SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND school_id = $2 AND is_active = true',
+        [studentData.classId, schoolId]
       );
-
       if (classResult.rows.length === 0) {
         throw new AppError('Class not found or inactive', 404);
       }
-
       const classInfo = classResult.rows[0];
       if (classInfo.current_enrollment >= classInfo.capacity) {
         throw new AppError('Class is at full capacity', 409);
       }
 
-      // Generate password if not provided
       const password = studentData.password || this.generateDefaultPassword(studentData.studentId);
       const passwordHash = await hashPassword(password);
-
-      // Generate sequential ID for user alt_id
       const userSequentialId = await this.generateSequentialId('users');
 
-      // Create user account
       const userResult = await client.query(
-        `INSERT INTO users (first_name, last_name, email, password_hash, role, phone, date_of_birth, address, alt_id)
-         VALUES ($1, $2, $3, $4, 'student', $5, $6, $7, $8)
+        `INSERT INTO users (first_name, last_name, email, password_hash, role, phone, date_of_birth, address, alt_id, school_id)
+         VALUES ($1, $2, $3, $4, 'student', $5, $6, $7, $8, $9)
          RETURNING id, first_name, last_name, email, phone, date_of_birth, address, is_active, created_at, updated_at`,
         [
-          studentData.firstName,
-          studentData.lastName,
-          studentData.email,
-          passwordHash,
-          studentData.phone || null,
-          studentData.dateOfBirth || null,
-          studentData.address || null,
-          userSequentialId
+          studentData.firstName, studentData.lastName, studentData.email, passwordHash,
+          studentData.phone || null, studentData.dateOfBirth || null, studentData.address || null,
+          userSequentialId, schoolId,
         ]
       );
-
       const user = userResult.rows[0];
 
-      // Generate sequential ID for student alt_id
       const studentSequentialId = await this.generateSequentialId('students');
 
-      // Create student profile
       const studentResult = await client.query(
-        `INSERT INTO students (user_id, student_id, class_id, enrollment_date, guardian_name, guardian_phone, guardian_email, emergency_contact, medical_info, alt_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, alt_id, user_id, student_id, class_id, enrollment_date, guardian_name, guardian_phone, guardian_email, emergency_contact, medical_info, is_active, created_at, updated_at`,
+        `INSERT INTO students
+           (user_id, student_id, class_id, enrollment_date, guardian_name, guardian_phone,
+            guardian_email, emergency_contact, medical_info, alt_id, school_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING id, alt_id, user_id, student_id, class_id, enrollment_date,
+                   guardian_name, guardian_phone, guardian_email, emergency_contact,
+                   medical_info, is_active, created_at, updated_at`,
         [
-          user.id,
-          studentData.studentId,
-          studentData.classId,
-          studentData.enrollmentDate,
-          studentData.guardianName,
-          studentData.guardianPhone,
-          studentData.guardianEmail || null,
-          studentData.emergencyContact,
-          studentData.medicalInfo || null,
-          studentSequentialId
+          user.id, studentData.studentId, studentData.classId, studentData.enrollmentDate,
+          studentData.guardianName, studentData.guardianPhone, studentData.guardianEmail || null,
+          studentData.emergencyContact, studentData.medicalInfo || null,
+          studentSequentialId, schoolId,
         ]
       );
-
       const student = studentResult.rows[0];
 
-      // Update class enrollment count
       await client.query(
-        'UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1',
-        [studentData.classId]
+        'UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1 AND school_id = $2',
+        [studentData.classId, schoolId]
       );
 
-      // Create student class history record
       await client.query(
         `INSERT INTO student_class_history (student_id, class_id, academic_year_id, start_date)
-         VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2), $3)`,
-        [student.id, studentData.classId, studentData.enrollmentDate]
+         VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2 AND school_id = $3), $4)`,
+        [student.id, studentData.classId, schoolId, studentData.enrollmentDate]
       );
 
       return {
@@ -113,64 +100,49 @@ export class StudentService extends BaseService {
       };
     });
 
-    // Invalidate related caches after creating student
-    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}*`);
-    await cacheService.delPattern(`${CacheKeys.CLASS}*`);
-    await cacheService.delPattern(`${CacheKeys.STATS_ENROLLMENT}*`);
-
+    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.CLASS}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.STATS_ENROLLMENT}:${schoolId}:*`);
     return result;
   }
 
   async getStudents(req: any) {
+    const schoolId = this.requireSchool();
     const { page, limit, offset, sortBy, sortOrder } = getPaginationParams(req, 'first_name');
     const { isActive, search, classId, grade } = req.query;
 
-    // Create cache key based on query parameters
-    const cacheKey = `${CacheKeys.STUDENTS_BY_CLASS}:${page}:${limit}:${sortBy}:${sortOrder}:${isActive || 'all'}:${search || 'none'}:${classId || 'all'}:${grade || 'all'}`;
+    const cacheKey = `${CacheKeys.STUDENTS_BY_CLASS}:${schoolId}:${page}:${limit}:${sortBy}:${sortOrder}:${isActive || 'all'}:${search || 'none'}:${classId || 'all'}:${grade || 'all'}`;
 
-    // Use cache wrapper for non-search queries
     if (!search) {
-      return await cacheService.cacheQuery(
-        cacheKey,
-        async () => {
-          return await this.executeStudentsQuery(req);
-        },
-        CacheTTL.FIVE_MINUTES
-      );
+      return await cacheService.cacheQuery(cacheKey, () => this.executeStudentsQuery(req, schoolId), CacheTTL.FIVE_MINUTES);
     }
-
-    // For search queries, execute directly without caching
-    return await this.executeStudentsQuery(req);
+    return await this.executeStudentsQuery(req, schoolId);
   }
 
-  private async executeStudentsQuery(req: any) {
+  private async executeStudentsQuery(req: any, schoolId: string) {
     const { page, limit, offset, sortBy, sortOrder } = getPaginationParams(req, 'first_name');
     const { isActive, search, classId, grade } = req.query;
 
-    let whereClause = "WHERE u.role = 'student'";
-    const queryParams: any[] = [];
+    let whereClause = "WHERE s.school_id = $1 AND u.role = 'student'";
+    const queryParams: any[] = [schoolId];
 
     if (isActive !== undefined) {
       whereClause += ` AND s.is_active = $${queryParams.length + 1}`;
       queryParams.push(isActive === 'true');
     }
-
     if (search) {
       whereClause += ` AND (u.first_name ILIKE $${queryParams.length + 1} OR u.last_name ILIKE $${queryParams.length + 1} OR u.email ILIKE $${queryParams.length + 1} OR s.student_id ILIKE $${queryParams.length + 1})`;
       queryParams.push(`%${search}%`);
     }
-
     if (classId) {
       whereClause += ` AND s.class_id = $${queryParams.length + 1}`;
       queryParams.push(classId);
     }
-
     if (grade) {
       whereClause += ` AND c.grade = $${queryParams.length + 1}`;
       queryParams.push(grade);
     }
 
-    // Get total count
     const countResult = await this.executeQuery(
       `SELECT COUNT(*) FROM students s
        JOIN users u ON s.user_id = u.id
@@ -180,10 +152,9 @@ export class StudentService extends BaseService {
     );
     const total = parseInt(countResult.rows[0].count);
 
-    // Get students
     const result = await this.executeQuery(
-      `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date, 
-              s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact, 
+      `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date,
+              s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact,
               s.medical_info, s.is_active, s.created_at, s.updated_at,
               u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address,
               c.name as class_name, c.grade, c.section,
@@ -210,112 +181,74 @@ export class StudentService extends BaseService {
       },
     }));
 
-    return {
-      students,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return { students, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async getStudentById(id: string) {
-    // Try cache first
-    const cacheKey = `${CacheKeys.STUDENT}:${id}`;
-    
-    return await cacheService.cacheQuery(
-      cacheKey,
-      async () => {
-        const isUUID = this.validateUUID(id);
-        
-        let result;
-        if (isUUID) {
-          result = await this.executeQuery(
-            `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date, 
-                    s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact, 
-                    s.medical_info, s.is_active, s.created_at, s.updated_at,
-                    u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address,
-                    c.name as class_name, c.grade, c.section,
-                    ay.name as academic_year_name
-             FROM students s
-             JOIN users u ON s.user_id = u.id
-             JOIN classes c ON s.class_id = c.id
-             JOIN academic_years ay ON c.academic_year_id = ay.id
-             WHERE s.id = $1`,
-            [id]
-          );
-        } else {
-          result = await this.executeQuery(
-            `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date, 
-                    s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact, 
-                    s.medical_info, s.is_active, s.created_at, s.updated_at,
-                    u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address,
-                    c.name as class_name, c.grade, c.section,
-                    ay.name as academic_year_name
-             FROM students s
-             JOIN users u ON s.user_id = u.id
-             JOIN classes c ON s.class_id = c.id
-             JOIN academic_years ay ON c.academic_year_id = ay.id
-             WHERE s.alt_id = $1 OR s.student_id = $1`,
-            [id]
-          );
-        }
+    const schoolId = this.requireSchool();
+    const cacheKey = `${CacheKeys.STUDENT}:${schoolId}:${id}`;
 
-        if (result.rows.length === 0) {
-          throw new AppError('Student not found', 404);
-        }
+    return await cacheService.cacheQuery(cacheKey, async () => {
+      const isUUID = this.validateUUID(id);
+      const idFilter = isUUID
+        ? 'WHERE s.id = $1 AND s.school_id = $2'
+        : 'WHERE (s.alt_id = $1 OR s.student_id = $1) AND s.school_id = $2';
 
-        const student = result.rows[0];
+      const result = await this.executeQuery(
+        `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date,
+                s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact,
+                s.medical_info, s.is_active, s.created_at, s.updated_at,
+                u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address,
+                c.name as class_name, c.grade, c.section,
+                ay.name as academic_year_name
+         FROM students s
+         JOIN users u ON s.user_id = u.id
+         JOIN classes c ON s.class_id = c.id
+         JOIN academic_years ay ON c.academic_year_id = ay.id
+         ${idFilter}`,
+        [id, schoolId]
+      );
 
-        // Get attendance summary
-        const attendanceResult = await this.executeQuery(
-          `SELECT 
-             COUNT(*) as total_days,
-             COUNT(CASE WHEN status = 'present' THEN 1 END) as present_days,
-             COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent_days,
-             COUNT(CASE WHEN status = 'late' THEN 1 END) as late_days
-           FROM attendance 
-           WHERE student_id = $1`,
-          [student.id]
-        );
+      if (result.rows.length === 0) throw new AppError('Student not found', 404);
+      const student = result.rows[0];
 
-        const attendance = attendanceResult.rows[0];
-        const attendancePercentage = attendance.total_days > 0 
-          ? Math.round((attendance.present_days / attendance.total_days) * 100) 
-          : 0;
+      const attendanceResult = await this.executeQuery(
+        `SELECT
+           COUNT(*) as total_days,
+           COUNT(CASE WHEN status = 'present' THEN 1 END) as present_days,
+           COUNT(CASE WHEN status = 'absent'  THEN 1 END) as absent_days,
+           COUNT(CASE WHEN status = 'late'    THEN 1 END) as late_days
+         FROM attendance
+         WHERE student_id = $1 AND school_id = $2`,
+        [student.id, schoolId]
+      );
+      const att = attendanceResult.rows[0];
+      const attendancePercentage = att.total_days > 0
+        ? Math.round((att.present_days / att.total_days) * 100)
+        : 0;
 
-        return {
-          ...this.transformStudentResponse(student),
-          user: this.transformUserResponse(student),
-          class: {
-            id: student.class_id,
-            name: student.class_name,
-            grade: student.grade,
-            section: student.section,
-            academicYear: student.academic_year_name,
-          },
-          attendanceSummary: {
-            totalDays: parseInt(attendance.total_days),
-            presentDays: parseInt(attendance.present_days),
-            absentDays: parseInt(attendance.absent_days),
-            lateDays: parseInt(attendance.late_days),
-            attendancePercentage,
-          },
-        };
-      },
-      CacheTTL.TEN_MINUTES
-    );
+      return {
+        ...this.transformStudentResponse(student),
+        user: this.transformUserResponse(student),
+        class: { id: student.class_id, name: student.class_name, grade: student.grade, section: student.section, academicYear: student.academic_year_name },
+        attendanceSummary: {
+          totalDays: parseInt(att.total_days),
+          presentDays: parseInt(att.present_days),
+          absentDays: parseInt(att.absent_days),
+          lateDays: parseInt(att.late_days),
+          attendancePercentage,
+        },
+      };
+    }, CacheTTL.TEN_MINUTES);
   }
 
   async updateStudent(id: string, updateData: UpdateStudent) {
+    const schoolId = this.requireSchool();
     const existingStudent = await this.checkEntityExists('students', id, 'alt_id');
     const studentId = existingStudent.id;
     const userId = existingStudent.user_id;
 
     const result = await this.executeTransaction(async (client) => {
-      // Update user information if provided
       const userUpdateData: any = {};
       if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
       if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
@@ -324,12 +257,11 @@ export class StudentService extends BaseService {
       if (updateData.address !== undefined) userUpdateData.address = updateData.address;
 
       if (Object.keys(userUpdateData).length > 0) {
-        const { query: userUpdateQuery, values: userValues } = this.buildUpdateQuery('users', userUpdateData);
-        userValues.push(userId);
-        await client.query(userUpdateQuery, userValues);
+        const { query: uq, values: uv } = this.buildUpdateQuery('users', userUpdateData);
+        uv.push(userId);
+        await client.query(uq, uv);
       }
 
-      // Update student information if provided
       const studentUpdateData: any = {};
       if (updateData.guardianName) studentUpdateData.guardianName = updateData.guardianName;
       if (updateData.guardianPhone) studentUpdateData.guardianPhone = updateData.guardianPhone;
@@ -337,44 +269,32 @@ export class StudentService extends BaseService {
       if (updateData.emergencyContact) studentUpdateData.emergencyContact = updateData.emergencyContact;
       if (updateData.medicalInfo !== undefined) studentUpdateData.medicalInfo = updateData.medicalInfo;
 
-      // Handle class change
       if (updateData.classId && updateData.classId !== existingStudent.class_id) {
-        // Check if new class exists and has capacity
         const newClassResult = await client.query(
-          'SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND is_active = true',
-          [updateData.classId]
+          'SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND school_id = $2 AND is_active = true',
+          [updateData.classId, schoolId]
         );
-
-        if (newClassResult.rows.length === 0) {
-          throw new AppError('New class not found or inactive', 404);
-        }
-
+        if (newClassResult.rows.length === 0) throw new AppError('New class not found or inactive', 404);
         const newClass = newClassResult.rows[0];
-        if (newClass.current_enrollment >= newClass.capacity) {
-          throw new AppError('New class is at full capacity', 409);
-        }
+        if (newClass.current_enrollment >= newClass.capacity) throw new AppError('New class is at full capacity', 409);
 
-        // Update class enrollments
         await client.query(
-          'UPDATE classes SET current_enrollment = current_enrollment - 1 WHERE id = $1',
-          [existingStudent.class_id]
+          'UPDATE classes SET current_enrollment = current_enrollment - 1 WHERE id = $1 AND school_id = $2',
+          [existingStudent.class_id, schoolId]
         );
         await client.query(
-          'UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1',
-          [updateData.classId]
+          'UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1 AND school_id = $2',
+          [updateData.classId, schoolId]
         );
-
-        // End current class history and start new one
         await client.query(
           'UPDATE student_class_history SET end_date = CURRENT_DATE WHERE student_id = $1 AND end_date IS NULL',
           [studentId]
         );
         await client.query(
           `INSERT INTO student_class_history (student_id, class_id, academic_year_id, start_date)
-           VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2), CURRENT_DATE)`,
-          [studentId, updateData.classId]
+           VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2 AND school_id = $3), CURRENT_DATE)`,
+          [studentId, updateData.classId, schoolId]
         );
-
         studentUpdateData.classId = updateData.classId;
       }
 
@@ -384,134 +304,246 @@ export class StudentService extends BaseService {
 
       let studentResult;
       if (Object.keys(studentUpdateData).length > 0) {
-        const { query: studentUpdateQuery, values: studentValues } = this.buildUpdateQuery('students', studentUpdateData);
-        studentValues.push(studentId);
-        studentResult = await client.query(studentUpdateQuery, studentValues);
+        const { query: sq, values: sv } = this.buildUpdateQuery('students', studentUpdateData);
+        sv.push(studentId);
+        studentResult = await client.query(sq, sv);
       } else {
         studentResult = await client.query(
-          `SELECT id, alt_id, user_id, student_id, class_id, enrollment_date, guardian_name, guardian_phone, guardian_email, emergency_contact, medical_info, is_active, created_at, updated_at
-           FROM students WHERE id = $1`,
+          'SELECT id, alt_id, user_id, student_id, class_id, enrollment_date, guardian_name, guardian_phone, guardian_email, emergency_contact, medical_info, is_active, created_at, updated_at FROM students WHERE id = $1',
           [studentId]
         );
       }
 
-      // Get updated user information
       const userResult = await client.query(
-        `SELECT first_name, last_name, email, phone, date_of_birth, address
-         FROM users WHERE id = $1`,
+        'SELECT first_name, last_name, email, phone, date_of_birth, address FROM users WHERE id = $1',
         [userId]
       );
 
-      const student = studentResult.rows[0];
-      const user = userResult.rows[0];
-
       return {
-        ...this.transformStudentResponse(student),
-        user: this.transformUserResponse(user),
+        ...this.transformStudentResponse(studentResult.rows[0]),
+        user: this.transformUserResponse(userResult.rows[0]),
       };
     });
 
-    // Invalidate related caches after updating student
-    await cacheService.delPattern(`${CacheKeys.STUDENT}*`);
-    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}*`);
-    await cacheService.delPattern(`${CacheKeys.CLASS}*`);
-
+    await cacheService.delPattern(`${CacheKeys.STUDENT}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.CLASS}:${schoolId}:*`);
     return result;
   }
 
   async deleteStudent(id: string) {
+    const schoolId = this.requireSchool();
     const existingStudent = await this.checkEntityExists('students', id, 'alt_id');
     const studentId = existingStudent.id;
     const userId = existingStudent.user_id;
 
-    const result = await this.executeTransaction(async (client) => {
-      // Deactivate student
+    await this.executeTransaction(async (client) => {
       await client.query(
-        'UPDATE students SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-        [studentId]
+        'UPDATE students SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND school_id = $2',
+        [studentId, schoolId]
       );
-
-      // Deactivate user account
       await client.query(
-        'UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-        [userId]
+        'UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND school_id = $2',
+        [userId, schoolId]
       );
-
-      // Update class enrollment count
       await client.query(
-        'UPDATE classes SET current_enrollment = current_enrollment - 1 WHERE id = $1',
-        [existingStudent.class_id]
+        'UPDATE classes SET current_enrollment = current_enrollment - 1 WHERE id = $1 AND school_id = $2',
+        [existingStudent.class_id, schoolId]
       );
-
-      // End class history
       await client.query(
         'UPDATE student_class_history SET end_date = CURRENT_DATE WHERE student_id = $1 AND end_date IS NULL',
         [studentId]
       );
-
-      return { success: true };
     });
 
-    // Invalidate related caches after deleting student
-    await cacheService.delPattern(`${CacheKeys.STUDENT}*`);
-    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}*`);
-    await cacheService.delPattern(`${CacheKeys.CLASS}*`);
-    await cacheService.delPattern(`${CacheKeys.STATS_ENROLLMENT}*`);
-
-    return result;
+    await cacheService.delPattern(`${CacheKeys.STUDENT}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.STUDENTS_BY_CLASS}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.CLASS}:${schoolId}:*`);
+    await cacheService.delPattern(`${CacheKeys.STATS_ENROLLMENT}:${schoolId}:*`);
+    return { success: true };
   }
 
-  // Get students by class with caching
   async getStudentsByClass(classId: string, params: { page: number; limit: number }) {
+    const schoolId = this.requireSchool();
     const { page, limit } = params;
-    const cacheKey = `${CacheKeys.STUDENTS_BY_CLASS}:${classId}:${page}:${limit}`;
+    const cacheKey = `${CacheKeys.STUDENTS_BY_CLASS}:${schoolId}:${classId}:${page}:${limit}`;
 
-    return await cacheService.cacheQuery(
-      cacheKey,
-      async () => {
-        const offset = (page - 1) * limit;
+    return await cacheService.cacheQuery(cacheKey, async () => {
+      const offset = (page - 1) * limit;
+      await this.checkEntityExists('classes', classId, 'alt_id');
 
-        // Validate class exists
-        await this.checkEntityExists('classes', classId, 'alt_id');
+      const countResult = await this.executeQuery(
+        'SELECT COUNT(*) FROM students s WHERE s.class_id = $1 AND s.school_id = $2 AND s.is_active = true',
+        [classId, schoolId]
+      );
+      const total = parseInt(countResult.rows[0].count);
 
-        // Get total count
-        const countResult = await this.executeQuery(
-          `SELECT COUNT(*) FROM students s WHERE s.class_id = $1 AND s.is_active = true`,
-          [classId]
-        );
-        const total = parseInt(countResult.rows[0].count);
+      const result = await this.executeQuery(
+        `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date,
+                s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact,
+                s.medical_info, s.is_active, s.created_at, s.updated_at,
+                u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address
+         FROM students s
+         JOIN users u ON s.user_id = u.id
+         WHERE s.class_id = $1 AND s.school_id = $2 AND s.is_active = true
+         ORDER BY u.first_name, u.last_name
+         LIMIT $3 OFFSET $4`,
+        [classId, schoolId, limit, offset]
+      );
 
-        // Get students
-        const result = await this.executeQuery(
-          `SELECT s.id, s.alt_id, s.user_id, s.student_id, s.class_id, s.enrollment_date,
-                  s.guardian_name, s.guardian_phone, s.guardian_email, s.emergency_contact,
-                  s.medical_info, s.is_active, s.created_at, s.updated_at,
-                  u.first_name, u.last_name, u.email, u.phone, u.date_of_birth, u.address
-           FROM students s
-           JOIN users u ON s.user_id = u.id
-           WHERE s.class_id = $1 AND s.is_active = true
-           ORDER BY u.first_name, u.last_name
-           LIMIT $2 OFFSET $3`,
-          [classId, limit, offset]
-        );
-
-        const students = result.rows.map((row: any) => ({
+      return {
+        students: result.rows.map((row: any) => ({
           ...this.transformStudentResponse(row),
           user: this.transformUserResponse(row),
-        }));
+        })),
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      };
+    }, CacheTTL.FIVE_MINUTES);
+  }
 
-        return {
-          students,
-          pagination: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-          },
-        };
-      },
-      CacheTTL.FIVE_MINUTES
+  async getStudentSummary(id: string) {
+    const schoolId = this.requireSchool();
+    const student = await this.getStudentById(id);
+
+    const feeResult = await this.executeQuery(
+      `SELECT
+         COALESCE(SUM(CASE WHEN sf.status IN ('pending','partial','overdue') THEN sf.amount - COALESCE(sf.amount_paid,0) ELSE 0 END), 0) as pending_fees,
+         MAX(sf.due_date) as next_due_date
+       FROM student_fees sf
+       WHERE sf.student_id = $1 AND sf.school_id = $2`,
+      [(student as any).id, schoolId]
     );
+
+    const gradesResult = await this.executeQuery(
+      `SELECT g.percentage, g.grade_letter, g.assessment_date,
+              sub.name as subject_name, at.name as assessment_type
+       FROM grades g
+       JOIN subjects sub ON g.subject_id = sub.id
+       JOIN assessment_types at ON g.assessment_type_id = at.id
+       WHERE g.student_id = $1 AND g.school_id = $2
+       ORDER BY g.assessment_date DESC
+       LIMIT 5`,
+      [(student as any).id, schoolId]
+    );
+
+    const gpaResult = await this.executeQuery(
+      'SELECT AVG(percentage) as overall_gpa FROM grades WHERE student_id = $1 AND school_id = $2',
+      [(student as any).id, schoolId]
+    );
+
+    return {
+      studentId: (student as any).id,
+      personalInfo: {
+        name: `${(student as any).user.firstName} ${(student as any).user.lastName}`,
+        studentIdNumber: (student as any).studentId,
+        email: (student as any).user.email,
+        phone: (student as any).user.phone,
+        dateOfBirth: (student as any).user.dateOfBirth,
+        address: (student as any).user.address,
+      },
+      academicInfo: {
+        currentClass: `${(student as any).class?.grade} ${(student as any).class?.section}`,
+        enrollmentDate: (student as any).enrollmentDate,
+        academicYear: (student as any).class?.academicYear,
+      },
+      guardianInfo: {
+        guardianName: (student as any).guardianName,
+        guardianPhone: (student as any).guardianPhone,
+        guardianEmail: (student as any).guardianEmail,
+        emergencyContact: (student as any).emergencyContact,
+      },
+      currentStats: {
+        attendancePercentage: (student as any).attendanceSummary?.attendancePercentage || 0,
+        overallGpa: gpaResult.rows[0]?.overall_gpa
+          ? parseFloat(gpaResult.rows[0].overall_gpa).toFixed(2)
+          : null,
+        pendingFees: parseFloat(feeResult.rows[0]?.pending_fees || '0'),
+        nextDueDate: feeResult.rows[0]?.next_due_date,
+        recentGrades: gradesResult.rows.map((g: any) => ({
+          subject: g.subject_name,
+          assessmentType: g.assessment_type,
+          percentage: g.percentage,
+          gradeLetter: g.grade_letter,
+          assessmentDate: g.assessment_date,
+        })),
+      },
+    };
+  }
+
+  async getStudentClassHistory(id: string) {
+    const schoolId = this.requireSchool();
+    const existingStudent = await this.checkEntityExists('students', id, 'alt_id');
+
+    const result = await this.executeQuery(
+      `SELECT sch.id, sch.student_id, sch.class_id, sch.academic_year_id,
+              sch.start_date, sch.end_date, sch.created_at, sch.updated_at,
+              c.name as class_name, c.grade, c.section,
+              ay.name as academic_year_name, ay.start_date as year_start, ay.end_date as year_end
+       FROM student_class_history sch
+       JOIN classes c ON sch.class_id = c.id AND c.school_id = $2
+       JOIN academic_years ay ON sch.academic_year_id = ay.id AND ay.school_id = $2
+       WHERE sch.student_id = $1
+       ORDER BY sch.start_date DESC`,
+      [existingStudent.id, schoolId]
+    );
+
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      classId: row.class_id,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      class: { name: row.class_name, grade: row.grade, section: row.section },
+      academicYear: { name: row.academic_year_name, startDate: row.year_start, endDate: row.year_end },
+    }));
+  }
+
+  async bulkUpdateStudents(studentIds: string[], updateData: any) {
+    const schoolId = this.requireSchool();
+    return await this.executeTransaction(async (client) => {
+      const results = { updatedCount: 0, failedUpdates: [] as any[] };
+
+      for (const studentId of studentIds) {
+        try {
+          const studentResult = await client.query(
+            'SELECT id, user_id FROM students WHERE (id = $1 OR alt_id = $1) AND school_id = $2',
+            [studentId, schoolId]
+          );
+          if (studentResult.rows.length === 0) {
+            results.failedUpdates.push({ studentId, error: 'Student not found' });
+            continue;
+          }
+          const student = studentResult.rows[0];
+
+          const userUpdateData: any = {};
+          if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
+          if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
+          if (updateData.phone !== undefined) userUpdateData.phone = updateData.phone;
+
+          if (Object.keys(userUpdateData).length > 0) {
+            const { query: uq, values: uv } = this.buildUpdateQuery('users', userUpdateData);
+            uv.push(student.user_id);
+            await client.query(uq, uv);
+          }
+
+          const studentUpdateData: any = {};
+          if (updateData.guardianName) studentUpdateData.guardianName = updateData.guardianName;
+          if (updateData.guardianPhone) studentUpdateData.guardianPhone = updateData.guardianPhone;
+          if (updateData.classId) studentUpdateData.classId = updateData.classId;
+
+          if (Object.keys(studentUpdateData).length > 0) {
+            const { query: sq, values: sv } = this.buildUpdateQuery('students', studentUpdateData);
+            sv.push(student.id);
+            await client.query(sq, sv);
+          }
+
+          results.updatedCount++;
+        } catch (error: any) {
+          results.failedUpdates.push({ studentId, error: error.message });
+        }
+      }
+
+      return results;
+    });
   }
 
   private generateDefaultPassword(studentId: string): string {
@@ -547,180 +579,4 @@ export class StudentService extends BaseService {
       address: user.address,
     };
   }
-
-  // Get student summary with all related information
-  async getStudentSummary(id: string) {
-    const student = await this.getStudentById(id);
-
-    // Get fee information
-    const feeResult = await this.executeQuery(
-      `SELECT 
-         COALESCE(SUM(CASE WHEN p.status = 'pending' THEN p.amount_due - p.amount_paid ELSE 0 END), 0) as pending_fees,
-         MAX(p.due_date) as next_due_date
-       FROM payments p
-       WHERE p.student_id = $1`,
-      [student.id]
-    );
-
-    // Get recent grades
-    const gradesResult = await this.executeQuery(
-      `SELECT g.grade_value, g.grade_letter, g.assessment_date,
-              s.name as subject_name, at.name as assessment_type
-       FROM grades g
-       JOIN subjects s ON g.subject_id = s.id
-       JOIN assessment_types at ON g.assessment_type_id = at.id
-       WHERE g.student_id = $1
-       ORDER BY g.assessment_date DESC
-       LIMIT 5`,
-      [student.id]
-    );
-
-    // Calculate overall GPA
-    const gpaResult = await this.executeQuery(
-      `SELECT AVG(grade_value) as overall_gpa
-       FROM grades
-       WHERE student_id = $1 AND grade_value IS NOT NULL`,
-      [student.id]
-    );
-
-    return {
-      studentId: student.id,
-      personalInfo: {
-        name: `${student.user.firstName} ${student.user.lastName}`,
-        studentIdNumber: student.studentId,
-        email: student.user.email,
-        phone: student.user.phone,
-        dateOfBirth: student.user.dateOfBirth,
-        address: student.user.address,
-      },
-      academicInfo: {
-        currentClass: `${student.class?.grade} ${student.class?.section}`,
-        enrollmentDate: student.enrollmentDate,
-        academicYear: student.class?.academicYear,
-      },
-      guardianInfo: {
-        guardianName: student.guardianName,
-        guardianPhone: student.guardianPhone,
-        guardianEmail: student.guardianEmail,
-        emergencyContact: student.emergencyContact,
-      },
-      currentStats: {
-        attendancePercentage: student.attendanceSummary?.attendancePercentage || 0,
-        overallGpa: gpaResult.rows[0]?.overall_gpa 
-          ? parseFloat(gpaResult.rows[0].overall_gpa).toFixed(2) 
-          : null,
-        pendingFees: parseFloat(feeResult.rows[0]?.pending_fees || '0'),
-        nextDueDate: feeResult.rows[0]?.next_due_date,
-        recentGrades: gradesResult.rows.map((g: any) => ({
-          subject: g.subject_name,
-          assessmentType: g.assessment_type,
-          gradeValue: g.grade_value,
-          gradeLetter: g.grade_letter,
-          assessmentDate: g.assessment_date,
-        })),
-      },
-    };
-  }
-
-  // Get student class history
-  async getStudentClassHistory(id: string) {
-    const existingStudent = await this.checkEntityExists('students', id, 'alt_id');
-    const studentId = existingStudent.id;
-
-    const result = await this.executeQuery(
-      `SELECT sch.id, sch.student_id, sch.class_id, sch.academic_year_id,
-              sch.start_date, sch.end_date, sch.created_at, sch.updated_at,
-              c.name as class_name, c.grade, c.section,
-              ay.name as academic_year_name, ay.start_date as year_start, ay.end_date as year_end
-       FROM student_class_history sch
-       JOIN classes c ON sch.class_id = c.id
-       JOIN academic_years ay ON sch.academic_year_id = ay.id
-       WHERE sch.student_id = $1
-       ORDER BY sch.start_date DESC`,
-      [studentId]
-    );
-
-    return result.rows.map((row: any) => ({
-      id: row.id,
-      studentId: row.student_id,
-      classId: row.class_id,
-      academicYearId: row.academic_year_id,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      class: {
-        name: row.class_name,
-        grade: row.grade,
-        section: row.section,
-      },
-      academicYear: {
-        name: row.academic_year_name,
-        startDate: row.year_start,
-        endDate: row.year_end,
-      },
-    }));
-  }
-
-  // Bulk update students
-  async bulkUpdateStudents(studentIds: string[], updateData: any) {
-    return await this.executeTransaction(async (client) => {
-      const results = {
-        updatedCount: 0,
-        failedUpdates: [] as any[],
-      };
-
-      for (const studentId of studentIds) {
-        try {
-          // Check if student exists
-          const studentResult = await client.query(
-            'SELECT id, user_id FROM students WHERE id = $1 OR alt_id = $1',
-            [studentId]
-          );
-
-          if (studentResult.rows.length === 0) {
-            results.failedUpdates.push({
-              studentId,
-              error: 'Student not found',
-            });
-            continue;
-          }
-
-          const student = studentResult.rows[0];
-
-          // Update user information if provided
-          const userUpdateData: any = {};
-          if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
-          if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
-          if (updateData.phone !== undefined) userUpdateData.phone = updateData.phone;
-
-          if (Object.keys(userUpdateData).length > 0) {
-            const { query: userUpdateQuery, values: userValues } = this.buildUpdateQuery('users', userUpdateData);
-            userValues.push(student.user_id);
-            await client.query(userUpdateQuery, userValues);
-          }
-
-          // Update student information if provided
-          const studentUpdateData: any = {};
-          if (updateData.guardianName) studentUpdateData.guardianName = updateData.guardianName;
-          if (updateData.guardianPhone) studentUpdateData.guardianPhone = updateData.guardianPhone;
-          if (updateData.classId) studentUpdateData.classId = updateData.classId;
-
-          if (Object.keys(studentUpdateData).length > 0) {
-            const { query: studentUpdateQuery, values: studentValues } = this.buildUpdateQuery('students', studentUpdateData);
-            studentValues.push(student.id);
-            await client.query(studentUpdateQuery, studentValues);
-          }
-
-          results.updatedCount++;
-        } catch (error: any) {
-          results.failedUpdates.push({
-            studentId,
-            error: error.message,
-          });
-        }
-      }
-
-      return results;
-    });
-  }}
+}

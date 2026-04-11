@@ -8,6 +8,7 @@ import {
 } from '../controllers/gradeController';
 import { validateBody, validateQuery } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
 import { 
   CreateGradeSchema,
@@ -19,7 +20,7 @@ import { IdSchema } from '../types/common';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Create grade (teachers and admins only)
 router.post(

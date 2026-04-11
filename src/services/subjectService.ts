@@ -2,92 +2,68 @@ import { BaseService } from './baseService';
 import { AppError } from '../middleware/errorHandler';
 import { CreateSubject, UpdateSubject } from '../types/academic';
 import { getPaginationParams } from '../utils/pagination';
-import cacheService, { CacheKeys, CacheTTL } from './cacheService';
 
 export class SubjectService extends BaseService {
   async createSubject(subjectData: CreateSubject) {
-    // Check if subject with same code already exists
+    const schoolId = this.requireSchool();
+
     const existingSubject = await this.executeQuery(
-      'SELECT id FROM subjects WHERE code = $1',
-      [subjectData.code]
+      'SELECT id FROM subjects WHERE code = $1 AND school_id = $2',
+      [subjectData.code, schoolId]
     );
+    if (existingSubject.rows.length > 0) throw new AppError('Subject with this code already exists', 409);
 
-    if (existingSubject.rows.length > 0) {
-      throw new AppError('Subject with this code already exists', 409);
-    }
-
-    // Generate sequential ID for alt_id
     const sequentialId = await this.generateSequentialId('subjects');
 
-    // Create subject
     const result = await this.executeQuery(
-      `INSERT INTO subjects (name, code, description, credit_hours, alt_id)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO subjects (name, code, description, credit_hours, alt_id, school_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, alt_id, name, code, description, credit_hours, is_active, created_at, updated_at`,
-      [
-        subjectData.name,
-        subjectData.code,
-        subjectData.description || null,
-        subjectData.creditHours || 1,
-        sequentialId
-      ]
+      [subjectData.name, subjectData.code, subjectData.description || null, subjectData.creditHours || 1, sequentialId, schoolId]
     );
 
     return this.transformSubjectResponse(result.rows[0]);
   }
 
   async getSubjects(req: any) {
+    const schoolId = this.requireSchool();
     const { page, limit, offset, sortBy, sortOrder } = getPaginationParams(req, 'name');
     const { isActive, search } = req.query;
 
-    let whereClause = '';
-    const queryParams: any[] = [];
+    let whereClause = 'WHERE school_id = $1';
+    const queryParams: any[] = [schoolId];
 
     if (isActive !== undefined) {
-      whereClause = 'WHERE is_active = $1';
+      whereClause += ` AND is_active = $${queryParams.length + 1}`;
       queryParams.push(isActive === 'true');
     }
 
     if (search) {
-      const searchClause = isActive !== undefined ? ' AND' : 'WHERE';
-      whereClause += `${searchClause} (name ILIKE $${queryParams.length + 1} OR code ILIKE $${queryParams.length + 1} OR description ILIKE $${queryParams.length + 1})`;
+      whereClause += ` AND (name ILIKE $${queryParams.length + 1} OR code ILIKE $${queryParams.length + 1} OR description ILIKE $${queryParams.length + 1})`;
       queryParams.push(`%${search}%`);
     }
 
-    // Get total count
-    const countResult = await this.executeQuery(
-      `SELECT COUNT(*) FROM subjects ${whereClause}`,
-      queryParams
-    );
+    const countResult = await this.executeQuery(`SELECT COUNT(*) FROM subjects ${whereClause}`, queryParams);
     const total = parseInt(countResult.rows[0].count);
 
-    // Get subjects
     const result = await this.executeQuery(
       `SELECT id, alt_id, name, code, description, credit_hours, is_active, created_at, updated_at
-       FROM subjects 
+       FROM subjects
        ${whereClause}
        ORDER BY ${sortBy} ${sortOrder}
        LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`,
       [...queryParams, limit, offset]
     );
 
-    const subjects = result.rows.map((subject: any) => this.transformSubjectResponse(subject));
-
     return {
-      subjects,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      subjects: result.rows.map((subject: any) => this.transformSubjectResponse(subject)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
   async getSubjectById(id: string) {
     const subject = await this.checkEntityExists('subjects', id, 'alt_id');
 
-    // Get classes that use this subject
     const classesResult = await this.executeQuery(
       `SELECT c.id, c.name, c.grade, c.section, ay.name as academic_year_name
        FROM class_subjects cs
@@ -98,7 +74,6 @@ export class SubjectService extends BaseService {
       [subject.id]
     );
 
-    // Get teachers assigned to this subject
     const teachersResult = await this.executeQuery(
       `SELECT t.id, t.employee_id, u.first_name, u.last_name
        FROM teacher_subjects ts
@@ -111,18 +86,8 @@ export class SubjectService extends BaseService {
 
     return {
       ...this.transformSubjectResponse(subject),
-      classes: classesResult.rows.map((cls: any) => ({
-        id: cls.id,
-        name: cls.name,
-        grade: cls.grade,
-        section: cls.section,
-        academicYear: cls.academic_year_name,
-      })),
-      teachers: teachersResult.rows.map((teacher: any) => ({
-        id: teacher.id,
-        employeeId: teacher.employee_id,
-        name: `${teacher.first_name} ${teacher.last_name}`,
-      })),
+      classes: classesResult.rows.map((cls: any) => ({ id: cls.id, name: cls.name, grade: cls.grade, section: cls.section, academicYear: cls.academic_year_name })),
+      teachers: teachersResult.rows.map((teacher: any) => ({ id: teacher.id, employeeId: teacher.employee_id, name: `${teacher.first_name} ${teacher.last_name}` })),
     };
   }
 
@@ -130,21 +95,16 @@ export class SubjectService extends BaseService {
     const existingSubject = await this.checkEntityExists('subjects', id, 'alt_id');
     const actualSubjectId = existingSubject.id;
 
-    // Check if code is being updated and if it conflicts with another subject
     if (updateData.code && updateData.code !== existingSubject.code) {
       const codeConflict = await this.executeQuery(
         'SELECT id FROM subjects WHERE code = $1 AND id != $2',
         [updateData.code, actualSubjectId]
       );
-
-      if (codeConflict.rows.length > 0) {
-        throw new AppError('Subject with this code already exists', 409);
-      }
+      if (codeConflict.rows.length > 0) throw new AppError('Subject with this code already exists', 409);
     }
 
     const { query: updateQuery, values } = this.buildUpdateQuery('subjects', updateData);
     values.push(actualSubjectId);
-
     const result = await this.executeQuery(updateQuery, values);
     return this.transformSubjectResponse(result.rows[0]);
   }
@@ -153,9 +113,8 @@ export class SubjectService extends BaseService {
     const existingSubject = await this.checkEntityExists('subjects', id, 'alt_id');
     const actualSubjectId = existingSubject.id;
 
-    // Check for dependencies
     const dependenciesCheck = await this.executeQuery(
-      `SELECT 
+      `SELECT
          (SELECT COUNT(*) FROM class_subjects WHERE subject_id = $1) as class_assignments,
          (SELECT COUNT(*) FROM teacher_subjects WHERE subject_id = $1) as teacher_assignments,
          (SELECT COUNT(*) FROM grades WHERE subject_id = $1) as grade_records`,
@@ -163,9 +122,7 @@ export class SubjectService extends BaseService {
     );
 
     const dependencies = dependenciesCheck.rows[0];
-    const totalDependencies = parseInt(dependencies.class_assignments) + 
-                             parseInt(dependencies.teacher_assignments) + 
-                             parseInt(dependencies.grade_records);
+    const totalDependencies = parseInt(dependencies.class_assignments) + parseInt(dependencies.teacher_assignments) + parseInt(dependencies.grade_records);
 
     if (totalDependencies > 0) {
       throw new AppError(
@@ -174,63 +131,36 @@ export class SubjectService extends BaseService {
       );
     }
 
-    // Soft delete the subject
-    await this.executeQuery(
-      'UPDATE subjects SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
-      [actualSubjectId]
-    );
-
+    await this.executeQuery('UPDATE subjects SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [actualSubjectId]);
     return { success: true };
   }
 
-  /**
-   * Toggle subject status (activate/deactivate)
-   */
   async toggleSubjectStatus(id: string, isActive: boolean) {
     const existingSubject = await this.checkEntityExists('subjects', id, 'alt_id');
-    const actualSubjectId = existingSubject.id;
-
     const result = await this.executeQuery(
       'UPDATE subjects SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-      [isActive, actualSubjectId]
+      [isActive, existingSubject.id]
     );
-
     return this.transformSubjectResponse(result.rows[0]);
   }
 
-  /**
-   * Get subject statistics
-   */
   async getSubjectStatistics(id: string) {
     const subject = await this.checkEntityExists('subjects', id, 'alt_id');
     const actualSubjectId = subject.id;
 
-    // Get statistics
-    const statsQuery = `
-      SELECT 
+    const statsResult = await this.executeQuery(
+      `SELECT
         (SELECT COUNT(*) FROM class_subjects WHERE subject_id = $1) as total_classes,
-        (SELECT COUNT(DISTINCT t.id) 
-         FROM teacher_subjects ts 
-         JOIN teachers t ON ts.teacher_id = t.id 
-         WHERE ts.subject_id = $1 AND t.is_active = true) as total_teachers,
-        (SELECT COUNT(DISTINCT s.id) 
-         FROM students s 
-         JOIN classes c ON c.id = s.class_id 
-         JOIN class_subjects cs ON cs.class_id = c.id 
-         WHERE cs.subject_id = $1 AND s.is_active = true) as total_students,
+        (SELECT COUNT(DISTINCT t.id) FROM teacher_subjects ts JOIN teachers t ON ts.teacher_id = t.id WHERE ts.subject_id = $1 AND t.is_active = true) as total_teachers,
+        (SELECT COUNT(DISTINCT s.id) FROM students s JOIN classes c ON c.id = s.class_id JOIN class_subjects cs ON cs.class_id = c.id WHERE cs.subject_id = $1 AND s.is_active = true) as total_students,
         (SELECT COUNT(*) FROM grades WHERE subject_id = $1) as total_grades,
-        (SELECT AVG(marks_obtained::float / total_marks * 100) 
-         FROM grades 
-         WHERE subject_id = $1 AND total_marks > 0) as average_percentage
-    `;
-    
-    const statsResult = await this.executeQuery(statsQuery, [actualSubjectId]);
-    const stats = statsResult.rows[0];
+        (SELECT AVG(marks_obtained::float / total_marks * 100) FROM grades WHERE subject_id = $1 AND total_marks > 0) as average_percentage`,
+      [actualSubjectId]
+    );
 
-    // Get grade distribution
-    const gradeDistributionQuery = `
-      SELECT 
-        CASE 
+    const gradeDistributionResult = await this.executeQuery(
+      `SELECT
+        CASE
           WHEN (marks_obtained::float / total_marks * 100) >= 90 THEN 'A+'
           WHEN (marks_obtained::float / total_marks * 100) >= 80 THEN 'A'
           WHEN (marks_obtained::float / total_marks * 100) >= 70 THEN 'B+'
@@ -240,32 +170,12 @@ export class SubjectService extends BaseService {
           ELSE 'F'
         END as grade,
         COUNT(*) as count
-      FROM grades 
-      WHERE subject_id = $1 AND total_marks > 0
-      GROUP BY 
-        CASE 
-          WHEN (marks_obtained::float / total_marks * 100) >= 90 THEN 'A+'
-          WHEN (marks_obtained::float / total_marks * 100) >= 80 THEN 'A'
-          WHEN (marks_obtained::float / total_marks * 100) >= 70 THEN 'B+'
-          WHEN (marks_obtained::float / total_marks * 100) >= 60 THEN 'B'
-          WHEN (marks_obtained::float / total_marks * 100) >= 50 THEN 'C+'
-          WHEN (marks_obtained::float / total_marks * 100) >= 40 THEN 'C'
-          ELSE 'F'
-        END
-      ORDER BY 
-        CASE 
-          WHEN (marks_obtained::float / total_marks * 100) >= 90 THEN 1
-          WHEN (marks_obtained::float / total_marks * 100) >= 80 THEN 2
-          WHEN (marks_obtained::float / total_marks * 100) >= 70 THEN 3
-          WHEN (marks_obtained::float / total_marks * 100) >= 60 THEN 4
-          WHEN (marks_obtained::float / total_marks * 100) >= 50 THEN 5
-          WHEN (marks_obtained::float / total_marks * 100) >= 40 THEN 6
-          ELSE 7
-        END
-    `;
-    
-    const gradeDistributionResult = await this.executeQuery(gradeDistributionQuery, [actualSubjectId]);
+       FROM grades WHERE subject_id = $1 AND total_marks > 0
+       GROUP BY 1 ORDER BY MIN(marks_obtained::float / total_marks * 100) DESC`,
+      [actualSubjectId]
+    );
 
+    const stats = statsResult.rows[0];
     return {
       subject: this.transformSubjectResponse(subject),
       stats: {
@@ -273,26 +183,17 @@ export class SubjectService extends BaseService {
         totalTeachers: parseInt(stats.total_teachers) || 0,
         totalStudents: parseInt(stats.total_students) || 0,
         totalGrades: parseInt(stats.total_grades) || 0,
-        averagePercentage: stats.average_percentage ? parseFloat(stats.average_percentage).toFixed(2) : null
+        averagePercentage: stats.average_percentage ? parseFloat(stats.average_percentage).toFixed(2) : null,
       },
-      gradeDistribution: gradeDistributionResult.rows.map((row: any) => ({
-        grade: row.grade,
-        count: parseInt(row.count)
-      }))
+      gradeDistribution: gradeDistributionResult.rows.map((row: any) => ({ grade: row.grade, count: parseInt(row.count) })),
     };
   }
 
   private transformSubjectResponse(subject: any) {
     return {
-      id: subject.id,
-      altId: subject.alt_id,
-      name: subject.name,
-      code: subject.code,
-      description: subject.description,
-      creditHours: subject.credit_hours,
-      isActive: subject.is_active,
-      createdAt: subject.created_at,
-      updatedAt: subject.updated_at,
+      id: subject.id, altId: subject.alt_id, name: subject.name, code: subject.code,
+      description: subject.description, creditHours: subject.credit_hours,
+      isActive: subject.is_active, createdAt: subject.created_at, updatedAt: subject.updated_at,
     };
   }
 }
