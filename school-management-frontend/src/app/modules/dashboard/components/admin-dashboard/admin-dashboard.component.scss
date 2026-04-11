@@ -5,16 +5,6 @@ $shadow-card: 0 2px 12px rgba(0, 0, 0, 0.07);
 $shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.13);
 $transition: all 0.22s cubic-bezier(.4,0,.2,1);
 
-// ─── KPI palette ────────────────────────────────────────────────────────────
-$palettes: (
-  purple: (#667eea, #764ba2),
-  pink:   (#f093fb, #f5576c),
-  blue:   (#4facfe, #00f2fe),
-  green:  (#43e97b, #38f9d7),
-  orange: (#fa8231, #f7b733),
-  red:    (#f5576c, #f093fb)
-);
-
 // ─── Host ────────────────────────────────────────────────────────────────────
 :host {
   display: block;
@@ -174,21 +164,20 @@ $palettes: (
     }
   }
 
-  // ─── Color variants ───────────────────────────────────────────
-  @each $name, $colors in $palettes {
-    &.#{$name} {
-      $c1: nth($colors, 1);
-      $c2: nth($colors, 2);
+  // ─── Color variants (explicit — avoids SCSS color-name interpolation warnings)
+  &.purple .kpi-icon-wrap { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  &.pink   .kpi-icon-wrap { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+  &.blue   .kpi-icon-wrap { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+  &.green  .kpi-icon-wrap { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+  &.orange .kpi-icon-wrap { background: linear-gradient(135deg, #fa8231 0%, #f7b733 100%); }
+  &.red    .kpi-icon-wrap { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
 
-      .kpi-icon-wrap {
-        background: linear-gradient(135deg, $c1 0%, $c2 100%);
-      }
-      .kpi-bar {
-        ::ng-deep .mdc-linear-progress__buffer-bar { background: rgba(0,0,0,0.06); }
-        ::ng-deep .mdc-linear-progress__bar-inner  { border-color: $c1; }
-      }
-    }
-  }
+  &.purple .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #667eea; }
+  &.pink   .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #f093fb; }
+  &.blue   .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #4facfe; }
+  &.green  .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #43e97b; }
+  &.orange .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #fa8231; }
+  &.red    .kpi-bar ::ng-deep .mdc-linear-progress__bar-inner { border-color: #f5576c; }
 }
 
 // ─── Chart Rows ──────────────────────────────────────────────────────────────
