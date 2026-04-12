@@ -1,5 +1,9 @@
 import {
-  Component, OnInit, ViewChild, ElementRef, AfterViewChecked
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,21 +11,39 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { HttpClient } from '@angular/common/http';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { RouterModule } from '@angular/router';
+
+import { AiService } from '../../services/ai.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  type?: 'text' | 'insights' | 'error';
+}
+
+interface InsightCard {
+  type: 'attendance' | 'grade' | 'fee' | 'general';
+  title: string;
+  items: any[];
 }
 
 @Component({
   selector: 'app-ai-chat',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
-    MatIconModule, MatButtonModule,
-    MatProgressSpinnerModule, MatTooltipModule,
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    MatCardModule,
+    MatChipsModule,
+    RouterModule,
   ],
   templateUrl: './ai-chat.component.html',
   styleUrl: './ai-chat.component.scss',
@@ -33,20 +55,47 @@ export class AiChatComponent implements OnInit, AfterViewChecked {
   inputText = '';
   isLoading = false;
   private shouldScroll = false;
-
-  private readonly API = 'http://localhost:3000/api/v1/ai/ask';
+  isPremium = false;
 
   readonly suggestedQuestions = [
-    'Which students have low attendance?',
-    'Show me fee collection summary this month',
-    'Which students are at risk of failing?',
-    'How is the overall school performance?',
+    {
+      icon: 'people',
+      text: 'Which students have low attendance?',
+      category: 'attendance',
+    },
+    {
+      icon: 'trending_up',
+      text: 'Show me fee collection summary',
+      category: 'fees',
+    },
+    {
+      icon: 'school',
+      text: 'Which students are at risk of failing?',
+      category: 'grades',
+    },
+    {
+      icon: 'analytics',
+      text: 'How is the overall school performance?',
+      category: 'health',
+    },
   ];
+
+  constructor(
+    private aiService: AiService,
+    private notificationService: NotificationService,
+  ) {}
 
   ngOnInit(): void {
     this.messages.push({
       role: 'assistant',
-      content: `Hello! I'm your AI school assistant. I can help you with insights about attendance, grades, fees, and overall school performance. What would you like to know?`,
+      content: `Hello! I'm your AI school assistant powered by Claude. I can help you with:
+
+• **Attendance Insights** — Identify students at risk
+• **Fee Management** — Collection summaries and defaulters
+• **Academic Performance** — Grade trends and predictions
+• **School Health** — Overall performance metrics
+
+What would you like to know?`,
       timestamp: new Date(),
     });
   }
@@ -70,39 +119,79 @@ export class AiChatComponent implements OnInit, AfterViewChecked {
     if (!question || this.isLoading) return;
 
     this.inputText = '';
-    this.messages.push({ role: 'user', content: question, timestamp: new Date() });
+    this.messages.push({
+      role: 'user',
+      content: question,
+      timestamp: new Date(),
+    });
     this.isLoading = true;
     this.shouldScroll = true;
 
-    this.http.post<{ success: boolean; data: { answer: string } }>(
-      this.API, { question }
-    ).subscribe({
-      next: res => {
+    this.aiService.askQuestion(question).subscribe({
+      next: (res) => {
+        const response =
+          res.data?.answer ||
+          'I apologize, but I was unable to generate a response. Please try again.';
         this.messages.push({
           role: 'assistant',
-          content: res.data?.answer || 'No response received.',
+          content: response,
           timestamp: new Date(),
+          type: 'text',
         });
         this.isLoading = false;
         this.shouldScroll = true;
       },
-      error: err => {
-        const msg = err.status === 403
-          ? 'AI features require a premium plan. Please upgrade your subscription.'
-          : err.error?.message || 'Failed to get a response. Please try again.';
-        this.messages.push({ role: 'assistant', content: msg, timestamp: new Date() });
+      error: (err) => {
+        let msg = 'Failed to get a response. Please try again.';
+        if (err.status === 403) {
+          msg =
+            'AI features require a Standard or Premium plan. Please upgrade your subscription to access AI insights.';
+        } else if (err.status === 429) {
+          msg = 'Too many requests. Please wait a moment and try again.';
+        } else if (err.error?.message) {
+          msg = err.error.message;
+        }
+        this.messages.push({
+          role: 'assistant',
+          content: msg,
+          timestamp: new Date(),
+          type: 'error',
+        });
         this.isLoading = false;
         this.shouldScroll = true;
       },
     });
   }
 
+  askQuestion(category: string): void {
+    const questions: Record<string, string> = {
+      attendance:
+        'Which students have attendance below 75% in the current month?',
+      fees: 'Give me a summary of fee collection this month and list the top 5 defaulters.',
+      grades: 'Which students have declining grades over the last semester?',
+      health:
+        'Provide a comprehensive school health report including attendance, academics, and fees.',
+    };
+    this.sendMessage(questions[category] || questions['health']);
+  }
+
+  quickStats(type: 'attendance' | 'fees' | 'grades'): void {
+    const questions: Record<string, string> = {
+      attendance: 'Show me the attendance statistics for all classes today.',
+      fees: 'What is the current fee collection status? List pending amounts by class.',
+      grades: 'Show me the grade distribution across all subjects.',
+    };
+    this.sendMessage(questions[type]);
+  }
+
   clearChat(): void {
-    this.messages = [{
-      role: 'assistant',
-      content: 'Chat cleared. How can I help you?',
-      timestamp: new Date(),
-    }];
+    this.messages = [
+      {
+        role: 'assistant',
+        content: 'Chat cleared! How can I help you?',
+        timestamp: new Date(),
+      },
+    ];
   }
 
   onKeyDown(event: KeyboardEvent): void {
@@ -112,5 +201,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked {
     }
   }
 
-  constructor(private http: HttpClient) {}
+  formatContent(content: string): string {
+    return content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>')
+      .replace(/- (.*?)(?=\n|$)/g, '• $1<br>');
+  }
 }

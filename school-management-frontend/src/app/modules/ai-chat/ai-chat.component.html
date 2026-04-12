@@ -7,11 +7,33 @@
       </div>
       <div>
         <h1 class="page-title">AI Assistant</h1>
-        <p class="page-subtitle">Powered by Claude · Ask anything about your school</p>
+        <p class="page-subtitle">
+          Powered by Claude · Natural language insights for your school
+        </p>
       </div>
     </div>
-    <button mat-icon-button matTooltip="Clear chat" (click)="clearChat()">
-      <mat-icon>refresh</mat-icon>
+    <div class="header-actions">
+      <button mat-icon-button matTooltip="Clear chat" (click)="clearChat()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <span class="quick-label">Quick insights:</span>
+    <button
+      mat-stroked-button
+      class="quick-btn"
+      (click)="quickStats('attendance')"
+    >
+      <mat-icon>people</mat-icon> Attendance
+    </button>
+    <button mat-stroked-button class="quick-btn" (click)="quickStats('fees')">
+      <mat-icon>payments</mat-icon> Fees
+    </button>
+    <button mat-stroked-button class="quick-btn" (click)="quickStats('grades')">
+      <mat-icon>grade</mat-icon> Grades
     </button>
   </div>
 
@@ -23,13 +45,19 @@
         class="message"
         [class.user]="msg.role === 'user'"
         [class.assistant]="msg.role === 'assistant'"
+        [class.error]="msg.type === 'error'"
       >
         <div class="message-avatar" *ngIf="msg.role === 'assistant'">
           <mat-icon>smart_toy</mat-icon>
         </div>
         <div class="message-bubble">
-          <p class="message-content">{{ msg.content }}</p>
-          <span class="message-time">{{ msg.timestamp | date:'shortTime' }}</span>
+          <div
+            class="message-content"
+            [innerHTML]="formatContent(msg.content)"
+          ></div>
+          <span class="message-time">{{
+            msg.timestamp | date: "shortTime"
+          }}</span>
         </div>
       </div>
 
@@ -47,15 +75,18 @@
     </div>
   </div>
 
-  <!-- Suggested questions (only when just greeting) -->
+  <!-- Suggested questions -->
   <div class="suggestions" *ngIf="messages.length === 1">
-    <p class="suggestions-label">Try asking:</p>
+    <p class="suggestions-label">Try these questions:</p>
     <div class="suggestions-grid">
       <button
         *ngFor="let q of suggestedQuestions"
         class="suggestion-chip"
-        (click)="sendMessage(q)"
-      >{{ q }}</button>
+        (click)="sendMessage(q.text)"
+      >
+        <mat-icon>{{ q.icon }}</mat-icon>
+        {{ q.text }}
+      </button>
     </div>
   </div>
 
