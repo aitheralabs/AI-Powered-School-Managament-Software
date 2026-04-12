@@ -48,7 +48,9 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d\\)\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); tt=d.get\\('data',{}\\).get\\('timetable',{}\\); print\\('success:',d.get\\('success'\\),'| Mon:',len\\(tt.get\\('Monday',[]\\)\\),'| Tue:',len\\(tt.get\\('Tuesday',[]\\)\\)\\)\")",
       "Bash(grep -l \"notification\\\\|webhook\\\\|socket\" \"D:/SCHOOL MANAGEMNET/src/database/migrations\"/*.sql)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat .env)",
+      "Bash(cat .env.example)"
     ]
   }
 }

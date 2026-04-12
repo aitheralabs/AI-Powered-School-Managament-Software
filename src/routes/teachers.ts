@@ -20,6 +20,7 @@ import {
   getTeacherStats,
   getTeacherClasses,
   getTeacherSubjects,
+  exportTeachers,
 } from '../controllers/teacherController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -38,9 +39,10 @@ const router = Router();
 // All routes require authentication + active subscription
 router.use(authenticate, resolveTenant, requireActiveSubscription);
 
-// CSV bulk import
+// CSV bulk import & export
 router.post('/import-csv', authorize('admin'), uploadCSV, importTeachersCSV);
 router.get('/csv-template', authorize('admin'), getTeacherCSVTemplate);
+router.get('/export', authorize('admin', 'staff'), exportTeachers);
 
 // Create teacher (admin only)
 router.post(

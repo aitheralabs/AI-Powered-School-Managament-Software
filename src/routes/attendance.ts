@@ -6,6 +6,7 @@ import {
   updateAttendance,
   getAttendanceById,
   getClassAttendance,
+  getClassAttendanceSummary,
   getStudentAttendanceSummary,
   deleteAttendance,
   getAttendanceStats,
@@ -95,6 +96,17 @@ router.get(
     subjectId: IdSchema.optional(),
   })),
   getClassAttendance
+);
+
+// Get class attendance summary (aggregated stats per student)
+router.get(
+  '/class/:classId/summary',
+  validateParams(z.object({ classId: IdSchema })),
+  validateQuery(z.object({
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    endDate:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  })),
+  getClassAttendanceSummary
 );
 
 // Get student attendance records list

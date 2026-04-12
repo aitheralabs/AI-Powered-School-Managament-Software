@@ -13,6 +13,7 @@ import {
   deleteStudentFee,
   getFeeStats,
   getStudentFeesByStudentId,
+  sendFeeReminder,
 } from '../controllers/feeController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -146,6 +147,17 @@ router.delete(
   authorize('admin'),
   validateParams(z.object({ id: IdSchema })),
   deleteStudentFee
+);
+
+// Send fee reminder to students (admin only)
+router.post(
+  '/send-reminder',
+  authorize('admin', 'staff'),
+  validateBody(z.object({
+    studentIds: z.array(IdSchema).min(1, 'At least one student ID is required'),
+    message: z.string().optional(),
+  })),
+  sendFeeReminder
 );
 
 export default router;

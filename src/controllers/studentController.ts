@@ -56,6 +56,50 @@ export const bulkUpdateStudents = asyncHandler(async (req: Request, res: Respons
   res.json({ success: true, message: `Successfully updated ${result.updatedCount} students`, data: result });
 });
 
+export const exportStudents = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const format = (req.query.format as string) || 'csv';
+
+  // students stores student-specific data; personal info (name, email, phone) is in users
+  const result = await query(
+    `SELECT s.id, u.first_name, u.last_name, u.email, u.phone,
+            u.date_of_birth, u.address,
+            s.student_id, s.guardian_name, s.guardian_phone, s.is_active,
+            c.name AS class_name, s.enrollment_date, s.created_at
+     FROM students s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN classes c ON c.id = s.class_id
+     WHERE s.school_id = $1
+     ORDER BY u.first_name, u.last_name`,
+    [schoolId]
+  );
+
+  const rows = result.rows;
+
+  if (format === 'csv') {
+    const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Date of Birth',
+                     'Address', 'Student ID', 'Guardian Name', 'Guardian Phone',
+                     'Class', 'Enrollment Date', 'Active', 'Created At'];
+    const csvRows = rows.map((r: any) => [
+      r.id, r.first_name, r.last_name, r.email || '', r.phone || '',
+      r.date_of_birth ? new Date(r.date_of_birth).toISOString().split('T')[0] : '',
+      `"${(r.address || '').replace(/"/g, '""')}"`,
+      r.student_id || '', r.guardian_name || '', r.guardian_phone || '',
+      r.class_name || '',
+      r.enrollment_date ? new Date(r.enrollment_date).toISOString().split('T')[0] : '',
+      r.is_active ? 'Yes' : 'No',
+      new Date(r.created_at).toISOString().split('T')[0],
+    ].join(','));
+
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
+    res.send(csv);
+  } else {
+    res.json({ success: true, data: rows });
+  }
+});
+
 export const getStudentStats = asyncHandler(async (req: Request, res: Response) => {
   const schoolId = req.schoolId!;
   const [totalRes, newRes, genderRes, classRes] = await Promise.all([

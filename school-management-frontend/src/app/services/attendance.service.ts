@@ -42,13 +42,14 @@ export class AttendanceService {
     return this.apiService.get<Attendance[]>(`attendance/class/${classId}`, params);
   }
 
+  // Backend route: GET /attendance-reports/report
   getAttendanceReport(params: {
     studentId?: string;
     classId?: string;
     startDate: string;
     endDate: string;
   }): Observable<ApiResponse<AttendanceReport[]>> {
-    return this.apiService.get<AttendanceReport[]>('attendance-reports', params);
+    return this.apiService.get<AttendanceReport[]>('attendance-reports/report', params);
   }
 
   getAttendanceStats(params?: { classId?: string; date?: string }): Observable<ApiResponse<AttendanceStats>> {
@@ -59,26 +60,35 @@ export class AttendanceService {
     return this.apiService.get(`attendance/student/${studentId}/summary`, params);
   }
 
+  // Backend route: GET /attendance/class/:classId/summary
   getClassAttendanceSummary(classId: string, params?: { startDate?: string; endDate?: string }): Observable<ApiResponse<any>> {
     return this.apiService.get(`attendance/class/${classId}/summary`, params);
   }
 
+  // Backend route: GET /attendance-reports/export
   exportAttendanceReport(params: {
     classId?: string;
     studentId?: string;
     startDate: string;
     endDate: string;
-    format?: 'csv' | 'excel' | 'pdf';
+    format?: 'csv' | 'excel' | 'json';
   }): Observable<Blob> {
     const queryParams = new URLSearchParams(params as any).toString();
-    return this.apiService.downloadFile(`attendance/export?${queryParams}`);
+    return this.apiService.downloadFile(`attendance-reports/export?${queryParams}`);
   }
 
+  // Backend route: GET /attendance-reports/trends
   getAttendanceAnalytics(params?: {
     classId?: string;
     startDate?: string;
     endDate?: string;
+    period?: 'daily' | 'weekly' | 'monthly';
   }): Observable<ApiResponse<any>> {
-    return this.apiService.get('attendance/analytics', params);
+    return this.apiService.get('attendance-reports/trends', params);
+  }
+
+  // Backend route: GET /attendance-reports/statistics
+  getAttendanceStatistics(params?: { period?: 'today' | 'week' | 'month' | 'semester' }): Observable<ApiResponse<any>> {
+    return this.apiService.get('attendance-reports/statistics', params);
   }
 }

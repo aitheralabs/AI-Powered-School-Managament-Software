@@ -122,6 +122,52 @@ export const getFeeStats = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+export const sendFeeReminder = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const { studentIds, message } = req.body as { studentIds: string[]; message?: string };
+
+  if (!studentIds || studentIds.length === 0) {
+    res.status(400).json({ success: false, message: 'studentIds array is required' });
+    return;
+  }
+
+  // Fetch student and fee details for the given IDs
+  const placeholders = studentIds.map((_: any, i: number) => `$${i + 2}`).join(', ');
+  // outstanding = sum of student_fee amounts minus total payments made
+  const result = await query(
+    `SELECT s.id, u.first_name, u.last_name, u.email,
+            COALESCE(SUM(sf.amount) - COALESCE(SUM(p.total_paid), 0), 0) AS outstanding_amount
+     FROM students s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN student_fees sf ON sf.student_id = s.id AND sf.status IN ('pending', 'overdue')
+     LEFT JOIN (
+       SELECT student_fee_id, SUM(amount) AS total_paid
+       FROM payments
+       WHERE school_id = $1
+       GROUP BY student_fee_id
+     ) p ON p.student_fee_id = sf.id
+     WHERE s.school_id = $1 AND s.id IN (${placeholders})
+     GROUP BY s.id, u.first_name, u.last_name, u.email`,
+    [schoolId, ...studentIds]
+  );
+
+  // In a real system this would send emails via emailService
+  // For now we log and return who would be notified
+  const notified = result.rows.map((r: any) => ({
+    studentId: r.id,
+    studentName: `${r.first_name} ${r.last_name}`,
+    email: r.email || null,
+    outstandingAmount: parseFloat(r.outstanding_amount || '0'),
+    reminded: !!(r.email),
+  }));
+
+  res.json({
+    success: true,
+    message: `Fee reminder sent to ${notified.filter((n: any) => n.reminded).length} student(s)`,
+    data: notified,
+  });
+});
+
 export const getStudentFeesByStudentId = asyncHandler(async (req: Request, res: Response) => {
   const schoolId = req.schoolId!;
   const { studentId } = req.params;

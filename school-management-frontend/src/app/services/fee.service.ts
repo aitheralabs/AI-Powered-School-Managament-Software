@@ -108,16 +108,18 @@ export class FeeService {
     return this.apiService.get('fee-reports/defaulters', params);
   }
 
-  exportFeeReport(type: 'collection' | 'outstanding' | 'defaulters', params: any, format: 'csv' | 'excel' | 'pdf' = 'pdf'): Observable<Blob> {
-    const queryParams = new URLSearchParams({ ...params, format }).toString();
-    return this.apiService.downloadFile(`fee-reports/${type}/export?${queryParams}`);
+  // Backend route: GET /fee-reports/export?reportType=collection|outstanding|defaulters&format=...
+  exportFeeReport(type: 'collection' | 'outstanding' | 'defaulters', params: any, format: 'csv' | 'excel' | 'json' = 'csv'): Observable<Blob> {
+    const queryParams = new URLSearchParams({ ...params, reportType: type, format }).toString();
+    return this.apiService.downloadFile(`fee-reports/export?${queryParams}`);
   }
 
+  // Backend route: POST /fees/send-reminder
   sendFeeReminder(studentIds: string[], message?: string): Observable<ApiResponse<any>> {
     return this.apiService.post('fees/send-reminder', { studentIds, message });
   }
 
-  bulkPaymentImport(file: File): Observable<ApiResponse<any>> {
-    return this.apiService.uploadFile('payments/bulk-import', file);
+  getPaymentStatistics(params?: { period?: 'today' | 'week' | 'month' | 'year'; classId?: string }): Observable<ApiResponse<any>> {
+    return this.apiService.get('payments/statistics/overview', params);
   }
 }

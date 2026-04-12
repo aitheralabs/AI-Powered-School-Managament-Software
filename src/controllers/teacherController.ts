@@ -158,3 +158,43 @@ export const getTeacherSubjects = asyncHandler(async (req: Request, res: Respons
   );
   res.json({ success: true, data: result.rows });
 });
+
+export const exportTeachers = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const format = (req.query.format as string) || 'csv';
+
+  const result = await query(
+    `SELECT t.id, u.first_name, u.last_name, u.email, u.phone, t.employee_id,
+            t.specialization, t.qualification, t.experience_years,
+            t.is_active, t.joining_date, u.created_at
+     FROM teachers t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.school_id = $1
+     ORDER BY u.first_name, u.last_name`,
+    [schoolId]
+  );
+
+  const rows = result.rows;
+
+  if (format === 'csv') {
+    const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Employee ID',
+                     'Specialization', 'Qualification', 'Experience (Years)',
+                     'Active', 'Joining Date', 'Created At'];
+    const csvRows = rows.map((r: any) => [
+      r.id, r.first_name, r.last_name, r.email || '', r.phone || '', r.employee_id || '',
+      `"${(r.specialization || '').replace(/"/g, '""')}"`,
+      `"${(r.qualification || '').replace(/"/g, '""')}"`,
+      r.experience_years || 0,
+      r.is_active ? 'Yes' : 'No',
+      r.joining_date ? new Date(r.joining_date).toISOString().split('T')[0] : '',
+      new Date(r.created_at).toISOString().split('T')[0],
+    ].join(','));
+
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="teachers.csv"');
+    res.send(csv);
+  } else {
+    res.json({ success: true, data: rows });
+  }
+});

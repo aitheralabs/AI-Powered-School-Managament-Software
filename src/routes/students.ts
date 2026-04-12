@@ -10,6 +10,7 @@ import {
   getStudentsByClass,
   bulkUpdateStudents,
   getStudentStats,
+  exportStudents,
 } from '../controllers/studentController';
 import { importStudentsCSV, getStudentCSVTemplate } from '../controllers/bulkUploadController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
@@ -91,9 +92,10 @@ router.get(
   getStudentsByClass
 );
 
-// CSV bulk import (admin only)
+// CSV bulk import & export (admin only)
 router.post('/import-csv', authorize('admin'), uploadCSV, importStudentsCSV);
 router.get('/csv-template', authorize('admin', 'staff'), getStudentCSVTemplate);
+router.get('/export', authorize('admin', 'staff'), exportStudents);
 
 // Bulk update students (admin only)
 router.patch(

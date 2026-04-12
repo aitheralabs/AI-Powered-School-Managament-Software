@@ -71,6 +71,80 @@ export const getStudentAttendanceList = asyncHandler(async (req: Request, res: R
   res.json({ success: true, data: result.rows });
 });
 
+export const getClassAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
+  const schoolId = req.schoolId!;
+  const { classId } = req.params;
+  const { startDate, endDate } = req.query as Record<string, string | undefined>;
+
+  let dateFilter = '';
+  const sqlParams: any[] = [classId, schoolId];
+
+  if (startDate) { dateFilter += ` AND a.date >= $${sqlParams.length + 1}`; sqlParams.push(startDate); }
+  if (endDate)   { dateFilter += ` AND a.date <= $${sqlParams.length + 1}`; sqlParams.push(endDate); }
+
+  const [summaryRes, byStudentRes] = await Promise.all([
+    query(
+      `SELECT
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE a.status = 'present') AS present,
+         COUNT(*) FILTER (WHERE a.status = 'absent')  AS absent,
+         COUNT(*) FILTER (WHERE a.status = 'late')    AS late,
+         COUNT(*) FILTER (WHERE a.status = 'excused') AS excused
+       FROM attendance a
+       WHERE a.class_id = $1 AND a.school_id = $2 ${dateFilter}`,
+      sqlParams
+    ),
+    query(
+      `SELECT
+         s.id AS student_id,
+         u.first_name || ' ' || u.last_name AS student_name,
+         COUNT(*) FILTER (WHERE a.status = 'present') AS present,
+         COUNT(*) FILTER (WHERE a.status = 'absent')  AS absent,
+         COUNT(*) FILTER (WHERE a.status = 'late')    AS late,
+         COUNT(*) FILTER (WHERE a.status = 'excused') AS excused,
+         COUNT(*) AS total
+       FROM attendance a
+       JOIN students s ON s.id = a.student_id
+       JOIN users u ON u.id = s.user_id
+       WHERE a.class_id = $1 AND a.school_id = $2 ${dateFilter}
+       GROUP BY s.id, u.first_name, u.last_name
+       ORDER BY u.first_name`,
+      sqlParams
+    ),
+  ]);
+
+  const s = summaryRes.rows[0];
+  const total = parseInt(s.total, 10);
+  const present = parseInt(s.present, 10);
+
+  res.json({
+    success: true,
+    data: {
+      classId,
+      summary: {
+        total,
+        present,
+        absent: parseInt(s.absent, 10),
+        late: parseInt(s.late, 10),
+        excused: parseInt(s.excused, 10),
+        attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
+      },
+      byStudent: byStudentRes.rows.map((r: any) => ({
+        studentId: r.student_id,
+        studentName: r.student_name,
+        present: parseInt(r.present, 10),
+        absent: parseInt(r.absent, 10),
+        late: parseInt(r.late, 10),
+        excused: parseInt(r.excused, 10),
+        total: parseInt(r.total, 10),
+        attendanceRate: parseInt(r.total, 10) > 0
+          ? Math.round((parseInt(r.present, 10) / parseInt(r.total, 10)) * 100)
+          : 0,
+      })),
+    },
+  });
+});
+
 export const getAttendanceStats = asyncHandler(async (req: Request, res: Response) => {
   const schoolId = req.schoolId!;
   const today = new Date().toISOString().split('T')[0];
