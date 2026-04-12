@@ -39,6 +39,7 @@ import monitoringRoutes from './routes/monitoring';
 import settingsRoutes from './routes/settings';
 import dashboardRoutes from './routes/dashboard';
 import timetableRoutes from './routes/timetable';
+import notificationRoutes from './routes/notifications';
 // import auditRoutes from './routes/audit';
 
 // Import monitoring service
@@ -174,6 +175,7 @@ app.use('/api/v1/monitoring', monitoringRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/timetable', timetableRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 // app.use('/api/v1/audit', auditRoutes);
 
 // Multi-tenant & SaaS routes

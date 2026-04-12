@@ -9,6 +9,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
 import { AuthService } from './services/auth.service';
 import { LoadingService } from './services/loading.service';
+import { RealtimeNotificationService } from './services/realtime-notification.service';
 
 @Component({
   selector: 'app-root',
@@ -29,13 +30,18 @@ export class AppComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private loadingService: LoadingService,
-    private router: Router
+    private router: Router,
+    private notifService: RealtimeNotificationService,
   ) {}
 
   ngOnInit() {
     // Subscribe to authentication state
     this.authService.currentUser$.subscribe(user => {
       this.isAuthenticated = !!user;
+      // Request browser notification permission once authenticated
+      if (user) {
+        this.notifService.requestBrowserPermission();
+      }
     });
 
     // Subscribe to loading state and update UI

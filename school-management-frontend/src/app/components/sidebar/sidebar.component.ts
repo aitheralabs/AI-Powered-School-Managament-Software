@@ -280,9 +280,9 @@ export class SidebarComponent implements OnInit {
       ]
     },
     {
-      title: 'AI Insights',
-      icon: 'psychology',
-      route: '/ai-insights',
+      title: 'AI Assistant',
+      icon: 'smart_toy',
+      route: '/ai-chat',
       roles: ['admin', 'teacher', 'staff']
     },
     {

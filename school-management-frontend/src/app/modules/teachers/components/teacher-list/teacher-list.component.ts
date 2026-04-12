@@ -16,6 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { TeacherService } from '../../../../services/teacher.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ReportExportService } from '../../../../services/report-export.service';
+import { BulkUploadComponent } from '../../../../components/bulk-upload/bulk-upload.component';
 import { Teacher } from '../../../../models/teacher.model';
 import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
 
@@ -35,7 +37,8 @@ import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
     MatInputModule,
     MatChipsModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    BulkUploadComponent,
   ],
   templateUrl: './teacher-list.component.html',
   styleUrl: './teacher-list.component.scss'
@@ -46,7 +49,8 @@ export class TeacherListComponent implements OnInit {
   isLoading = false;
   searchQuery = '';
   searchFocused = false;
-  
+  showBulkUpload = false;
+
   // Pagination
   totalItems = 0;
   pageSize = 10;
@@ -56,9 +60,14 @@ export class TeacherListComponent implements OnInit {
   constructor(
     private teacherService: TeacherService,
     private notificationService: NotificationService,
+    private exportService: ReportExportService,
     private dialog: MatDialog,
     private router: Router
   ) {}
+
+  exportCSV(): void {
+    this.exportService.exportTeachersCSV();
+  }
 
   ngOnInit() {
     this.loadTeachers();

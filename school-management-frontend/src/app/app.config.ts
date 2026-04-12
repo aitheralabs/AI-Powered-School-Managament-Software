@@ -2,6 +2,7 @@ import { ApplicationConfig, provideZoneChangeDetection, ErrorHandler } from '@an
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideToastr } from 'ngx-toastr';
 
 import { routes } from './app.routes';
@@ -17,6 +18,7 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([authInterceptor, loadingInterceptor])
     ),
     provideAnimations(),
+    provideNativeDateAdapter(),
     provideToastr({
       timeOut: 3000,
       positionClass: 'toast-top-right',

@@ -1,0 +1,61 @@
+.grade-page { padding: 24px; max-width: 1300px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.page-title { margin: 0; font-size: 22px; font-weight: 700; color: #1e293b; }
+.page-subtitle { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+}
+.stat-card {
+  background: #fff; border-radius: 14px; padding: 20px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); border: 1px solid #e2e8f0; text-align: center;
+}
+.stat-value { margin: 0; font-size: 22px; font-weight: 700; }
+.stat-label { margin: 4px 0 0; font-size: 12px; color: #64748b; }
+.stat-sub   { margin: 2px 0 0; font-size: 11px; color: #94a3b8; }
+.blue .stat-value   { color: #3b82f6; }
+.purple .stat-value { color: #8b5cf6; }
+.green .stat-value  { color: #10b981; }
+.red .stat-value    { color: #ef4444; }
+
+.content-card {
+  background: #fff; border-radius: 16px; border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden; margin-bottom: 20px;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
+  h2 { margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; }
+}
+.card-body { padding: 20px; }
+
+.distribution-row { display: flex; flex-wrap: wrap; gap: 12px; padding: 16px 20px; }
+.grade-pill {
+  display: flex; flex-direction: column; align-items: center;
+  border: 2px solid; border-radius: 10px; padding: 10px 18px; min-width: 60px;
+}
+.grade-letter { font-size: 18px; font-weight: 700; }
+.grade-count  { font-size: 12px; color: #64748b; }
+
+.form-card .card-body { padding: 20px; }
+.grade-form {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  @media (max-width: 900px) { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+.full { grid-column: 1 / -1; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.filter-card .filter-row { display: flex; gap: 12px; padding: 12px 20px; flex-wrap: wrap; }
+.filter-field { width: 200px; }
+::ng-deep .filter-field .mat-mdc-form-field-subscript-wrapper { display: none; }
+
+.data-table { width: 100%; }
+.loading-center { display: flex; justify-content: center; padding: 40px; }
+.empty-state { text-align: center; color: #94a3b8; padding: 40px; font-size: 14px; }
+
+.grade-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+}

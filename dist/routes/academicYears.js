@@ -18,6 +18,7 @@ router.get('/', (0, validation_1.validateQuery)(common_1.PaginationSchema.extend
     isActive: zod_1.z.string().optional().transform(val => val === 'true'),
 })), (0, caching_1.cacheResponse)(3600), academicYearController_1.getAcademicYears);
 router.get('/active', (0, caching_1.cacheResponse)(3600), academicYearController_1.getActiveAcademicYear);
+router.post('/:id/activate', (0, auth_1.authorize)('admin'), (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), (0, caching_1.invalidateCache)(['academic_year*']), academicYearController_1.activateAcademicYear);
 router.get('/:id', (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), (0, caching_1.cacheResponse)(3600), academicYearController_1.getAcademicYearById);
 router.put('/:id', (0, auth_1.authorize)('admin'), (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), sanitization_1.sanitizeAcademicYear, (0, validation_1.validateBody)(academic_1.UpdateAcademicYearSchema), (0, caching_1.invalidateCache)(['academic_year*']), academicYearController_1.updateAcademicYear);
 router.delete('/:id', (0, auth_1.authorize)('admin'), (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), (0, caching_1.invalidateCache)(['academic_year*']), academicYearController_1.deleteAcademicYear);

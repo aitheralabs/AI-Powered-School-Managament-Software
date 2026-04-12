@@ -5,6 +5,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -13,6 +14,8 @@ import { AcademicService } from '../../../../services/academic.service';
 import { TeacherService } from '../../../../services/teacher.service';
 import { NotificationService } from '../../../../services/notification.service';
 import { ErrorService } from '../../../../services/error.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-class-form',
@@ -24,8 +27,9 @@ import { ErrorService } from '../../../../services/error.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
     MatSelectModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './class-form.component.html',
   styleUrl: './class-form.component.scss'
@@ -38,6 +42,7 @@ export class ClassFormComponent implements OnInit {
   
   academicYears: any[] = [];
   teachers: any[] = [];
+  noAcademicYears = false;
   
   gradeOptions = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'
@@ -84,44 +89,36 @@ export class ClassFormComponent implements OnInit {
 
   loadFormData() {
     this.isLoadingData = true;
-    
-    // Load academic years
-    this.academicService.getAcademicYears().subscribe({
-      next: (response) => {
-        console.log('Academic Years Response:', response);
-        if (response.success && response.data) {
-          // Backend returns 'academicYears' not 'items'
-          this.academicYears = response.data.academicYears || response.data.items || [];
-          console.log('Academic Years:', this.academicYears);
-          
-          if (this.academicYears.length === 0) {
-            this.notificationService.warning('No academic years found. Please create an academic year first.');
-          }
+    this.noAcademicYears = false;
+
+    forkJoin({
+      years:    this.academicService.getAcademicYears().pipe(catchError(() => of(null))),
+      teachers: this.teacherService.getTeachers().pipe(catchError(() => of(null))),
+    }).subscribe({
+      next: ({ years, teachers }) => {
+        // Academic years
+        if (years?.success && years.data) {
+          this.academicYears = years.data.academicYears || years.data.items || [];
         }
-      },
-      error: (error) => {
-        console.error('Error loading academic years:', error);
-        this.errorService.logError(error, 'ClassForm.loadAcademicYears');
-        this.notificationService.error('Failed to load academic years', 'Error');
-      }
-    });
-    
-    // Load teachers
-    this.teacherService.getTeachers().subscribe({
-      next: (response) => {
-        this.isLoadingData = false;
-        console.log('Teachers Response:', response);
-        if (response.success && response.data) {
-          this.teachers = response.data.items || [];
-          console.log('Teachers:', this.teachers);
+        this.noAcademicYears = this.academicYears.length === 0;
+
+        // Auto-select active year or first available
+        if (this.academicYears.length > 0 && !this.isEditMode) {
+          const active = this.academicYears.find((y: any) => y.isActive);
+          this.classForm.patchValue({ academicYearId: (active || this.academicYears[0]).id });
         }
-      },
-      error: (error) => {
+
+        // Teachers
+        if (teachers?.success && teachers.data) {
+          this.teachers = teachers.data.items || [];
+        }
+
         this.isLoadingData = false;
-        console.error('Error loading teachers:', error);
-        this.errorService.logError(error, 'ClassForm.loadTeachers');
-        this.notificationService.error('Failed to load teachers', 'Error');
-      }
+      },
+      error: () => {
+        this.isLoadingData = false;
+        this.notificationService.error('Failed to load form data');
+      },
     });
   }
 

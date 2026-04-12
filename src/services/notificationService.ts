@@ -13,6 +13,7 @@
 import { query } from '../database/connection';
 import nodemailer from 'nodemailer';
 import env from '../config/env';
+import { emitToUser } from '../socket/socketServer';
 
 // ─────────────────────────────────────────────────────────────
 // Email transport
@@ -56,9 +57,10 @@ export interface NotificationPayload {
 }
 
 export async function enqueueNotification(payload: NotificationPayload): Promise<void> {
-  await query(
+  const result = await query(
     `INSERT INTO notifications (school_id, user_id, type, channel, title, body, data)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     RETURNING id, type, title, body, data, created_at`,
     [
       payload.schoolId || null,
       payload.userId,
@@ -69,6 +71,19 @@ export async function enqueueNotification(payload: NotificationPayload): Promise
       JSON.stringify(payload.data || {}),
     ]
   );
+
+  // Push real-time notification to connected client
+  if (payload.channel === 'in_app' && result.rows.length > 0) {
+    const notification = result.rows[0];
+    emitToUser(payload.userId, 'notification:new', {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      data: notification.data,
+      createdAt: notification.created_at,
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────

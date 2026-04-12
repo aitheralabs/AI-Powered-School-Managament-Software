@@ -49,16 +49,21 @@
       </div>
 
       <!-- Academic Year -->
+      <div *ngIf="noAcademicYears" class="no-years-warning">
+        <mat-icon>warning</mat-icon>
+        <span>No academic years found. &nbsp;</span>
+        <a href="/academic/academic-years" target="_blank" style="color:#3b82f6;font-weight:600;">
+          Create one first →
+        </a>
+      </div>
+
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Academic Year</mat-label>
         <mat-select formControlName="academicYearId">
           <mat-option *ngFor="let year of academicYears" [value]="year.id">
-            {{ year.name }}
+            {{ year.name }}{{ year.isActive ? ' (Active)' : '' }}
           </mat-option>
         </mat-select>
-        <mat-hint *ngIf="academicYears.length === 0" style="color: orange;">
-          Loading academic years... (Found: {{ academicYears.length }})
-        </mat-hint>
         <mat-error *ngIf="classForm.get('academicYearId')?.hasError('required')">
           Academic year is required
         </mat-error>

@@ -304,3 +304,9 @@
   &.edit  { color: var(--gray-600, #475569); &:hover { background: var(--gray-100, #f1f5f9); } }
   &.delete{ color: #ef4444; &:hover { background: #fef2f2; } }
 }
+
+.bulk-upload-panel {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-200, #e2e8f0);
+  background: var(--gray-50, #f8fafc);
+}

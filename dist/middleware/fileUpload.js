@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFileUrl = exports.deleteFile = exports.uploadDocument = exports.uploadProfilePicture = exports.uploadFields = exports.uploadMultiple = exports.uploadSingle = void 0;
+exports.uploadCSV = exports.getFileUrl = exports.deleteFile = exports.uploadDocument = exports.uploadProfilePicture = exports.uploadFields = exports.uploadMultiple = exports.uploadSingle = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -154,5 +154,18 @@ const getFileUrl = (filePath) => {
     return `/uploads/${relativePath}`;
 };
 exports.getFileUrl = getFileUrl;
+exports.uploadCSV = (0, multer_1.default)({
+    storage: multer_1.default.memoryStorage(),
+    fileFilter: (_req, file, cb) => {
+        const ext = file.originalname.split('.').pop()?.toLowerCase();
+        if (ext === 'csv' || file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel') {
+            cb(null, true);
+        }
+        else {
+            cb(new errorHandler_1.AppError('Only CSV files are allowed for bulk import', 400));
+        }
+    },
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+}).single('file');
 exports.default = upload;
 //# sourceMappingURL=fileUpload.js.map

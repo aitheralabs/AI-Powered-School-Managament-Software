@@ -28,6 +28,16 @@ const routes: Routes = [
     data: { title: 'Attendance Calendar' }
   },
   {
+    path: 'mark',
+    component: AttendanceMarkingComponent,
+    data: { title: 'Mark Attendance' }
+  },
+  {
+    path: 'analytics',
+    component: AttendanceReportsComponent,
+    data: { title: 'Attendance Analytics' }
+  },
+  {
     path: 'student/:studentId',
     component: StudentAttendanceComponent,
     data: { title: 'Student Attendance' }

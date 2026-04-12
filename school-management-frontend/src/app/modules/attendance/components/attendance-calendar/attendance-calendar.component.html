@@ -1,0 +1,67 @@
+<div class="calendar-page fade-in">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Attendance Calendar</h1>
+      <p class="page-subtitle">Monthly overview of class attendance</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="content-card controls-card">
+    <div class="controls-row">
+      <!-- Class filter -->
+      <mat-form-field appearance="outline" class="class-field">
+        <mat-label>Filter by Class</mat-label>
+        <mat-select [(ngModel)]="selectedClassId" (ngModelChange)="onClassChange()">
+          <mat-option value="">All Classes</mat-option>
+          <mat-option *ngFor="let c of classes" [value]="c.id">{{ c.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Month navigation -->
+      <div class="month-nav">
+        <button mat-icon-button (click)="prevMonth()"><mat-icon>chevron_left</mat-icon></button>
+        <span class="month-label">{{ getMonthLabel() }}</span>
+        <button mat-icon-button (click)="nextMonth()"><mat-icon>chevron_right</mat-icon></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend-row">
+    <span class="leg-item"><span class="leg-dot all-present"></span> All Present</span>
+    <span class="leg-item"><span class="leg-dot mixed"></span> Partial Absence</span>
+    <span class="leg-item"><span class="leg-dot all-absent"></span> All Absent / No Data + Absent</span>
+    <span class="leg-item"><span class="leg-dot today-dot"></span> Today</span>
+  </div>
+
+  <!-- Calendar -->
+  <div class="content-card calendar-card">
+    <div *ngIf="isLoading" class="loading-center"><mat-spinner diameter="36"></mat-spinner></div>
+
+    <table class="cal-table" *ngIf="!isLoading">
+      <thead>
+        <tr>
+          <th *ngFor="let d of weekdays">{{ d }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let week of calendarWeeks">
+          <td *ngFor="let day of week"
+              [ngClass]="['cal-cell', getDayClass(day), isToday(day) ? 'today' : '']"
+              [matTooltip]="getTooltip(day)"
+              matTooltipPosition="above">
+            <span class="day-num" [class.other]="!day.isCurrentMonth">{{ day.dayNum }}</span>
+            <div class="day-counts" *ngIf="day.isCurrentMonth && day.count">
+              <span class="dc-p" *ngIf="day.count.present">{{ day.count.present }}P</span>
+              <span class="dc-a" *ngIf="day.count.absent">{{ day.count.absent }}A</span>
+              <span class="dc-l" *ngIf="day.count.late">{{ day.count.late }}L</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

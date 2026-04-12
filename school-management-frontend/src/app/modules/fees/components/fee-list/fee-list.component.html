@@ -1,0 +1,188 @@
+<div class="fee-page fade-in">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Fee Management</h1>
+      <p class="page-subtitle">Manage fee categories, assignments, and payments</p>
+    </div>
+    <div class="header-actions" *ngIf="isAdmin">
+      <button mat-stroked-button (click)="loadAll()">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+      <button mat-raised-button color="accent" (click)="openAssignForm()">
+        <mat-icon>assignment</mat-icon> Assign Fee
+      </button>
+      <button mat-raised-button color="primary" (click)="openCategoryForm()">
+        <mat-icon>add</mat-icon> New Category
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" *ngIf="stats">
+    <div class="stat-card green">
+      <div class="stat-icon"><mat-icon>check_circle</mat-icon></div>
+      <div class="stat-body">
+        <p class="stat-value">₹{{ formatAmount(stats.collected) }}</p>
+        <p class="stat-label">Collected</p>
+        <p class="stat-sub">{{ stats.collectionPercentage || 0 }}% rate</p>
+      </div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon"><mat-icon>schedule</mat-icon></div>
+      <div class="stat-body">
+        <p class="stat-value">₹{{ formatAmount(stats.pending) }}</p>
+        <p class="stat-label">Pending</p>
+        <p class="stat-sub">{{ stats.pendingCount || 0 }} dues</p>
+      </div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon"><mat-icon>warning</mat-icon></div>
+      <div class="stat-body">
+        <p class="stat-value">₹{{ formatAmount(stats.overdueAmount) }}</p>
+        <p class="stat-label">Overdue</p>
+        <p class="stat-sub">{{ stats.defaulterCount || 0 }} defaulters</p>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon"><mat-icon>receipt_long</mat-icon></div>
+      <div class="stat-body">
+        <p class="stat-value">₹{{ formatAmount(stats.totalFees) }}</p>
+        <p class="stat-label">Total Billed</p>
+        <p class="stat-sub">{{ stats.totalStudentFees || 0 }} records</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fee Categories -->
+  <div class="content-card">
+    <div class="card-header">
+      <h2>Fee Categories</h2>
+      <button mat-icon-button matTooltip="Add Category" *ngIf="isAdmin" (click)="openCategoryForm()">
+        <mat-icon>add_circle</mat-icon>
+      </button>
+    </div>
+    <div *ngIf="loadingCategories" class="loading-center"><mat-spinner diameter="36"></mat-spinner></div>
+    <table mat-table [dataSource]="categories" *ngIf="!loadingCategories" class="data-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let cat">
+          <strong>{{ cat.name }}</strong>
+          <br><span class="text-muted" *ngIf="cat.description">{{ cat.description }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>Amount</th>
+        <td mat-cell *matCellDef="let cat"><strong>₹{{ formatAmount(cat.amount) }}</strong></td>
+      </ng-container>
+      <ng-container matColumnDef="frequency">
+        <th mat-header-cell *matHeaderCellDef>Frequency</th>
+        <td mat-cell *matCellDef="let cat">
+          <span class="chip chip-info">{{ cat.frequency | titlecase }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="mandatory">
+        <th mat-header-cell *matHeaderCellDef>Mandatory</th>
+        <td mat-cell *matCellDef="let cat">
+          <mat-icon [style.color]="cat.isMandatory ? '#10b981' : '#94a3b8'">
+            {{ cat.isMandatory ? 'check_circle' : 'radio_button_unchecked' }}
+          </mat-icon>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let cat">
+          <button mat-icon-button matTooltip="Edit" *ngIf="isAdmin" (click)="openCategoryForm(cat)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Delete" *ngIf="isAdmin" (click)="deleteCategory(cat)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="categoryColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: categoryColumns;"></tr>
+    </table>
+    <p *ngIf="!loadingCategories && categories.length === 0" class="empty-state">
+      No fee categories. Click "New Category" to add one.
+    </p>
+  </div>
+
+  <!-- Student Fees -->
+  <div class="content-card" style="margin-top: 24px">
+    <div class="card-header">
+      <h2>Student Fees</h2>
+      <div class="filter-row">
+        <mat-form-field appearance="outline" class="filter-select">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="filterStatus" (ngModelChange)="loadStudentFees()">
+            <mat-option value="">All</mat-option>
+            <mat-option value="pending">Pending</mat-option>
+            <mat-option value="paid">Paid</mat-option>
+            <mat-option value="overdue">Overdue</mat-option>
+            <mat-option value="partial">Partial</mat-option>
+            <mat-option value="waived">Waived</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div *ngIf="loadingFees" class="loading-center"><mat-spinner diameter="36"></mat-spinner></div>
+
+    <table mat-table [dataSource]="studentFees" *ngIf="!loadingFees" class="data-table">
+      <ng-container matColumnDef="student">
+        <th mat-header-cell *matHeaderCellDef>Student</th>
+        <td mat-cell *matCellDef="let fee">{{ fee.studentName || fee.student_name || fee.student_id }}</td>
+      </ng-container>
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef>Category</th>
+        <td mat-cell *matCellDef="let fee">{{ fee.category_name || fee.fee_category_id }}</td>
+      </ng-container>
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>Amount</th>
+        <td mat-cell *matCellDef="let fee">₹{{ formatAmount(fee.amount) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="paid">
+        <th mat-header-cell *matHeaderCellDef>Paid</th>
+        <td mat-cell *matCellDef="let fee">₹{{ formatAmount(fee.amount_paid || 0) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="dueDate">
+        <th mat-header-cell *matHeaderCellDef>Due Date</th>
+        <td mat-cell *matCellDef="let fee">{{ fee.due_date | date:'mediumDate' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let fee">
+          <span class="chip" [ngClass]="getStatusClass(fee.status)">{{ fee.status | titlecase }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let fee">
+          <button mat-icon-button color="primary" matTooltip="Record Payment"
+            *ngIf="isAdmin && fee.status !== 'paid' && fee.status !== 'waived'"
+            (click)="openPaymentForm(fee)">
+            <mat-icon>payment</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Delete" *ngIf="isAdmin" (click)="deleteFee(fee)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="feeColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: feeColumns;"></tr>
+    </table>
+
+    <p *ngIf="!loadingFees && studentFees.length === 0" class="empty-state">
+      No fee records found for the selected filter.
+    </p>
+
+    <mat-paginator
+      [length]="totalFees"
+      [pageSize]="feePageSize"
+      [pageSizeOptions]="[10, 20, 50, 100]"
+      (page)="onFeePageChange($event)">
+    </mat-paginator>
+  </div>
+</div>

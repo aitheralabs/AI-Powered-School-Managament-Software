@@ -15,6 +15,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { StudentService } from '../../../../services/student.service';
 import { NotificationService } from '../../../../services/notification.service';
+import { ReportExportService } from '../../../../services/report-export.service';
+import { BulkUploadComponent } from '../../../../components/bulk-upload/bulk-upload.component';
 import { Student } from '../../../../models/student.model';
 import { StudentFormComponent } from '../student-form/student-form.component';
 
@@ -42,7 +44,8 @@ const AVATAR_GRADIENTS = [
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    BulkUploadComponent,
   ],
   templateUrl: './student-list.component.html',
   styleUrl: './student-list.component.scss'
@@ -53,6 +56,7 @@ export class StudentListComponent implements OnInit {
   isLoading = false;
   searchQuery = '';
   searchFocused = false;
+  showBulkUpload = false;
 
   // Pagination
   totalItems = 0;
@@ -63,9 +67,19 @@ export class StudentListComponent implements OnInit {
   constructor(
     private studentService: StudentService,
     private notificationService: NotificationService,
+    private exportService: ReportExportService,
     private dialog: MatDialog,
     private router: Router
   ) {}
+
+  exportCSV(): void {
+    this.exportService.exportStudentsCSV({ search: this.searchQuery || undefined });
+  }
+
+  onBulkUploadDone(): void {
+    this.showBulkUpload = false;
+    this.loadStudents();
+  }
 
   ngOnInit() {
     this.loadStudents();

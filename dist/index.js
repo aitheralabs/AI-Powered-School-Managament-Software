@@ -3,9 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const http_1 = __importDefault(require("http"));
 const app_1 = __importDefault(require("./app"));
 const env_1 = __importDefault(require("./config/env"));
 const connection_1 = require("./database/connection");
+const socketServer_1 = require("./socket/socketServer");
 const startServer = async () => {
     try {
         const dbConnected = await (0, connection_1.testConnection)();
@@ -13,15 +15,18 @@ const startServer = async () => {
             console.error('❌ Failed to connect to database. Exiting...');
             process.exit(1);
         }
-        const server = app_1.default.listen(env_1.default.PORT, () => {
+        const httpServer = http_1.default.createServer(app_1.default);
+        (0, socketServer_1.initSocketServer)(httpServer);
+        httpServer.listen(env_1.default.PORT, () => {
             console.log(`🚀 Server running on port ${env_1.default.PORT}`);
             console.log(`📝 Environment: ${env_1.default.NODE_ENV}`);
             console.log(`🔗 Health check: http://localhost:${env_1.default.PORT}/health`);
             console.log(`📚 API docs: http://localhost:${env_1.default.PORT}/api/v1`);
+            console.log(`🔌 WebSocket: ws://localhost:${env_1.default.PORT}`);
         });
         const gracefulShutdown = (signal) => {
             console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
-            server.close(async () => {
+            httpServer.close(async () => {
                 console.log('🔌 HTTP server closed');
                 try {
                     await (0, connection_1.closePool)();

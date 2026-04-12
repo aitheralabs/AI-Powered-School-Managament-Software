@@ -1,6 +1,8 @@
+import http from 'http';
 import app from './app';
 import env from './config/env';
 import { testConnection, closePool } from './database/connection';
+import { initSocketServer } from './socket/socketServer';
 
 const startServer = async () => {
   try {
@@ -11,21 +13,26 @@ const startServer = async () => {
       process.exit(1);
     }
 
+    // Create HTTP server and attach Socket.io
+    const httpServer = http.createServer(app);
+    initSocketServer(httpServer);
+
     // Start server
-    const server = app.listen(env.PORT, () => {
+    httpServer.listen(env.PORT, () => {
       console.log(`🚀 Server running on port ${env.PORT}`);
       console.log(`📝 Environment: ${env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${env.PORT}/health`);
       console.log(`📚 API docs: http://localhost:${env.PORT}/api/v1`);
+      console.log(`🔌 WebSocket: ws://localhost:${env.PORT}`);
     });
 
     // Graceful shutdown
     const gracefulShutdown = (signal: string) => {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
-      
-      server.close(async () => {
+
+      httpServer.close(async () => {
         console.log('🔌 HTTP server closed');
-        
+
         try {
           await closePool();
           console.log('✅ Graceful shutdown completed');
@@ -37,9 +44,8 @@ const startServer = async () => {
       });
     };
 
-    // Handle shutdown signals
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -47,17 +53,14 @@ const startServer = async () => {
   }
 };
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
-// Start the server
 startServer();

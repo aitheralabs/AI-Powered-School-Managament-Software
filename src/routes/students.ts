@@ -11,12 +11,14 @@ import {
   bulkUpdateStudents,
   getStudentStats,
 } from '../controllers/studentController';
+import { importStudentsCSV, getStudentCSVTemplate } from '../controllers/bulkUploadController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
 import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
-import { 
-  CreateStudentSchema, 
+import { uploadCSV } from '../middleware/fileUpload';
+import {
+  CreateStudentSchema,
   UpdateStudentSchema,
   StudentQuerySchema
 } from '../types/student';
@@ -88,6 +90,10 @@ router.get(
   cacheResponse(300), // Cache for 5 minutes
   getStudentsByClass
 );
+
+// CSV bulk import (admin only)
+router.post('/import-csv', authorize('admin'), uploadCSV, importStudentsCSV);
+router.get('/csv-template', authorize('admin', 'staff'), getStudentCSVTemplate);
 
 // Bulk update students (admin only)
 router.patch(

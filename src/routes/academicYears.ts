@@ -6,6 +6,7 @@ import {
   updateAcademicYear,
   deleteAcademicYear,
   getActiveAcademicYear,
+  activateAcademicYear,
 } from '../controllers/academicYearController';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
 import { authenticate, authorize } from '../middleware/auth';
@@ -51,6 +52,15 @@ router.get(
   '/active',
   cacheResponse(3600), // Cache for 1 hour (rarely changes)
   getActiveAcademicYear
+);
+
+// Activate academic year (must be before /:id to avoid conflict)
+router.post(
+  '/:id/activate',
+  authorize('admin'),
+  validateParams(z.object({ id: IdSchema })),
+  invalidateCache(['academic_year*']),
+  activateAcademicYear
 );
 
 // Get academic year by ID

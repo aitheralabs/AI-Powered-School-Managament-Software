@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const studentController_1 = require("../controllers/studentController");
+const bulkUploadController_1 = require("../controllers/bulkUploadController");
 const validation_1 = require("../middleware/validation");
 const auth_1 = require("../middleware/auth");
 const tenant_1 = require("../middleware/tenant");
 const caching_1 = require("../middleware/caching");
+const fileUpload_1 = require("../middleware/fileUpload");
 const student_1 = require("../types/student");
 const common_1 = require("../types/common");
 const zod_1 = require("zod");
@@ -21,6 +23,8 @@ router.get('/class/:classId', (0, auth_1.authorize)('admin', 'teacher'), (0, val
     page: zod_1.z.string().optional().default('1'),
     limit: zod_1.z.string().optional().default('50'),
 })), (0, caching_1.cacheResponse)(300), studentController_1.getStudentsByClass);
+router.post('/import-csv', (0, auth_1.authorize)('admin'), fileUpload_1.uploadCSV, bulkUploadController_1.importStudentsCSV);
+router.get('/csv-template', (0, auth_1.authorize)('admin', 'staff'), bulkUploadController_1.getStudentCSVTemplate);
 router.patch('/bulk-update', (0, auth_1.authorize)('admin'), (0, validation_1.validateBody)(zod_1.z.object({
     studentIds: zod_1.z.array(common_1.IdSchema).min(1, 'At least one student ID is required'),
     updateData: zod_1.z.object({

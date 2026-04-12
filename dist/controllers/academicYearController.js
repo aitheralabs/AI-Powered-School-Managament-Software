@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActiveAcademicYear = exports.deleteAcademicYear = exports.updateAcademicYear = exports.getAcademicYearById = exports.getAcademicYears = exports.createAcademicYear = void 0;
+exports.activateAcademicYear = exports.getActiveAcademicYear = exports.deleteAcademicYear = exports.updateAcademicYear = exports.getAcademicYearById = exports.getAcademicYears = exports.createAcademicYear = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
 const academicYearService_1 = require("../services/academicYearService");
 const academicYearService = new academicYearService_1.AcademicYearService();
@@ -27,5 +27,9 @@ exports.deleteAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) =
 exports.getActiveAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const academicYear = await academicYearService.forSchool(req.schoolId).getActiveAcademicYear();
     res.json({ success: true, data: { academicYear } });
+});
+exports.activateAcademicYear = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const academicYear = await academicYearService.forSchool(req.schoolId).updateAcademicYear(req.params.id, { isActive: true });
+    res.json({ success: true, message: 'Academic year activated successfully', data: { academicYear } });
 });
 //# sourceMappingURL=academicYearController.js.map

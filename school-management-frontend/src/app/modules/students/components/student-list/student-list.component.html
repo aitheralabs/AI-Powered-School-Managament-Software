@@ -56,10 +56,18 @@
         <button class="icon-action-btn" matTooltip="Filter">
           <mat-icon>tune</mat-icon>
         </button>
-        <button class="icon-action-btn" matTooltip="Export">
+        <button class="icon-action-btn" matTooltip="Export CSV" (click)="exportCSV()">
           <mat-icon>download</mat-icon>
         </button>
+        <button class="icon-action-btn" matTooltip="Bulk Import CSV" (click)="showBulkUpload = !showBulkUpload">
+          <mat-icon>upload_file</mat-icon>
+        </button>
       </div>
+    </div>
+
+    <!-- Bulk Upload Panel -->
+    <div class="bulk-upload-panel" *ngIf="showBulkUpload">
+      <app-bulk-upload type="students"></app-bulk-upload>
     </div>
 
     <!-- Loading state -->

@@ -104,33 +104,127 @@
       <!-- Attendance Tab -->
       <mat-tab label="Attendance">
         <div class="tab-content">
-          <mat-card class="placeholder-card">
-            <mat-icon>how_to_reg</mat-icon>
-            <h3>Attendance Records</h3>
-            <p>Attendance tracking feature coming soon</p>
-          </mat-card>
+          <!-- Summary -->
+          <div class="summary-row" *ngIf="attendanceSummary">
+            <div class="summary-card green">
+              <p class="s-value">{{ attendanceSummary.present || 0 }}</p>
+              <p class="s-label">Present</p>
+            </div>
+            <div class="summary-card red">
+              <p class="s-value">{{ attendanceSummary.absent || 0 }}</p>
+              <p class="s-label">Absent</p>
+            </div>
+            <div class="summary-card orange">
+              <p class="s-value">{{ attendanceSummary.late || 0 }}</p>
+              <p class="s-label">Late</p>
+            </div>
+            <div class="summary-card blue">
+              <p class="s-value">{{ getAttendancePct() }}%</p>
+              <p class="s-label">Attendance Rate</p>
+            </div>
+          </div>
+
+          <div *ngIf="loadingAttendance" class="tab-loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+          <div class="tab-table-card" *ngIf="!loadingAttendance">
+            <table mat-table [dataSource]="attendanceRecords" class="tab-table">
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let r">{{ r.date | date:'mediumDate' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="att-chip" [ngClass]="'att-' + (r.status || 'unknown')">
+                    {{ r.status | titlecase }}
+                  </span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="subject">
+                <th mat-header-cell *matHeaderCellDef>Subject</th>
+                <td mat-cell *matCellDef="let r">{{ r.subject?.name || r.subjectName || '—' }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="attendanceColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: attendanceColumns;"></tr>
+            </table>
+            <p class="tab-empty" *ngIf="attendanceRecords.length === 0">No attendance records found.</p>
+          </div>
         </div>
       </mat-tab>
 
       <!-- Grades Tab -->
       <mat-tab label="Grades">
         <div class="tab-content">
-          <mat-card class="placeholder-card">
-            <mat-icon>grade</mat-icon>
-            <h3>Grade Records</h3>
-            <p>Grade tracking feature coming soon</p>
-          </mat-card>
+          <div *ngIf="loadingGrades" class="tab-loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+          <div class="tab-table-card" *ngIf="!loadingGrades">
+            <table mat-table [dataSource]="gradeRecords" class="tab-table">
+              <ng-container matColumnDef="subject">
+                <th mat-header-cell *matHeaderCellDef>Subject</th>
+                <td mat-cell *matCellDef="let g">{{ g.subject?.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="assessment">
+                <th mat-header-cell *matHeaderCellDef>Assessment</th>
+                <td mat-cell *matCellDef="let g">{{ g.assessmentType?.name || g.assessment_type?.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="marks">
+                <th mat-header-cell *matHeaderCellDef>Marks</th>
+                <td mat-cell *matCellDef="let g">{{ g.marksObtained ?? g.marks_obtained }}/{{ g.totalMarks ?? g.total_marks }}</td>
+              </ng-container>
+              <ng-container matColumnDef="percentage">
+                <th mat-header-cell *matHeaderCellDef>Percentage</th>
+                <td mat-cell *matCellDef="let g">{{ g.percentage }}%</td>
+              </ng-container>
+              <ng-container matColumnDef="grade">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let g">
+                  <span class="grade-badge"
+                    [style.background]="getGradeColor(g.gradeLetter || g.grade_letter) + '22'"
+                    [style.color]="getGradeColor(g.gradeLetter || g.grade_letter)">
+                    {{ g.gradeLetter || g.grade_letter || '—' }}
+                  </span>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="gradeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: gradeColumns;"></tr>
+            </table>
+            <p class="tab-empty" *ngIf="gradeRecords.length === 0">No grade records found.</p>
+          </div>
         </div>
       </mat-tab>
 
       <!-- Fees Tab -->
       <mat-tab label="Fees">
         <div class="tab-content">
-          <mat-card class="placeholder-card">
-            <mat-icon>payment</mat-icon>
-            <h3>Fee Records</h3>
-            <p>Fee management feature coming soon</p>
-          </mat-card>
+          <div *ngIf="loadingFees" class="tab-loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+          <div class="tab-table-card" *ngIf="!loadingFees">
+            <table mat-table [dataSource]="feeRecords" class="tab-table">
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <td mat-cell *matCellDef="let f">{{ f.feeCategory?.name || f.category?.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount</th>
+                <td mat-cell *matCellDef="let f">₹{{ formatAmount(f.amount) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="dueDate">
+                <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                <td mat-cell *matCellDef="let f">{{ f.dueDate | date:'mediumDate' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let f">
+                  <span class="chip" [ngClass]="getFeeStatusClass(f.status)">
+                    {{ f.status | titlecase }}
+                  </span>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="feeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: feeColumns;"></tr>
+            </table>
+            <p class="tab-empty" *ngIf="feeRecords.length === 0">No fee records found.</p>
+          </div>
         </div>
       </mat-tab>
     </mat-tab-group>

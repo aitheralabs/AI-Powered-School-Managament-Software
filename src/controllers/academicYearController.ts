@@ -33,3 +33,8 @@ export const getActiveAcademicYear = asyncHandler(async (req: Request, res: Resp
   const academicYear = await academicYearService.forSchool(req.schoolId!).getActiveAcademicYear();
   res.json({ success: true, data: { academicYear } });
 });
+
+export const activateAcademicYear = asyncHandler(async (req: Request, res: Response) => {
+  const academicYear = await academicYearService.forSchool(req.schoolId!).updateAcademicYear(req.params.id, { isActive: true } as any);
+  res.json({ success: true, message: 'Academic year activated successfully', data: { academicYear } });
+});

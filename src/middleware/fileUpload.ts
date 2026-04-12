@@ -171,4 +171,18 @@ export const getFileUrl = (filePath: string): string => {
   return `/uploads/${relativePath}`;
 };
 
+// CSV upload (memory storage — for bulk import parsing)
+export const uploadCSV = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (_req, file, cb) => {
+    const ext = file.originalname.split('.').pop()?.toLowerCase();
+    if (ext === 'csv' || file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel') {
+      cb(null, true);
+    } else {
+      cb(new AppError('Only CSV files are allowed for bulk import', 400));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+}).single('file');
+
 export default upload;

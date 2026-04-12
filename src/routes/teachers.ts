@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { importTeachersCSV, getTeacherCSVTemplate } from '../controllers/bulkUploadController';
+import { uploadCSV } from '../middleware/fileUpload';
 import {
   createTeacher,
   getTeachers,
@@ -35,6 +37,10 @@ const router = Router();
 
 // All routes require authentication + active subscription
 router.use(authenticate, resolveTenant, requireActiveSubscription);
+
+// CSV bulk import
+router.post('/import-csv', authorize('admin'), uploadCSV, importTeachersCSV);
+router.get('/csv-template', authorize('admin'), getTeacherCSVTemplate);
 
 // Create teacher (admin only)
 router.post(

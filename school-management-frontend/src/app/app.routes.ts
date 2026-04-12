@@ -75,6 +75,31 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'parents',
+    loadComponent: () => import('./modules/parents/parent-list.component').then(c => c.ParentListComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'reports',
+    loadChildren: () => import('./modules/reports/reports.routes').then(m => m.reportsRoutes),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'subjects',
+    loadComponent: () => import('./modules/subjects/subject-list.component').then(c => c.SubjectListComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'ai-chat',
+    loadComponent: () => import('./modules/ai-chat/ai-chat.component').then(c => c.AiChatComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'ai-insights',
+    redirectTo: 'ai-chat',
+    pathMatch: 'full',
+  },
+  {
     path: 'unauthorized',
     loadComponent: () => import('./components/unauthorized/unauthorized.component').then(c => c.UnauthorizedComponent)
   },
