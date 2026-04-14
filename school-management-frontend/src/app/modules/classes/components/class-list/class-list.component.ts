@@ -25,14 +25,22 @@ import { ClassFormComponent } from '../class-form/class-form.component';
     MatCardModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatDialogModule
+    MatDialogModule,
   ],
   templateUrl: './class-list.component.html',
-  styleUrl: './class-list.component.scss'
+  styleUrl: './class-list.component.scss',
 })
 export class ClassListComponent implements OnInit {
   classes: Class[] = [];
-  displayedColumns: string[] = ['name', 'grade', 'section', 'capacity', 'studentCount', 'teacher', 'actions'];
+  displayedColumns: string[] = [
+    'name',
+    'grade',
+    'section',
+    'capacity',
+    'studentCount',
+    'teacher',
+    'actions',
+  ];
   isLoading = false;
   error: string | null = null;
 
@@ -41,7 +49,7 @@ export class ClassListComponent implements OnInit {
     private notificationService: NotificationService,
     private errorService: ErrorService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -52,24 +60,34 @@ export class ClassListComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
 
-    console.log('Loading classes...');
     this.classService.getClasses().subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.isLoading = false;
-        console.log('Classes response:', response);
-        if (response.success && response.data) {
-          this.classes = response.data.items || [];
-          console.log('Classes loaded:', this.classes.length);
+
+        let items: any[] = [];
+
+        if (response.success) {
+          if (response.data && response.data.items) {
+            items = response.data.items;
+          } else if (response.data && Array.isArray(response.data)) {
+            items = response.data;
+          } else if (response.data && response.data.classes) {
+            items = response.data.classes;
+          }
         }
+
+        this.classes = items;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isLoading = false;
-        console.error('Error loading classes:', error);
         const errorMessage = this.errorService.processError(error);
         this.error = errorMessage.message;
-        this.notificationService.error('Failed to load classes. Please try again.', 'Error');
+        this.notificationService.error(
+          'Failed to load classes. Please try again.',
+          'Error',
+        );
         this.errorService.logError(error, 'ClassList.loadClasses');
-      }
+      },
     });
   }
 
@@ -77,13 +95,11 @@ export class ClassListComponent implements OnInit {
     const dialogRef = this.dialog.open(ClassFormComponent, {
       width: '600px',
       disableClose: true,
-      data: {}
+      data: {},
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('Create dialog closed with result:', result);
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        console.log('Reloading classes after creation...');
         this.loadClasses();
       }
     });
@@ -97,10 +113,10 @@ export class ClassListComponent implements OnInit {
     const dialogRef = this.dialog.open(ClassFormComponent, {
       width: '600px',
       disableClose: true,
-      data: { class: classItem }
+      data: { class: classItem },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.loadClasses();
       }
@@ -114,11 +130,11 @@ export class ClassListComponent implements OnInit {
           this.notificationService.success('Class deleted successfully');
           this.loadClasses();
         },
-        error: (error) => {
-          const errorMessage = this.errorService.processError(error);
+        error: (err: any) => {
+          const errorMessage = this.errorService.processError(err);
           this.notificationService.error(errorMessage.message, 'Delete Failed');
-          this.errorService.logError(error, 'ClassList.deleteClass');
-        }
+          this.errorService.logError(err, 'ClassList.deleteClass');
+        },
       });
     }
   }

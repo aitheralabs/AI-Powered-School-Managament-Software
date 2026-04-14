@@ -79,7 +79,7 @@ export interface ClassFilters {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ClassService {
   private readonly endpoint = 'classes';
@@ -87,8 +87,7 @@ export class ClassService {
   constructor(private apiService: ApiService) {}
 
   getClasses(filters?: ClassFilters): Observable<any> {
-    const params = this.buildQueryParams(filters);
-    return this.apiService.get<any>(`${this.endpoint}?${params}`);
+    return this.apiService.getPaginated<any>(this.endpoint, filters);
   }
 
   getClass(id: string): Observable<any> {
@@ -111,29 +110,42 @@ export class ClassService {
     return this.apiService.get<any>(`${this.endpoint}/stats`);
   }
 
-  getClassStudents(classId: string, filters?: { page?: number; limit?: number }): Observable<any> {
+  getClassStudents(
+    classId: string,
+    filters?: { page?: number; limit?: number },
+  ): Observable<any> {
     const params = this.buildQueryParams(filters);
-    return this.apiService.get<any>(`${this.endpoint}/${classId}/students?${params}`);
+    return this.apiService.get<any>(
+      `${this.endpoint}/${classId}/students?${params}`,
+    );
   }
 
   assignStudentToClass(classId: string, studentId: string): Observable<any> {
-    return this.apiService.post<any>(`${this.endpoint}/${classId}/enroll`, { studentId });
+    return this.apiService.post<any>(`${this.endpoint}/${classId}/enroll`, {
+      studentId,
+    });
   }
 
   removeStudentFromClass(classId: string, studentId: string): Observable<any> {
-    return this.apiService.delete<any>(`${this.endpoint}/${classId}/students/${studentId}`);
+    return this.apiService.delete<any>(
+      `${this.endpoint}/${classId}/students/${studentId}`,
+    );
   }
 
   private buildQueryParams(filters?: any): string {
     if (!filters) return '';
-    
+
     const params = new URLSearchParams();
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== null &&
+        filters[key] !== ''
+      ) {
         params.append(key, filters[key].toString());
       }
     });
-    
+
     return params.toString();
   }
 }

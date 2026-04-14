@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { filter } from 'rxjs/operators';
+import { filter, debounceTime } from 'rxjs/operators';
 
 import { SharedModule } from './shared/shared.module';
 import { HeaderComponent } from './components/header/header.component';
@@ -13,19 +13,30 @@ import { RealtimeNotificationService } from './services/realtime-notification.se
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, SharedModule, HeaderComponent, SidebarComponent, LoadingSpinnerComponent],
+  standalone: true,
+  imports: [
+    RouterOutlet,
+    CommonModule,
+    SharedModule,
+    HeaderComponent,
+    SidebarComponent,
+    LoadingSpinnerComponent,
+  ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
   title = 'School Management System';
   isAuthenticated = false;
   isLoading = false;
   sidenavOpened = true;
-  
-  // Route prefixes that bypass the authenticated shell layout
-  // These render with a full-screen blank canvas (no header/sidebar)
-  private readonly publicPrefixes = ['/', '/auth', '/super-admin', '/unauthorized'];
+
+  private readonly publicPrefixes = [
+    '/',
+    '/auth',
+    '/super-admin',
+    '/unauthorized',
+  ];
 
   constructor(
     private authService: AuthService,
@@ -35,46 +46,36 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Subscribe to authentication state
-    this.authService.currentUser$.subscribe(user => {
+    // Authentication with debounce to prevent rapid changes
+    this.authService.currentUser$.pipe(debounceTime(100)).subscribe((user) => {
       this.isAuthenticated = !!user;
-      // Request browser notification permission once authenticated
       if (user) {
         this.notifService.requestBrowserPermission();
       }
     });
 
-    // Subscribe to loading state and update UI
-    this.loadingService.loading$.subscribe(loading => {
+    // Loading state
+    this.loadingService.loading$.pipe(debounceTime(50)).subscribe((loading) => {
       this.isLoading = loading;
-      
-      // Optional: Add a small delay to prevent flickering for fast requests
-      if (!loading) {
-        setTimeout(() => {
-          this.isLoading = loading;
-        }, 100);
-      }
     });
 
-    // Check if current route is public and handle mobile navigation
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
-      // Auto-close sidenav on mobile after navigation
-      if (this.isMobile()) {
-        this.sidenavOpened = false;
-      }
-    });
+    // Navigation events
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        if (this.isMobile()) {
+          this.sidenavOpened = false;
+        }
+      });
 
-    // Set initial sidenav state based on screen size
+    // Initial state
     this.sidenavOpened = !this.isMobile();
   }
 
-  /** True for routes that render without the app shell (header + sidebar). */
   isPublicRoute(): boolean {
-    const url = this.router.url.split('?')[0]; // strip query params
-    return this.publicPrefixes.some(prefix =>
-      prefix === '/' ? url === '/' : url.startsWith(prefix)
+    const url = this.router.url.split('?')[0];
+    return this.publicPrefixes.some((prefix) =>
+      prefix === '/' ? url === '/' : url.startsWith(prefix),
     );
   }
 
