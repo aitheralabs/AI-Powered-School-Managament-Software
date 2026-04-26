@@ -1,18 +1,17 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { ClassListComponent } from './components/class-list/class-list.component';
-// import { ClassDetailComponent } from './components/class-detail/class-detail.component';
+import { ClassDetailComponent } from './components/class-detail/class-detail.component';
 
 const routes: Routes = [
   {
     path: '',
     component: ClassListComponent
+  },
+  {
+    path: ':id',
+    component: ClassDetailComponent
   }
-  // Temporarily disabled until ClassDetailComponent is fixed
-  // {
-  //   path: ':id',
-  //   component: ClassDetailComponent
-  // }
 ];
 
 @NgModule({

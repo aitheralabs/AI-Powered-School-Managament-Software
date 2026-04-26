@@ -13,6 +13,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface AppNotification {
   id: string;
@@ -43,8 +44,8 @@ export interface NotificationListResponse {
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeNotificationService implements OnDestroy {
-  private readonly API = 'http://localhost:3000/api/v1/notifications';
-  private readonly WS_URL = 'http://localhost:3000';
+  private readonly API = `${environment.apiUrl}/notifications`;
+  private readonly WS_URL = environment.apiUrl.replace('/api/v1', '');
 
   private socket: Socket | null = null;
 

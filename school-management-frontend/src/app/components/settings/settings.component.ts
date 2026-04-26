@@ -13,6 +13,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { SettingsService, UserSettings } from '../../services/settings.service';
 import { NotificationService } from '../../services/notification.service';
 import { ErrorService } from '../../services/error.service';
+import { environment } from '../../../environments/environment';
 import { UserService } from '../../services/user.service';
 import { ChangePasswordDialogComponent } from '../profile/change-password-dialog/change-password-dialog.component';
 
@@ -260,7 +261,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
    */
   private downloadFile(url: string, filename: string) {
     // Prepend backend URL if the URL is relative
-    const fullUrl = url.startsWith('http') ? url : `http://localhost:3000${url}`;
+    const baseUrl = environment.apiUrl.replace('/api/v1', '');
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
     
     // Fetch the file and download as blob to force download
     fetch(fullUrl)

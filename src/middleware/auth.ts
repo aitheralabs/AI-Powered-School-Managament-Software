@@ -21,14 +21,8 @@ declare global {
 
 // JWT authentication middleware
 export const authenticate = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  console.log('🔐 Authentication middleware called');
-  console.log('Request URL:', req.url);
-  console.log('Request method:', req.method);
-  console.log('Authorization header:', req.headers.authorization);
-  
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    console.log('❌ No authorization header found');
     throw new AppError('Access token is required', 401);
   }
   const parts = authHeader.split(' ');
@@ -46,20 +40,12 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       role: UserRole 
     };
 
-    console.log('Token decoded successfully:', { 
-      id: decoded.id, 
-      userId: decoded.userId, 
-      email: decoded.email, 
-      role: decoded.role 
-    });
-
     // Handle both 'id' and 'userId' fields for backward compatibility
     const userId = decoded.id || decoded.userId;
     const email = decoded.email;
     const role = decoded.role;
     
     if (!userId || !email || !role) {
-      console.log('Missing required fields in token:', { userId, email, role });
       throw new AppError('Invalid token payload', 401);
     }
 
@@ -95,7 +81,6 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
     
     next();
   } catch (error) {
-    console.log('JWT verification error:', error);
     if (error instanceof jwt.TokenExpiredError) {
       throw new AppError('Access token has expired. Please refresh your token.', 401);
     }

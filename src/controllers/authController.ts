@@ -7,10 +7,6 @@ const authService = new AuthService();
 
 // Register user
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Register request received');
-  console.log('Request body:', req.body);
-  console.log('Request headers:', req.headers);
-  
   const userData = req.body;
   
   try {
@@ -36,8 +32,6 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 // Login user
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Login request received');
-  
   const loginData = req.body;
   
   try {
@@ -49,8 +43,6 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       role: result.user.role,
     });
 
-    console.log('🎯 Login successful, generated token:', result.token.substring(0, 50) + '...');
-    
     res.json({
       success: true,
       message: 'Login successful',
@@ -65,7 +57,6 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 // Get current user profile
 export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
-  console.log('📋 Profile request for user:', req.user!.id);
   const userId = req.user!.id;
   const user = await authService.getCurrentUser(userId, { email: req.user!.email, role: req.user!.role });
 

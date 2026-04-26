@@ -180,12 +180,12 @@ export const teacherDashboard = asyncHandler(async (req: Request, res: Response)
     avgAttendanceRes,
   ] = await Promise.all([
     query(
-      `SELECT c.id, c.name, c.grade_level,
+      `SELECT c.id, c.name, c.grade,
               COUNT(DISTINCT s.id) AS student_count
          FROM classes c
          LEFT JOIN students s ON s.class_id = c.id AND s.is_active = true
         WHERE c.teacher_id = $1 AND c.school_id = $2 AND c.is_active = true
-        GROUP BY c.id, c.name, c.grade_level`,
+        GROUP BY c.id, c.name, c.grade`,
       [teacher.id, schoolId]
     ),
     query(
@@ -276,7 +276,7 @@ export const teacherDashboard = asyncHandler(async (req: Request, res: Response)
       myClasses: myClassesRes.rows.map((r: Record<string, string>) => ({
         id:           r.id,
         name:         r.name,
-        gradeLevel:   r.grade_level,
+        gradeLevel:   r.grade,
         studentCount: parseInt(r.student_count, 10),
       })),
       attendanceSummary: {

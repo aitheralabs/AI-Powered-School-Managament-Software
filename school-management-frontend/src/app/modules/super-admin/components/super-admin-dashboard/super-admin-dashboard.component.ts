@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { environment } from '../../../../../environments/environment';
 
 import { DashboardService } from '../../../../services/dashboard.service';
 
@@ -52,7 +53,7 @@ export class SuperAdminDashboardComponent implements OnInit {
 
   tenantForm: CreateTenantForm = this.blankForm();
 
-  private readonly API = 'http://localhost:3000/api/v1/superadmin';
+  private readonly API = `${environment.apiUrl}/superadmin`;
 
   constructor(
     private dashboardService: DashboardService,

@@ -14,7 +14,6 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
 
 // Get all users with pagination
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Get users request received');
   const result = await userService.getUsers(req);
 
   res.json({
@@ -28,13 +27,11 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 // Get user by ID (supports both UUID and regular IDs)
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Get user by ID request received');
   const { id } = req.params;
-  console.log("Looking for user with ID:", req.params.id);
-  
+
   try {
     const user = await userService.getUserById(id);
-    
+
     // Audit sensitive user data access
     auditData.access(req, 'users', id, true);
 
@@ -53,7 +50,6 @@ export const getUserById = asyncHandler(async (req: Request, res: Response) => {
 
 // Update user (supports both UUID and regular IDs)
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Update user request received');
   const { id } = req.params;
   const updateData = req.body;
 
@@ -71,7 +67,6 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 
 // Delete user (soft delete) - supports both UUID and regular IDs
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
-  console.log('Delete user request received');
   const { id } = req.params;
 
   await userService.deleteUser(id);

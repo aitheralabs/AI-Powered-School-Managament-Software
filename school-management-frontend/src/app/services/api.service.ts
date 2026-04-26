@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../models/user.model';
+import { environment } from '../../environments/environment';
 
 export interface PaginationParams {
   page?: number;
@@ -30,7 +31,7 @@ export interface PaginatedResponse<T> {
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly API_URL = 'http://localhost:3000/api/v1';
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

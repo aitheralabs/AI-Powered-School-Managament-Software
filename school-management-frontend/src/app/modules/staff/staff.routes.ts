@@ -6,4 +6,10 @@ export const staffRoutes: Routes = [
     loadComponent: () =>
       import('./staff-list.component').then((c) => c.StaffListComponent),
   },
+  // "Add staff" opens a dialog on the list page — redirect to list
+  {
+    path: 'add',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
 ];

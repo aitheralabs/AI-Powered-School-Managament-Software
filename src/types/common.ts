@@ -11,14 +11,18 @@ export const IdSchema = z.string().min(1, 'ID is required').refine((id) => {
 }, 'Invalid ID format');
 
 export const PaginationSchema = z.object({
-  page: z.string().optional().default('1').transform(val => {
+  page: z.string().optional().default('1').superRefine((val, ctx) => {
     const num = Number(val);
-    return isNaN(num) ? 1 : Math.max(1, num);
-  }),
-  limit: z.string().optional().default('10').transform(val => {
+    if (isNaN(num) || !Number.isInteger(num) || num < 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Page must be a positive integer >= 1' });
+    }
+  }).transform(val => Number(val)),
+  limit: z.string().optional().default('10').superRefine((val, ctx) => {
     const num = Number(val);
-    return isNaN(num) ? 10 : Math.max(1, Math.min(100, num));
-  }),
+    if (isNaN(num) || !Number.isInteger(num) || num < 1 || num > 100) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Limit must be an integer between 1 and 100' });
+    }
+  }).transform(val => Number(val)),
   sortBy: z.string().optional(),
   sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
 });

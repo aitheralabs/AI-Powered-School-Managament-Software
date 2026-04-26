@@ -8,6 +8,18 @@ const routes: Routes = [
     path: '',
     component: TeacherListComponent
   },
+  // "Add teacher" opens a dialog on the list page — redirect to list
+  {
+    path: 'add',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
+  // Teacher assignments shown on list page
+  {
+    path: 'assignments',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
   {
     path: ':id',
     component: TeacherDetailComponent

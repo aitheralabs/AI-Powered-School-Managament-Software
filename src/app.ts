@@ -40,7 +40,7 @@ import settingsRoutes from './routes/settings';
 import dashboardRoutes from './routes/dashboard';
 import timetableRoutes from './routes/timetable';
 import notificationRoutes from './routes/notifications';
-// import auditRoutes from './routes/audit';
+import auditRoutes from './routes/audit';
 
 // Import monitoring service
 import { monitoringService } from './services/monitoringService';
@@ -137,18 +137,6 @@ app.use('/api/v1/webhooks', webhookRoutes);
 app.use('/health', healthRoutes);
 app.use('/api/v1/health', healthRoutes);
 
-// Test endpoint
-app.post('/test', (req, res) => {
-  console.log('Test endpoint - Headers:', req.headers);
-  console.log('Test endpoint - Body:', req.body);
-  res.json({
-    success: true,
-    message: 'Test endpoint working',
-    receivedBody: req.body,
-    contentType: req.headers['content-type'],
-  });
-});
-
 // API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
@@ -176,7 +164,7 @@ app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/timetable', timetableRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
-// app.use('/api/v1/audit', auditRoutes);
+app.use('/api/v1/audit', auditRoutes);
 
 // Multi-tenant & SaaS routes
 app.use('/api/v1/schools', schoolRoutes);
@@ -198,13 +186,16 @@ app.use('/uploads', (req, res, next) => {
 }, express.static('uploads'));
 
 // API documentation endpoint
-app.get('/api/v1', cacheResponse(300), (req, res) => {
+app.get('/api/v1', cacheResponse(300), (_req, res) => {
   res.json({
     success: true,
     message: 'School Management API v1',
+    version: '1.0.0',
     endpoints: {
       auth: '/api/v1/auth',
       users: '/api/v1/users',
+      schools: '/api/v1/schools',
+      superadmin: '/api/v1/superadmin',
       academicYears: '/api/v1/academic-years',
       semesters: '/api/v1/semesters',
       subjects: '/api/v1/subjects',
@@ -212,6 +203,7 @@ app.get('/api/v1', cacheResponse(300), (req, res) => {
       students: '/api/v1/students',
       parents: '/api/v1/parents',
       teachers: '/api/v1/teachers',
+      staff: '/api/v1/staff',
       attendance: '/api/v1/attendance',
       attendanceReports: '/api/v1/attendance-reports',
       fees: '/api/v1/fees',
@@ -220,9 +212,17 @@ app.get('/api/v1', cacheResponse(300), (req, res) => {
       grades: '/api/v1/grades',
       assessmentTypes: '/api/v1/assessment-types',
       reportCards: '/api/v1/report-cards',
-      staff: '/api/v1/staff',
+      timetable: '/api/v1/timetable',
       reports: '/api/v1/reports',
-      reportExports: '/api/v1/reports',
+      dashboard: '/api/v1/dashboard',
+      notifications: '/api/v1/notifications',
+      settings: '/api/v1/settings',
+      files: '/api/v1/files',
+      ai: '/api/v1/ai',
+      audit: '/api/v1/audit',
+      health: '/api/v1/health',
+      cache: '/api/v1/cache',
+      monitoring: '/api/v1/monitoring',
     },
   });
 });

@@ -6,6 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { NotificationService } from '../../services/notification.service';
+import { environment } from '../../../environments/environment';
 
 export type BulkUploadType = 'students' | 'teachers';
 
@@ -132,7 +133,7 @@ export class BulkUploadComponent {
   isUploading = false;
   result: ImportResult | null = null;
 
-  private readonly API = 'http://localhost:3000/api/v1';
+  private readonly API = environment.apiUrl;
 
   constructor(
     private http: HttpClient,

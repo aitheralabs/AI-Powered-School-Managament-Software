@@ -236,6 +236,76 @@ export class ClassService extends BaseService {
     return { success: true };
   }
 
+  async assignSubjectToClass(classId: string, subjectId: string, teacherId?: string) {
+    const schoolId = this.requireSchool();
+    const classInfo = await this.checkEntityExists('classes', classId, 'alt_id');
+
+    const subjectExists = await this.executeQuery(
+      'SELECT id FROM subjects WHERE id = $1 AND (school_id = $2 OR school_id IS NULL) AND is_active = true',
+      [subjectId, schoolId]
+    );
+    if (subjectExists.rows.length === 0) throw new AppError('Subject not found', 404);
+
+    // teacherId may be a users.id or teachers.id — resolve to users.id
+    let resolvedTeacherId: string | null = null;
+    if (teacherId) {
+      // Try users table first
+      const userRow = await this.executeQuery(
+        "SELECT id FROM users WHERE id = $1 AND role = 'teacher' AND school_id = $2",
+        [teacherId, schoolId]
+      );
+      if (userRow.rows.length > 0) {
+        resolvedTeacherId = userRow.rows[0].id;
+      } else {
+        // Try teachers table
+        const teacherRow = await this.executeQuery(
+          'SELECT user_id FROM teachers WHERE id = $1 AND school_id = $2',
+          [teacherId, schoolId]
+        );
+        if (teacherRow.rows.length > 0) resolvedTeacherId = teacherRow.rows[0].user_id;
+      }
+    }
+
+    const result = await this.executeQuery(
+      `INSERT INTO class_subjects (class_id, subject_id, teacher_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (class_id, subject_id) DO UPDATE SET teacher_id = EXCLUDED.teacher_id
+       RETURNING id, class_id, subject_id, teacher_id, created_at`,
+      [classInfo.id, subjectId, resolvedTeacherId]
+    );
+
+    await cacheService.delPattern(`${CacheKeys.CLASS}:${schoolId}:*`);
+    return result.rows[0];
+  }
+
+  async getClassSubjects(classId: string) {
+    const schoolId = this.requireSchool();
+    const classInfo = await this.checkEntityExists('classes', classId, 'alt_id');
+
+    const result = await this.executeQuery(
+      `SELECT cs.id as assignment_id, s.id, s.name, s.code, s.credit_hours, s.description,
+              u.first_name as teacher_first_name, u.last_name as teacher_last_name, u.id as teacher_user_id
+       FROM class_subjects cs
+       JOIN subjects s ON cs.subject_id = s.id
+       LEFT JOIN users u ON cs.teacher_id = u.id
+       WHERE cs.class_id = $1 AND s.is_active = true
+       ORDER BY s.name`,
+      [classInfo.id]
+    );
+
+    return {
+      subjects: result.rows.map((s: any) => ({
+        assignmentId: s.assignment_id,
+        id: s.id,
+        name: s.name,
+        code: s.code,
+        creditHours: s.credit_hours,
+        description: s.description,
+        teacher: s.teacher_first_name ? { id: s.teacher_user_id, name: `${s.teacher_first_name} ${s.teacher_last_name}` } : null,
+      })),
+    };
+  }
+
   private transformClassResponse(cls: any) {
     return {
       id: cls.id, altId: cls.alt_id, name: cls.name, grade: cls.grade, section: cls.section,

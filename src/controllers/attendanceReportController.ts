@@ -26,6 +26,26 @@ export const getAttendanceStatistics = asyncHandler(async (req: Request, res: Re
   res.json({ success: true, data: report });
 });
 
-export const exportAttendanceData = asyncHandler(async (_req: Request, res: Response) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
+export const exportAttendanceData = asyncHandler(async (req: Request, res: Response) => {
+  const { format = 'csv', ...reportQuery } = req.query as Record<string, string>;
+
+  const result = await attendanceReportService
+    .forSchool(req.schoolId!)
+    .exportAttendanceData(format, reportQuery, req.user!.id, req.user!.role);
+
+  if (format === 'json') {
+    res.json({ success: true, data: result });
+    return;
+  }
+
+  // CSV / Excel: stream the file as a download
+  const { csvData, filename, mimeType } = result as {
+    csvData: string;
+    filename: string;
+    mimeType: string;
+  };
+
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csvData);
 });

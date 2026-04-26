@@ -7,12 +7,12 @@ const feeService = new FeeService();
 
 export const createFeeCategory = asyncHandler(async (req: Request, res: Response) => {
   const feeCategory = await feeService.forSchool(req.schoolId!).createFeeCategory(req.body);
-  res.status(201).json({ success: true, message: 'Fee category created successfully', data: feeCategory });
+  res.status(201).json({ success: true, message: 'Fee category created successfully', data: { feeCategory } });
 });
 
 export const getFeeCategories = asyncHandler(async (req: Request, res: Response) => {
   const result = await feeService.forSchool(req.schoolId!).getFeeCategories(req);
-  res.json({ success: true, data: result.feeCategories, pagination: result.pagination });
+  res.json({ success: true, data: result });
 });
 
 export const getFeeCategoryById = asyncHandler(async (req: Request, res: Response) => {
@@ -37,7 +37,7 @@ export const assignFeesToStudents = asyncHandler(async (req: Request, res: Respo
 
 export const getStudentFees = asyncHandler(async (req: Request, res: Response) => {
   const result = await feeService.forSchool(req.schoolId!).getStudentFees(req);
-  res.json({ success: true, data: result.studentFees, pagination: result.pagination });
+  res.json({ success: true, data: result });
 });
 
 export const assignFeesToClass = asyncHandler(async (req: Request, res: Response) => {
@@ -179,5 +179,5 @@ export const getStudentFeesByStudentId = asyncHandler(async (req: Request, res: 
      ORDER BY sf.due_date ASC`,
     [studentId, schoolId]
   );
-  res.json({ success: true, data: result.rows });
+  res.json({ success: true, data: { fees: result.rows } });
 });

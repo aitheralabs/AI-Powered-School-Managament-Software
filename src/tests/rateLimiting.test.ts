@@ -1,17 +1,37 @@
 import request from 'supertest';
 import app from '../app';
 import { RateLimitingService } from '../services/rateLimitingService';
+import { query } from '../database/connection';
+
+// Test identifiers used in RateLimitingService unit tests
+const TEST_IPS = [
+  '192.168.1.100', '192.168.1.101', '192.168.1.102',
+  '192.168.1.103', '192.168.1.104',
+];
 
 describe('Rate Limiting', () => {
   let rateLimitingService: RateLimitingService;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     rateLimitingService = new RateLimitingService();
+    // Remove any leftover entries from previous runs for our test IPs
+    await query(
+      'DELETE FROM rate_limit_entries WHERE identifier = ANY($1)',
+      [TEST_IPS]
+    ).catch(() => { /* ignore if table doesn't exist yet */ });
+  });
+
+  beforeEach(async () => {
+    // Keep test IPs clean between tests so they all start with no prior limits
+    await query(
+      'DELETE FROM rate_limit_entries WHERE identifier = ANY($1)',
+      [TEST_IPS]
+    ).catch(() => {});
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await rateLimitingService.cleanupOldEntries();
+    // Additional cleanup after each test
+    await rateLimitingService.cleanupOldEntries().catch(() => {});
   });
 
   describe('General Rate Limiting', () => {

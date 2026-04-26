@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
+    "test:watch": "ng test --watch",
+    "test:coverage": "ng test --watch=false --browsers=ChromeHeadless --coverage",
     "serve:ssr:school-management-frontend": "node dist/school-management-frontend/server/server.mjs"
   },
   "private": true,

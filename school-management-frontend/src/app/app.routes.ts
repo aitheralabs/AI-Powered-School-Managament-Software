@@ -115,6 +115,12 @@ export const routes: Routes = [
       ),
     canActivate: [AuthGuard],
   },
+  // "Add parent" opens a dialog on the list page — redirect to list
+  {
+    path: 'parents/add',
+    redirectTo: 'parents',
+    pathMatch: 'full',
+  },
   {
     path: 'reports',
     loadChildren: () =>

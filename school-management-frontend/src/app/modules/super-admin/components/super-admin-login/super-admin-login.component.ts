@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-super-admin-login',
@@ -21,7 +22,7 @@ export class SuperAdminLoginComponent {
   emailFocused = false;
   passFocused = false;
 
-  private readonly API = 'http://localhost:3000/api/v1/superadmin';
+  private readonly API = `${environment.apiUrl}/superadmin`;
 
   constructor(private http: HttpClient, private router: Router) {
     // Redirect if already logged in

@@ -6,12 +6,12 @@ const paymentService = new PaymentService();
 
 export const recordPayment = asyncHandler(async (req: Request, res: Response) => {
   const payment = await paymentService.forSchool(req.schoolId!).recordPayment(req.body, req.user!.id);
-  res.status(201).json({ success: true, message: 'Payment recorded successfully', data: payment });
+  res.status(201).json({ success: true, message: 'Payment recorded successfully', data: { payment } });
 });
 
 export const getPayments = asyncHandler(async (req: Request, res: Response) => {
   const result = await paymentService.forSchool(req.schoolId!).getPayments(req);
-  res.json({ success: true, data: result.payments, pagination: result.pagination });
+  res.json({ success: true, data: result });
 });
 
 export const getPaymentById = asyncHandler(async (req: Request, res: Response) => {

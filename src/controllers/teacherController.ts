@@ -12,12 +12,12 @@ export const createTeacher = asyncHandler(async (req: Request, res: Response) =>
 
 export const getTeachers = asyncHandler(async (req: Request, res: Response) => {
   const result = await teacherService.forSchool(req.schoolId!).getTeachers(req);
-  res.json({ success: true, data: result.teachers, pagination: result.pagination });
+  res.json({ success: true, data: result });
 });
 
 export const getTeacherById = asyncHandler(async (req: Request, res: Response) => {
   const teacher = await teacherService.forSchool(req.schoolId!).getTeacherById(req.params.id);
-  res.json({ success: true, data: teacher });
+  res.json({ success: true, data: { teacher } });
 });
 
 export const updateTeacher = asyncHandler(async (req: Request, res: Response) => {

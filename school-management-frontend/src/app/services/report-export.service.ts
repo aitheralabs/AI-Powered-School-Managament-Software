@@ -8,10 +8,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ReportExportService {
-  private readonly API = 'http://localhost:3000/api/v1';
+  private readonly API = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

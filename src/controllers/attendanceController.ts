@@ -7,7 +7,7 @@ const attendanceService = new AttendanceService();
 
 export const markAttendance = asyncHandler(async (req: Request, res: Response) => {
   const attendance = await attendanceService.forSchool(req.schoolId!).markAttendance(req.body, req.user!.id);
-  res.status(201).json({ success: true, message: 'Attendance marked successfully', data: attendance });
+  res.status(201).json({ success: true, message: 'Attendance marked successfully', data: { attendance } });
 });
 
 export const markBulkAttendance = asyncHandler(async (req: Request, res: Response) => {
@@ -17,7 +17,7 @@ export const markBulkAttendance = asyncHandler(async (req: Request, res: Respons
 
 export const getAttendance = asyncHandler(async (req: Request, res: Response) => {
   const result = await attendanceService.forSchool(req.schoolId!).getAttendance(req);
-  res.json({ success: true, data: result.attendance, pagination: result.pagination });
+  res.json({ success: true, data: result });
 });
 
 export const getAttendanceById = asyncHandler(async (req: Request, res: Response) => {
@@ -68,7 +68,7 @@ export const getStudentAttendanceList = asyncHandler(async (req: Request, res: R
     sqlParams
   );
 
-  res.json({ success: true, data: result.rows });
+  res.json({ success: true, data: { attendance: result.rows } });
 });
 
 export const getClassAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
