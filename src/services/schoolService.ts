@@ -266,6 +266,84 @@ export class SchoolService {
     invalidateTenantCache(schoolId);
   }
 
+  /** Update mutable school profile fields */
+  async updateSchool(
+    schoolId: string,
+    input: Partial<{
+      name: string; phone: string; address: string; city: string;
+      state: string; country: string; postalCode: string;
+      website: string; timezone: string; logoUrl: string;
+    }>
+  ): Promise<any> {
+    const fields: string[]  = [];
+    const values: unknown[] = [];
+    let   i = 1;
+
+    const colMap: Record<string, string> = {
+      name: 'name', phone: 'phone', address: 'address',
+      city: 'city', state: 'state', country: 'country',
+      postalCode: 'postal_code', website: 'website',
+      timezone: 'timezone', logoUrl: 'logo_url',
+    };
+
+    for (const [key, col] of Object.entries(colMap)) {
+      const val = (input as any)[key];
+      if (val !== undefined) {
+        fields.push(`${col} = $${i++}`);
+        values.push(val);
+      }
+    }
+
+    if (fields.length === 0) throw new AppError('No valid fields to update', 400);
+
+    fields.push(`updated_at = NOW()`);
+    values.push(schoolId);
+
+    const result = await query(
+      `UPDATE schools SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) throw new AppError('School not found', 404);
+
+    invalidateTenantCache(schoolId);
+    return result.rows[0];
+  }
+
+  /**
+   * GDPR data export — returns a structured JSON object with all school data.
+   * The route handler streams this as a JSON file download.
+   */
+  async exportSchoolData(schoolId: string): Promise<any> {
+    const [
+      schoolRes, studentsRes, teachersRes, staffRes,
+      classesRes, academicYearsRes, feeCategoriesRes,
+      paymentsRes, attendanceRes,
+    ] = await Promise.all([
+      query('SELECT id, name, slug, email, phone, address, city, state, country, plan, subscription_status, created_at FROM schools WHERE id = $1', [schoolId]),
+      query('SELECT * FROM students      WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM teachers      WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM staff         WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM classes       WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM academic_years WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM fee_categories WHERE school_id = $1', [schoolId]),
+      query('SELECT id, student_id, amount, payment_date, payment_method, status, created_at FROM payments WHERE school_id = $1', [schoolId]),
+      query('SELECT * FROM attendance    WHERE school_id = $1', [schoolId]),
+    ]);
+
+    return {
+      exportedAt:    new Date().toISOString(),
+      school:        schoolRes.rows[0],
+      students:      studentsRes.rows,
+      teachers:      teachersRes.rows,
+      staff:         staffRes.rows,
+      classes:       classesRes.rows,
+      academicYears: academicYearsRes.rows,
+      feeCategories: feeCategoriesRes.rows,
+      payments:      paymentsRes.rows,
+      attendance:    attendanceRes.rows,
+    };
+  }
+
   /** Check if school is within plan limits before adding a resource */
   async checkLimit(schoolId: string, resource: 'student' | 'teacher' | 'staff'): Promise<void> {
     const schoolResult = await query(

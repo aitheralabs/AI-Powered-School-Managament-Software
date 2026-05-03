@@ -68,9 +68,9 @@ export class AuthService extends BaseService {
   }
 
   async login(loginData: Login) {
-    // Find user by email
+    // Find user by email — include school_id so it can be embedded in the JWT
     const result = await this.executeQuery(
-      'SELECT id, first_name, last_name, email, password_hash, role, is_active FROM users WHERE email = $1',
+      'SELECT id, first_name, last_name, email, password_hash, role, school_id, is_active FROM users WHERE email = $1',
       [loginData.email]
     );
 
@@ -91,11 +91,12 @@ export class AuthService extends BaseService {
       throw new AppError('Invalid email or password', 401);
     }
 
-    // Generate JWT tokens
+    // Embed schoolId in the JWT so resolveTenant middleware avoids a DB round-trip
     const tokens = generateTokens({
       id: user.id,
       email: user.email,
       role: user.role,
+      schoolId: user.school_id ?? undefined,
     });
 
     // Store refresh token in database

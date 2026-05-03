@@ -21,10 +21,13 @@ import {
   registerSchool,
   getMySchool,
   getSchoolUsage,
+  updateMySchool,
+  exportSchoolData,
 } from '../controllers/schoolController';
 import { query } from '../database/connection';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { SchoolService } from '../services/schoolService';
+import { invoiceService } from '../services/invoiceService';
 import crypto from 'crypto';
 import https from 'https';
 
@@ -77,8 +80,10 @@ router.get('/verify-email', asyncHandler(async (req: Request, res: Response) => 
 
 router.use(authenticate, resolveTenant);
 
-router.get('/me',       authorize('admin'),          getMySchool);
-router.get('/me/usage', authorize('admin', 'staff'), getSchoolUsage);
+router.get   ('/me',        authorize('admin'),          getMySchool);
+router.patch ('/me',        authorize('admin'),          updateMySchool);
+router.get   ('/me/usage',  authorize('admin', 'staff'), getSchoolUsage);
+router.post  ('/me/export', authorize('admin'),          exportSchoolData);
 
 /** POST /api/v1/schools/me/create-order — create a Razorpay order for plan upgrade */
 router.post('/me/create-order', authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
@@ -205,18 +210,38 @@ router.post('/me/verify-payment', authorize('admin'), asyncHandler(async (req: R
     ? planResult.rows[0].price_yearly
     : planResult.rows[0].price_monthly;
 
-  await query(
+  const billingResult = await query(
     `INSERT INTO billing_events
        (school_id, event_type, amount, currency, plan_name, billing_period, gateway, gateway_event_id, gateway_payload, status)
      VALUES ($1,'payment.captured',$2,'INR',$3,$4,'razorpay',$5,$6,'success')
-     ON CONFLICT (gateway_event_id) DO NOTHING`,
+     ON CONFLICT (gateway_event_id) DO NOTHING
+     RETURNING id`,
     [req.schoolId!, amountPaid, plan, billingPeriod, paymentId, JSON.stringify({ orderId, paymentId })]
   );
+
+  // Auto-generate invoice + email receipt
+  invoiceService.generateInvoice({
+    schoolId:        req.schoolId!,
+    billingEventId:  billingResult.rows[0]?.id,
+    amountPaid,
+    currency:        'INR',
+    planName:        plan,
+    billingPeriod:   billingPeriod as 'monthly' | 'yearly',
+    gatewayInvoiceId: paymentId,
+    periodStart:     new Date(),
+    periodEnd:       subscriptionEndsAt,
+  }).catch(err => console.error('[Schools] Invoice generation failed:', err));
 
   res.json({
     success: true,
     message: `Subscription upgraded to ${plan}. Your account is now active.`,
   });
+}));
+
+/** POST /api/v1/schools/me/invoices/:id/resend — re-send receipt email */
+router.post('/me/invoices/:id/resend', authorize('admin'), asyncHandler(async (req: Request, res: Response) => {
+  await invoiceService.resendReceipt(req.params.id, req.schoolId!);
+  res.json({ success: true, message: 'Receipt email re-sent.' });
 }));
 
 /** GET /api/v1/schools/me/invoices — billing history */

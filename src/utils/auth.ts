@@ -18,35 +18,30 @@ export const comparePassword = async (
   return await bcrypt.compare(password, hashedPassword);
 };
 
-// Generate JWT access token (short-lived)
-export const generateAccessToken = (payload: {
+export interface TokenPayload {
   id: string;
   email: string;
   role: UserRole;
-}): string => {
+  schoolId?: string; // included so resolveTenant skips the extra DB lookup
+}
+
+// Generate JWT access token (short-lived)
+export const generateAccessToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: '1h', // Increased for testing
+    expiresIn: '1h',
   } as jwt.SignOptions);
 };
 
 // Generate JWT refresh token (long-lived)
-export const generateRefreshToken = (payload: {
-  id: string;
-  email: string;
-  role: UserRole;
-}): string => {
+export const generateRefreshToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN, // Use the configured expiration for refresh token
+    expiresIn: env.JWT_EXPIRES_IN,
     jwtid: crypto.randomUUID(),
   } as jwt.SignOptions);
 };
 
 // Generate both access and refresh tokens
-export const generateTokens = (payload: {
-  id: string;
-  email: string;
-  role: UserRole;
-}) => {
+export const generateTokens = (payload: TokenPayload) => {
   return {
     accessToken: generateAccessToken(payload),
     refreshToken: generateRefreshToken(payload),
@@ -54,11 +49,7 @@ export const generateTokens = (payload: {
 };
 
 // Legacy function for backward compatibility
-export const generateToken = (payload: {
-  id: string;
-  email: string;
-  role: UserRole;
-}): string => {
+export const generateToken = (payload: TokenPayload): string => {
   return generateAccessToken(payload);
 };
 

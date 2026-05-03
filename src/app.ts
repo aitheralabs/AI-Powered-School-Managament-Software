@@ -44,6 +44,8 @@ import auditRoutes from './routes/audit';
 
 // Import monitoring service
 import { monitoringService } from './services/monitoringService';
+// Scheduled tasks (dunning, trial warnings, overage alerts)
+import { startScheduledTasks } from './cron/scheduledTasks';
 import { requestTimingMiddleware } from './middleware/requestTiming';
 import statusMonitor from 'express-status-monitor';
 import { cacheResponse } from './middleware/caching';
@@ -246,6 +248,11 @@ app.use(monitoringService.getErrorHandler());
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
+
+// Start background cron jobs (skip in test to avoid timer leaks)
+if (process.env.NODE_ENV !== 'test') {
+  startScheduledTasks();
+}
 
 export default app;
 export { app };

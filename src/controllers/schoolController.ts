@@ -107,6 +107,32 @@ export const listAllSchools = asyncHandler(async (req: Request, res: Response) =
   res.json({ success: true, ...result });
 });
 
+/** PATCH /api/v1/schools/me — update school profile */
+export const updateMySchool = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.schoolId) throw new AppError('Tenant context missing', 500);
+
+  const allowed = ['name','phone','address','city','state','country','postalCode','website','timezone','logoUrl'];
+  const input: Record<string, any> = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) input[key] = req.body[key];
+  }
+
+  const updated = await schoolService.updateSchool(req.schoolId, input);
+  res.json({ success: true, message: 'School profile updated.', data: updated });
+});
+
+/** POST /api/v1/schools/me/export — GDPR data export */
+export const exportSchoolData = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.schoolId) throw new AppError('Tenant context missing', 500);
+
+  const data     = await schoolService.exportSchoolData(req.schoolId);
+  const filename = `school-export-${data.school.slug}-${Date.now()}.json`;
+
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.json(data);
+});
+
 /** POST /api/v1/superadmin/schools/:id/suspend */
 export const suspendSchool = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

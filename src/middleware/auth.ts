@@ -33,25 +33,27 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
 
   try {
     // Verify and decode the JWT token
-    const decoded = jwt.verify(token, env.JWT_SECRET) as { 
-      id?: string; 
-      userId?: string; 
-      email: string; 
-      role: UserRole 
+    const decoded = jwt.verify(token, env.JWT_SECRET) as {
+      id?: string;
+      userId?: string;
+      email: string;
+      role: UserRole;
+      schoolId?: string; // present in tokens issued after migration 028
     };
 
     // Handle both 'id' and 'userId' fields for backward compatibility
     const userId = decoded.id || decoded.userId;
     const email = decoded.email;
     const role = decoded.role;
-    
+    const schoolIdFromToken = decoded.schoolId;
+
     if (!userId || !email || !role) {
       throw new AppError('Invalid token payload', 401);
     }
 
     // In tests, trust the token payload and skip DB lookup to reduce flakiness
     if (env.NODE_ENV === 'test') {
-      req.user = { id: String(userId), email, role };
+      req.user = { id: String(userId), email, role, schoolId: schoolIdFromToken };
       return next();
     }
 
@@ -61,9 +63,10 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       throw new AppError('Invalid token payload', 401);
     }
 
-    // Verify user exists in database and is active
+    // Confirm user is still active in DB. We trust the token's schoolId to
+    // avoid a redundant FK join — DB school_id is used as the authoritative value.
     const user = await query(
-      'SELECT id, first_name, last_name, email, role, school_id, is_active FROM users WHERE id = $1 AND is_active = true',
+      'SELECT id, email, role, school_id, is_active FROM users WHERE id = $1 AND is_active = true',
       [userId]
     );
 
@@ -76,7 +79,8 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       id: userData.id,
       email: userData.email,
       role: userData.role,
-      schoolId: userData.school_id,   // attach tenant id from DB
+      // DB value is authoritative; fall back to token claim for legacy tokens
+      schoolId: userData.school_id ?? schoolIdFromToken,
     };
     
     next();

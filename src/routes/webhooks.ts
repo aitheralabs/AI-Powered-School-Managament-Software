@@ -17,6 +17,8 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { SchoolService } from '../services/schoolService';
+import { invoiceService } from '../services/invoiceService';
+import { dunningService } from '../services/dunningService';
 import { query } from '../database/connection';
 
 const router = Router();
@@ -72,16 +74,15 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
   switch (event.event) {
     case 'subscription.activated':
     case 'subscription.charged': {
-      // Determine plan from subscription notes
-      const notes = event.payload?.subscription?.entity?.notes || {};
-      const plan = notes.plan || 'basic';
+      const notes         = event.payload?.subscription?.entity?.notes || {};
+      const plan          = notes.plan || 'basic';
       const billingPeriod = notes.billing_period || 'monthly';
-
-      // Calculate next billing date
-      const chargedAt = event.payload?.subscription?.entity?.charge_at;
-      const nextDate = chargedAt
+      const chargedAt     = event.payload?.subscription?.entity?.charge_at;
+      const nextDate      = chargedAt
         ? new Date(chargedAt * 1000)
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const amountPaid = (event.payload?.payment?.entity?.amount || 0) / 100;
 
       if (schoolId) {
         await schoolService.updateSubscription({
@@ -91,18 +92,37 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
           subscriptionEndsAt: nextDate,
         });
 
-        // Log billing event
-        await query(
+        const billingResult = await query(
           `INSERT INTO billing_events
              (school_id, event_type, amount, currency, plan_name, billing_period, gateway, gateway_event_id, gateway_payload, status)
-           VALUES ($1,$2,$3,'INR',$4,$5,'razorpay',$6,$7,'success')`,
-          [
+           VALUES ($1,$2,$3,'INR',$4,$5,'razorpay',$6,$7,'success')
+           RETURNING id`,
+          [schoolId, event.event, amountPaid, plan, billingPeriod, eventId, JSON.stringify(event)]
+        );
+
+        // Auto-generate invoice + send receipt email
+        if (amountPaid > 0) {
+          const periodStart = new Date();
+          const periodEnd   = new Date(nextDate);
+          invoiceService.generateInvoice({
             schoolId,
-            event.event,
-            (event.payload?.payment?.entity?.amount || 0) / 100,
-            plan, billingPeriod, eventId,
-            JSON.stringify(event),
-          ]
+            billingEventId: billingResult.rows[0]?.id,
+            amountPaid,
+            currency: 'INR',
+            planName: plan,
+            billingPeriod: billingPeriod as 'monthly' | 'yearly',
+            gatewayInvoiceId: eventId,
+            periodStart,
+            periodEnd,
+          }).catch(err => console.error('[Webhook] Invoice generation failed:', err));
+        }
+
+        // Clear any active dunning when payment succeeds
+        await query(
+          `UPDATE schools
+           SET dunning_step = 0, dunning_started_at = NULL, dunning_last_email_at = NULL
+           WHERE id = $1 AND dunning_step > 0`,
+          [schoolId]
         );
       }
       break;
@@ -125,6 +145,9 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
           "UPDATE schools SET subscription_status = 'past_due', updated_at = NOW() WHERE id = $1",
           [schoolId]
         );
+        // Kick off dunning step 1 immediately
+        dunningService.handlePaymentFailed(schoolId)
+          .catch(err => console.error('[Webhook] Dunning trigger failed:', err));
       }
       break;
     }
@@ -185,30 +208,54 @@ router.post(
 
     switch (event.type) {
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        const subscriptionId = invoice.subscription;
-        const plan = invoice.lines?.data?.[0]?.metadata?.plan || 'basic';
-        const periodEnd = invoice.lines?.data?.[0]?.period?.end;
+        const stripeInvoice  = event.data.object;
+        const stripeSubId    = stripeInvoice.subscription;
+        const plan           = stripeInvoice.lines?.data?.[0]?.metadata?.plan || 'basic';
+        const billingPeriod  = stripeInvoice.lines?.data?.[0]?.metadata?.billing_period || 'monthly';
+        const periodEndTs    = stripeInvoice.lines?.data?.[0]?.period?.end;
+        const periodStartTs  = stripeInvoice.lines?.data?.[0]?.period?.start;
+        const amountPaid     = (stripeInvoice.amount_paid || 0) / 100;
+        const currency       = (stripeInvoice.currency || 'usd').toUpperCase();
 
         if (schoolId) {
+          const subEnd = periodEndTs ? new Date(periodEndTs * 1000) : undefined;
           await schoolService.updateSubscription({
             schoolId,
             plan: plan as any,
             stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : undefined,
+            stripeSubscriptionId: stripeSubId,
+            subscriptionEndsAt: subEnd,
           });
 
-          await query(
+          const billingResult = await query(
             `INSERT INTO billing_events
-               (school_id, event_type, amount, currency, plan_name, gateway, gateway_event_id, gateway_payload, status)
-             VALUES ($1,$2,$3,$4,$5,'stripe',$6,$7,'success')`,
-            [
-              schoolId, event.type,
-              (invoice.amount_paid || 0) / 100,
-              (invoice.currency || 'usd').toUpperCase(),
-              plan, event.id, JSON.stringify(event),
-            ]
+               (school_id, event_type, amount, currency, plan_name, billing_period, gateway, gateway_event_id, gateway_payload, status)
+             VALUES ($1,$2,$3,$4,$5,$6,'stripe',$7,$8,'success')
+             RETURNING id`,
+            [schoolId, event.type, amountPaid, currency, plan, billingPeriod, event.id, JSON.stringify(event)]
+          );
+
+          // Auto-generate invoice + receipt email
+          if (amountPaid > 0) {
+            invoiceService.generateInvoice({
+              schoolId,
+              billingEventId:  billingResult.rows[0]?.id,
+              amountPaid,
+              currency,
+              planName:        plan,
+              billingPeriod:   billingPeriod as 'monthly' | 'yearly',
+              gatewayInvoiceId: event.id,
+              periodStart: periodStartTs ? new Date(periodStartTs * 1000) : undefined,
+              periodEnd:   subEnd,
+            }).catch(err => console.error('[Webhook/Stripe] Invoice generation failed:', err));
+          }
+
+          // Clear dunning on success
+          await query(
+            `UPDATE schools
+             SET dunning_step = 0, dunning_started_at = NULL, dunning_last_email_at = NULL
+             WHERE id = $1 AND dunning_step > 0`,
+            [schoolId]
           );
         }
         break;
@@ -220,6 +267,8 @@ router.post(
             "UPDATE schools SET subscription_status = 'past_due', updated_at = NOW() WHERE id = $1",
             [schoolId]
           );
+          dunningService.handlePaymentFailed(schoolId)
+            .catch(err => console.error('[Webhook/Stripe] Dunning trigger failed:', err));
         }
         break;
       }
