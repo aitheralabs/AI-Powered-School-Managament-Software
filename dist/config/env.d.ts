@@ -18,10 +18,16 @@ export declare const env: {
     REDIS_ENABLED: boolean;
     SMTP_PORT: number;
     SMTP_SECURE: boolean;
+    APP_URL: string;
+    APP_NAME: string;
+    UPLOAD_DIR: string;
+    MAX_FILE_SIZE: number;
+    ALLOWED_FILE_TYPES: string;
     REDIS_PASSWORD?: string | undefined;
     SMTP_HOST?: string | undefined;
     SMTP_USER?: string | undefined;
     SMTP_PASS?: string | undefined;
+    SMTP_FROM?: string | undefined;
     SUPER_ADMIN_JWT_SECRET?: string | undefined;
     ANTHROPIC_API_KEY?: string | undefined;
     RAZORPAY_KEY_ID?: string | undefined;

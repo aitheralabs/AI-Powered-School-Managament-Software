@@ -25,7 +25,7 @@ export declare class ClassService extends BaseService {
         updatedAt: any;
     }>;
     getClasses(req: any): Promise<{
-        classes: any;
+        items: any;
         pagination: {
             page: number;
             limit: number;
@@ -77,6 +77,10 @@ export declare class ClassService extends BaseService {
     }>;
     deleteClass(id: string): Promise<{
         success: boolean;
+    }>;
+    assignSubjectToClass(classId: string, subjectId: string, teacherId?: string): Promise<any>;
+    getClassSubjects(classId: string): Promise<{
+        subjects: any;
     }>;
     private transformClassResponse;
 }

@@ -8,20 +8,20 @@ export declare const CreateFeeCategorySchema: z.ZodObject<{
     amount: z.ZodNumber;
     frequency: z.ZodEnum<["monthly", "quarterly", "semester", "annual", "one-time"]>;
     isMandatory: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
-    academicYearId: z.ZodEffects<z.ZodString, string, string>;
+    academicYearId: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "strip", z.ZodTypeAny, {
     name: string;
-    academicYearId: string;
     amount: number;
     frequency: "semester" | "monthly" | "quarterly" | "annual" | "one-time";
     isMandatory: boolean;
     description?: string | undefined;
+    academicYearId?: string | undefined;
 }, {
     name: string;
-    academicYearId: string;
     amount: number;
     frequency: "semester" | "monthly" | "quarterly" | "annual" | "one-time";
     description?: string | undefined;
+    academicYearId?: string | undefined;
     isMandatory?: boolean | undefined;
 }>;
 export declare const UpdateFeeCategorySchema: z.ZodObject<Omit<{
@@ -30,7 +30,7 @@ export declare const UpdateFeeCategorySchema: z.ZodObject<Omit<{
     amount: z.ZodOptional<z.ZodNumber>;
     frequency: z.ZodOptional<z.ZodEnum<["monthly", "quarterly", "semester", "annual", "one-time"]>>;
     isMandatory: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodBoolean>>>;
-    academicYearId: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    academicYearId: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
 }, "academicYearId">, "strip", z.ZodTypeAny, {
     name?: string | undefined;
     description?: string | undefined;

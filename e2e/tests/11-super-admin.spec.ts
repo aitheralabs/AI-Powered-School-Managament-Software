@@ -20,7 +20,8 @@ test.describe('Super Admin Dashboard', () => {
 
   test('platform KPI stats visible', async ({ page }) => {
     await page.waitForTimeout(2000);
-    const kpiCards = page.locator('mat-card, .card, .stat-card, .kpi');
+    // Super admin dashboard uses .kpi-tile (not mat-card/.card/.kpi)
+    const kpiCards = page.locator('mat-card, .card, .stat-card, .kpi, .kpi-tile');
     const count = await kpiCards.count();
     expect(count).toBeGreaterThanOrEqual(1);
     await expect(page.locator('body')).not.toContainText('Unexpected error');
@@ -97,9 +98,11 @@ test.describe('Super Admin navigation', () => {
     await page.goto('/super-admin/dashboard');
     await page.waitForLoadState('networkidle');
 
-    const navLinks = page.locator('nav a, mat-nav-list a, [routerLink]');
+    // Super admin uses a header-only layout (no routerLink sidebar)
+    // Check for any interactive navigation/action elements in the header
+    const navLinks = page.locator('nav a, mat-nav-list a, [routerLink], header button, .sa-logout-btn, .create-tenant-btn');
     const count    = await navLinks.count();
-    console.log(`Super Admin has ${count} nav links`);
+    console.log(`Super Admin has ${count} nav/action elements`);
     expect(count).toBeGreaterThan(0);
   });
 });

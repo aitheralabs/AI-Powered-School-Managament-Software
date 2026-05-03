@@ -1,0 +1,188 @@
+<div class="billing-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Billing &amp; Subscription</h1>
+      <p>Manage your plan, payments, and invoice history.</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-wrap" *ngIf="isLoading">
+    <mat-spinner diameter="44"></mat-spinner>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- Banners -->
+    <div class="alert-banner warning" *ngIf="isTrialing && trialDaysLeft <= 7 && trialDaysLeft > 0">
+      <mat-icon>schedule</mat-icon>
+      <span>Your free trial expires in <strong>{{ trialDaysLeft }} day{{ trialDaysLeft !== 1 ? 's' : '' }}</strong>. Upgrade to keep access to all features.</span>
+    </div>
+    <div class="alert-banner danger" *ngIf="trialDaysLeft === 0 && isTrialing">
+      <mat-icon>warning</mat-icon>
+      <span>Your free trial has expired. Upgrade now to continue using the platform.</span>
+    </div>
+    <div class="alert-banner danger" *ngIf="isPastDue">
+      <mat-icon>credit_card_off</mat-icon>
+      <span>Your last payment failed. Please upgrade or update your payment method to restore full access.</span>
+    </div>
+    <div class="alert-banner success" *ngIf="successMsg">
+      <mat-icon>check_circle</mat-icon> {{ successMsg }}
+    </div>
+    <div class="alert-banner error" *ngIf="error">
+      <mat-icon>error</mat-icon> {{ error }}
+      <button class="dismiss" (click)="error = ''"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <!-- Current plan card -->
+    <div class="current-plan-card" *ngIf="usage">
+      <div class="plan-info">
+        <div class="plan-badge-lg" [style.background]="planColor(currentPlan) + '15'" [style.color]="planColor(currentPlan)">
+          <mat-icon>workspace_premium</mat-icon>
+          {{ currentPlan | titlecase }} Plan
+        </div>
+        <div class="plan-status">
+          <span *ngIf="isTrialing" class="status-chip trial">
+            <mat-icon>schedule</mat-icon>
+            Trial — {{ trialDaysLeft }} day{{ trialDaysLeft !== 1 ? 's' : '' }} left
+          </span>
+          <span *ngIf="usage.subscriptionStatus === 'active'" class="status-chip active">
+            <mat-icon>check_circle</mat-icon> Active
+          </span>
+          <span *ngIf="isPastDue" class="status-chip danger">
+            <mat-icon>warning</mat-icon> Payment Due
+          </span>
+          <span *ngIf="usage.subscriptionEndsAt && usage.subscriptionStatus === 'active'" class="renews-on">
+            Renews {{ usage.subscriptionEndsAt | date:'MMM d, y' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Usage bars -->
+      <div class="usage-grid">
+        <div class="usage-item">
+          <div class="usage-top">
+            <span>Students</span>
+            <span class="usage-nums">{{ usage.usage?.students?.used || 0 }} / {{ usage.usage?.students?.limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(usage.usage?.students?.used || 0, usage.usage?.students?.limit)"
+                 [class.high]="usagePct(usage.usage?.students?.used || 0, usage.usage?.students?.limit) >= 80"></div>
+          </div>
+        </div>
+        <div class="usage-item">
+          <div class="usage-top">
+            <span>Teachers</span>
+            <span class="usage-nums">{{ usage.usage?.teachers?.used || 0 }} / {{ usage.usage?.teachers?.limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(usage.usage?.teachers?.used || 0, usage.usage?.teachers?.limit)"
+                 [class.high]="usagePct(usage.usage?.teachers?.used || 0, usage.usage?.teachers?.limit) >= 80"></div>
+          </div>
+        </div>
+        <div class="usage-item">
+          <div class="usage-top">
+            <span>Staff</span>
+            <span class="usage-nums">{{ usage.usage?.staff?.used || 0 }} / {{ usage.usage?.staff?.limit }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(usage.usage?.staff?.used || 0, usage.usage?.staff?.limit)"
+                 [class.high]="usagePct(usage.usage?.staff?.used || 0, usage.usage?.staff?.limit) >= 80"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plans section -->
+    <div class="section-header">
+      <h2>Choose your plan</h2>
+      <div class="period-toggle">
+        <button [class.active]="billingPeriod === 'monthly'" (click)="billingPeriod = 'monthly'">Monthly</button>
+        <button [class.active]="billingPeriod === 'yearly'"  (click)="billingPeriod = 'yearly'">
+          Yearly <span class="save-tag">Save up to 20%</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="plans-grid">
+      <div class="plan-card"
+           *ngFor="let plan of plans"
+           [class.current]="isCurrentPlan(plan.name)"
+           [class.popular]="plan.name === 'premium'">
+
+        <div class="popular-label" *ngIf="plan.name === 'premium'">Most Popular</div>
+
+        <div class="plan-header">
+          <div class="plan-name" [style.color]="planColor(plan.name)">{{ plan.display_name || (plan.name | titlecase) }}</div>
+          <div class="plan-price" *ngIf="plan.name !== 'enterprise'">
+            <span class="price-num">₹{{ planPrice(plan) | number:'1.0-0' }}</span>
+            <span class="price-per">/{{ billingPeriod === 'yearly' ? 'year' : 'month' }}</span>
+          </div>
+          <div class="plan-price" *ngIf="plan.name === 'enterprise'">
+            <span class="price-num">Custom</span>
+          </div>
+          <div class="yearly-saving" *ngIf="billingPeriod === 'yearly' && planSaving(plan) > 0">
+            Save {{ planSaving(plan) }}%
+          </div>
+        </div>
+
+        <p class="plan-desc">{{ plan.description }}</p>
+
+        <ul class="feature-list">
+          <li *ngFor="let f of featureList(plan)">
+            <mat-icon>check_circle</mat-icon> {{ f }}
+          </li>
+        </ul>
+
+        <button class="plan-btn"
+                [class.current-btn]="isCurrentPlan(plan.name)"
+                [class.upgrade-btn]="isUpgrade(plan.name)"
+                [class.popular-btn]="plan.name === 'premium' && !isCurrentPlan(plan.name)"
+                [disabled]="isCurrentPlan(plan.name) || checkoutLoading"
+                (click)="startCheckout(plan)">
+          <mat-spinner *ngIf="checkoutLoading" diameter="16"></mat-spinner>
+          <span *ngIf="isCurrentPlan(plan.name)">Current Plan</span>
+          <span *ngIf="!isCurrentPlan(plan.name) && plan.name !== 'enterprise'">
+            {{ isUpgrade(plan.name) ? 'Upgrade Now' : 'Downgrade' }}
+          </span>
+          <span *ngIf="!isCurrentPlan(plan.name) && plan.name === 'enterprise'">Contact Sales</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Invoice history -->
+    <div class="section-header" style="margin-top: 40px">
+      <h2>Payment History</h2>
+      <span class="invoice-count" *ngIf="invoiceTotal > 0">{{ invoiceTotal }} record{{ invoiceTotal !== 1 ? 's' : '' }}</span>
+    </div>
+
+    <div class="invoices-card">
+      <div class="empty-invoices" *ngIf="invoices.length === 0">
+        <mat-icon>receipt_long</mat-icon>
+        <p>No payment history yet.</p>
+      </div>
+      <table *ngIf="invoices.length > 0">
+        <thead>
+          <tr><th>Date</th><th>Plan</th><th>Period</th><th>Amount</th><th>Gateway</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let inv of invoices">
+            <td>{{ inv.created_at | date:'MMM d, y' }}</td>
+            <td><span class="plan-chip" [style.color]="planColor(inv.plan_name)">{{ inv.plan_name | titlecase }}</span></td>
+            <td>{{ inv.billing_period | titlecase }}</td>
+            <td class="amount-cell">₹{{ inv.amount | number:'1.0-0' }}</td>
+            <td><span class="gateway-chip">{{ inv.gateway | titlecase }}</span></td>
+            <td>
+              <span class="status-chip" [class.active]="inv.status === 'success'" [class.danger]="inv.status === 'failed'">
+                <mat-icon>{{ inv.status === 'success' ? 'check_circle' : 'cancel' }}</mat-icon>
+                {{ inv.status | titlecase }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+</div>

@@ -1,6 +1,9 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.school.com/api/v1',
-  apiTimeout: 30000, // 30 seconds
-  apiVersion: 'v1'
+  // Relative URL: works on any domain since nginx proxies /api/ to the backend.
+  // Same-origin requests have no CORS preflight — eliminates the Authorization
+  // header preflight issue that caused intermittent E2E test failures.
+  apiUrl: '/api/v1',
+  apiTimeout: 30000,
+  apiVersion: 'v1',
 };

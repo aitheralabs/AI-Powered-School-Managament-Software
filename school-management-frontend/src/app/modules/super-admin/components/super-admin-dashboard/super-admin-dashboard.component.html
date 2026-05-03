@@ -11,6 +11,9 @@
     </div>
     <div class="sa-header-right">
       <span class="sa-date">{{ today | date:'EEE, MMM d, y' }}</span>
+      <a routerLink="/super-admin/schools" class="sa-schools-btn" matTooltip="Manage all schools">
+        <mat-icon>domain</mat-icon> Manage Schools
+      </a>
       <button class="sa-logout-btn" (click)="logout()" matTooltip="Sign out">
         <mat-icon>logout</mat-icon> Sign Out
       </button>
@@ -82,6 +85,9 @@
             <h3>Recently Joined Schools</h3>
             <p class="card-sub">Newest {{ data.recentSchools?.length }} schools on platform</p>
           </div>
+          <a routerLink="/super-admin/schools" class="card-link">
+            View All <mat-icon>chevron_right</mat-icon>
+          </a>
         </div>
 
         <div *ngIf="!data.recentSchools?.length" class="empty-msg">

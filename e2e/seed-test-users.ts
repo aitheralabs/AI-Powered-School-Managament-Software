@@ -110,23 +110,41 @@ async function main() {
       console.log(`   → Password check: ${match ? '✅ OK' : '❌ MISMATCH'}`);
     }
 
-    // ── 4. Ensure E2E class exists ───────────────────────────────────────────
+    // ── 4. Ensure academic year exists ──────────────────────────────────────
+    let academicYearId: string;
+    const existingYear = await run(`SELECT id FROM academic_years WHERE school_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`, [schoolId]);
+    if (existingYear.rows.length > 0) {
+      academicYearId = existingYear.rows[0].id;
+      console.log('✅ Using existing academic year:', academicYearId);
+    } else {
+      const yearRes = await run(
+        `INSERT INTO academic_years (name, start_date, end_date, is_active, school_id)
+         VALUES ('2024-2025', '2024-04-01', '2025-03-31', true, $1) RETURNING id`,
+        [schoolId]
+      );
+      academicYearId = yearRes.rows[0].id;
+      console.log('✅ Created academic year:', academicYearId);
+    }
+
+    // ── 5. Ensure E2E class exists ───────────────────────────────────────────
     let classId: string;
     const existingClass = await run(`SELECT id FROM classes WHERE school_id = $1`, [schoolId]);
     if (existingClass.rows.length > 0) {
       classId = existingClass.rows[0].id;
       console.log('✅ Using existing class:', classId);
+      // Ensure class has academic_year_id set
+      await run(`UPDATE classes SET academic_year_id = $1 WHERE id = $2 AND academic_year_id IS NULL`, [academicYearId, classId]);
     } else {
       const cls = await run(
-        `INSERT INTO classes (name, grade, section, capacity, school_id, is_active)
-         VALUES ('Class 10', '10', 'A', 40, $1, true) RETURNING id`,
-        [schoolId]
+        `INSERT INTO classes (name, grade, section, capacity, school_id, is_active, academic_year_id)
+         VALUES ('Class 10', '10', 'A', 40, $1, true, $2) RETURNING id`,
+        [schoolId, academicYearId]
       );
       classId = cls.rows[0].id;
       console.log('✅ Created E2E class:', classId);
     }
 
-    // ── 5. Link teacher record (correct required columns) ────────────────────
+    // ── 6. Link teacher record (correct required columns) ────────────────────
     const tchUser = await run(`SELECT id FROM users WHERE email = 'teacher@testschool.com'`);
     if (tchUser.rows[0]) {
       try {
@@ -147,7 +165,7 @@ async function main() {
       } catch (e: any) { console.log('   (teachers table skip:', e.message.slice(0, 80), ')'); }
     }
 
-    // ── 6. Link student record (correct required columns) ────────────────────
+    // ── 7. Link student record (correct required columns) ────────────────────
     const stuUser = await run(`SELECT id FROM users WHERE email = 'student@testschool.com'`);
     if (stuUser.rows[0]) {
       try {

@@ -79,7 +79,8 @@ test.describe('Teacher Dashboard', () => {
   test('teacher sees class-related widgets', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
-    const cards = page.locator('mat-card, .card');
+    // Teacher dashboard uses .kpi-tile and .dash-card (not mat-card/.card)
+    const cards = page.locator('mat-card, .card, .kpi-tile, .dash-card');
     await expect(cards.first()).toBeVisible();
   });
 });

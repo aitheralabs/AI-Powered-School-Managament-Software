@@ -286,6 +286,12 @@ export class SidebarComponent implements OnInit {
       roles: ['admin', 'teacher', 'staff']
     },
     {
+      title: 'Billing',
+      icon: 'credit_card',
+      route: '/billing',
+      roles: ['admin']
+    },
+    {
       title: 'Settings',
       icon: 'settings',
       route: '/settings',

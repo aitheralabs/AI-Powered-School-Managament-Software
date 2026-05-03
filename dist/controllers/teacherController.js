@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTeacherSubjects = exports.getTeacherClasses = exports.getTeacherStats = exports.getOptimalTeacherSuggestions = exports.checkAssignmentConflicts = exports.getAllTeacherAssignments = exports.removeTeacherFromClassSubject = exports.assignTeacherToClassSubject = exports.removeTeacherFromClass = exports.getTeacherWorkload = exports.assignTeacherToClass = exports.removeTeacherFromSubject = exports.assignTeacherToSubject = exports.deleteTeacher = exports.updateTeacher = exports.getTeacherById = exports.getTeachers = exports.createTeacher = void 0;
+exports.exportTeachers = exports.getTeacherSubjects = exports.getTeacherClasses = exports.getTeacherStats = exports.getOptimalTeacherSuggestions = exports.checkAssignmentConflicts = exports.getAllTeacherAssignments = exports.removeTeacherFromClassSubject = exports.assignTeacherToClassSubject = exports.removeTeacherFromClass = exports.getTeacherWorkload = exports.assignTeacherToClass = exports.removeTeacherFromSubject = exports.assignTeacherToSubject = exports.deleteTeacher = exports.updateTeacher = exports.getTeacherById = exports.getTeachers = exports.createTeacher = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
 const teacherService_1 = require("../services/teacherService");
 const connection_1 = require("../database/connection");
@@ -11,11 +11,11 @@ exports.createTeacher = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 });
 exports.getTeachers = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await teacherService.forSchool(req.schoolId).getTeachers(req);
-    res.json({ success: true, data: result.teachers, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.getTeacherById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const teacher = await teacherService.forSchool(req.schoolId).getTeacherById(req.params.id);
-    res.json({ success: true, data: teacher });
+    res.json({ success: true, data: { teacher } });
 });
 exports.updateTeacher = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const teacher = await teacherService.forSchool(req.schoolId).updateTeacher(req.params.id, req.body);
@@ -121,5 +121,38 @@ exports.getTeacherSubjects = (0, errorHandler_1.asyncHandler)(async (req, res) =
      JOIN subjects s ON s.id = ts.subject_id
      WHERE ts.teacher_id = $1 AND s.school_id = $2 AND s.is_active = true`, [id, schoolId]);
     res.json({ success: true, data: result.rows });
+});
+exports.exportTeachers = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const schoolId = req.schoolId;
+    const format = req.query.format || 'csv';
+    const result = await (0, connection_1.query)(`SELECT t.id, u.first_name, u.last_name, u.email, u.phone, t.employee_id,
+            t.specialization, t.qualification, t.experience_years,
+            t.is_active, t.joining_date, u.created_at
+     FROM teachers t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.school_id = $1
+     ORDER BY u.first_name, u.last_name`, [schoolId]);
+    const rows = result.rows;
+    if (format === 'csv') {
+        const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Employee ID',
+            'Specialization', 'Qualification', 'Experience (Years)',
+            'Active', 'Joining Date', 'Created At'];
+        const csvRows = rows.map((r) => [
+            r.id, r.first_name, r.last_name, r.email || '', r.phone || '', r.employee_id || '',
+            `"${(r.specialization || '').replace(/"/g, '""')}"`,
+            `"${(r.qualification || '').replace(/"/g, '""')}"`,
+            r.experience_years || 0,
+            r.is_active ? 'Yes' : 'No',
+            r.joining_date ? new Date(r.joining_date).toISOString().split('T')[0] : '',
+            new Date(r.created_at).toISOString().split('T')[0],
+        ].join(','));
+        const csv = [headers.join(','), ...csvRows].join('\n');
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="teachers.csv"');
+        res.send(csv);
+    }
+    else {
+        res.json({ success: true, data: rows });
+    }
 });
 //# sourceMappingURL=teacherController.js.map

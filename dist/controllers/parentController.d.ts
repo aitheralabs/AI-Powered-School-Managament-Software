@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 export declare const createParent: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getParents: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getParentById: (req: Request, res: Response, next: import("express").NextFunction) => void;

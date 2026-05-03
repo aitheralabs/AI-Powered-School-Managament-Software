@@ -10,6 +10,14 @@ export const routes: Routes = [
         (c) => c.LandingComponent,
       ),
   },
+  // ─── School self-registration (public) ──────────────────────────────────
+  {
+    path: 'school-register',
+    loadComponent: () =>
+      import('./modules/school-register/school-register.component').then(
+        (c) => c.SchoolRegisterComponent,
+      ),
+  },
   // ─── Auth ────────────────────────────────────────────────────────────────
   {
     path: 'auth',
@@ -153,6 +161,21 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./modules/staff/staff.routes').then((m) => m.staffRoutes),
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'billing',
+    loadComponent: () =>
+      import('./modules/billing/billing.component').then(
+        (c) => c.BillingComponent,
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./modules/verify-email/verify-email.component').then(
+        (c) => c.VerifyEmailComponent,
+      ),
   },
   {
     path: 'unauthorized',

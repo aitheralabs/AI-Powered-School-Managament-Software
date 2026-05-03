@@ -54,13 +54,16 @@ class StudentService extends baseService_1.BaseService {
             if (existingStudentId.rows.length > 0) {
                 throw new errorHandler_1.AppError('A student with this ID already exists', 409);
             }
-            const classResult = await client.query('SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND school_id = $2 AND is_active = true', [studentData.classId, schoolId]);
-            if (classResult.rows.length === 0) {
-                throw new errorHandler_1.AppError('Class not found or inactive', 404);
-            }
-            const classInfo = classResult.rows[0];
-            if (classInfo.current_enrollment >= classInfo.capacity) {
-                throw new errorHandler_1.AppError('Class is at full capacity', 409);
+            const classId = studentData.classId || null;
+            if (classId) {
+                const classResult = await client.query('SELECT id, capacity, current_enrollment FROM classes WHERE id = $1 AND school_id = $2 AND is_active = true', [classId, schoolId]);
+                if (classResult.rows.length === 0) {
+                    throw new errorHandler_1.AppError('Class not found or inactive', 404);
+                }
+                const classInfo = classResult.rows[0];
+                if (classInfo.current_enrollment >= classInfo.capacity) {
+                    throw new errorHandler_1.AppError('Class is at full capacity', 409);
+                }
             }
             const password = studentData.password || this.generateDefaultPassword(studentData.studentId);
             const passwordHash = await (0, auth_1.hashPassword)(password);
@@ -81,15 +84,17 @@ class StudentService extends baseService_1.BaseService {
          RETURNING id, alt_id, user_id, student_id, class_id, enrollment_date,
                    guardian_name, guardian_phone, guardian_email, emergency_contact,
                    medical_info, is_active, created_at, updated_at`, [
-                user.id, studentData.studentId, studentData.classId, studentData.enrollmentDate,
+                user.id, studentData.studentId, classId, studentData.enrollmentDate,
                 studentData.guardianName, studentData.guardianPhone, studentData.guardianEmail || null,
                 studentData.emergencyContact, studentData.medicalInfo || null,
                 studentSequentialId, schoolId,
             ]);
             const student = studentResult.rows[0];
-            await client.query('UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1 AND school_id = $2', [studentData.classId, schoolId]);
-            await client.query(`INSERT INTO student_class_history (student_id, class_id, academic_year_id, start_date)
-         VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2 AND school_id = $3), $4)`, [student.id, studentData.classId, schoolId, studentData.enrollmentDate]);
+            if (classId) {
+                await client.query('UPDATE classes SET current_enrollment = current_enrollment + 1 WHERE id = $1 AND school_id = $2', [classId, schoolId]);
+                await client.query(`INSERT INTO student_class_history (student_id, class_id, academic_year_id, start_date)
+           VALUES ($1, $2, (SELECT academic_year_id FROM classes WHERE id = $2 AND school_id = $3), $4)`, [student.id, classId, schoolId, studentData.enrollmentDate]);
+            }
             return {
                 ...this.transformStudentResponse(student),
                 user: this.transformUserResponse(user),
@@ -161,7 +166,7 @@ class StudentService extends baseService_1.BaseService {
                 academicYear: student.academic_year_name,
             },
         }));
-        return { students, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+        return { items: students, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
     }
     async getStudentById(id) {
         const schoolId = this.requireSchool();

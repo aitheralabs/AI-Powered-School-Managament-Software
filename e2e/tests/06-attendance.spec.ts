@@ -10,7 +10,9 @@ test.describe('Attendance - Admin/Teacher', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/attendance');
-    await page.waitForLoadState('networkidle');
+    // domcontentloaded is sufficient here — networkidle waits for every API call
+    // to settle and eats most of the 30 s test budget when the backend is slow.
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('attendance page loads', async ({ page }) => {
@@ -71,8 +73,8 @@ test.describe('Attendance - Admin/Teacher', () => {
 
   test('can mark students present/absent', async ({ page }) => {
     await page.goto('/attendance/mark');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Select class
     const classSelect = page.locator('mat-select').first();

@@ -3,24 +3,24 @@ export declare const CreateTeacherSchema: z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
     email: z.ZodString;
-    password: z.ZodString;
-    phone: z.ZodOptional<z.ZodString>;
-    dateOfBirth: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    password: z.ZodOptional<z.ZodString>;
+    phone: z.ZodEffects<z.ZodOptional<z.ZodString>, string | undefined, unknown>;
+    dateOfBirth: z.ZodEffects<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>, string | undefined, unknown>;
     address: z.ZodOptional<z.ZodString>;
     employeeId: z.ZodString;
     qualification: z.ZodOptional<z.ZodString>;
-    experienceYears: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
-    specialization: z.ZodOptional<z.ZodString>;
+    experienceYears: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodNumber>>, number, unknown>;
+    specialization: z.ZodEffects<z.ZodOptional<z.ZodString>, string | undefined, unknown>;
     joiningDate: z.ZodEffects<z.ZodString, string, string>;
-    salary: z.ZodOptional<z.ZodNumber>;
+    salary: z.ZodEffects<z.ZodOptional<z.ZodNumber>, number | undefined, unknown>;
 }, "strip", z.ZodTypeAny, {
-    password: string;
     email: string;
     firstName: string;
     lastName: string;
     employeeId: string;
     experienceYears: number;
     joiningDate: string;
+    password?: string | undefined;
     phone?: string | undefined;
     dateOfBirth?: string | undefined;
     address?: string | undefined;
@@ -28,30 +28,30 @@ export declare const CreateTeacherSchema: z.ZodObject<{
     specialization?: string | undefined;
     salary?: number | undefined;
 }, {
-    password: string;
     email: string;
     firstName: string;
     lastName: string;
     employeeId: string;
     joiningDate: string;
-    phone?: string | undefined;
-    dateOfBirth?: string | undefined;
+    password?: string | undefined;
+    phone?: unknown;
+    dateOfBirth?: unknown;
     address?: string | undefined;
     qualification?: string | undefined;
-    experienceYears?: number | undefined;
-    specialization?: string | undefined;
-    salary?: number | undefined;
+    experienceYears?: unknown;
+    specialization?: unknown;
+    salary?: unknown;
 }>;
 export declare const UpdateTeacherSchema: z.ZodObject<{
     firstName: z.ZodOptional<z.ZodString>;
     lastName: z.ZodOptional<z.ZodString>;
-    phone: z.ZodOptional<z.ZodString>;
-    dateOfBirth: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    phone: z.ZodEffects<z.ZodOptional<z.ZodString>, string | undefined, unknown>;
+    dateOfBirth: z.ZodEffects<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>, string | undefined, unknown>;
     address: z.ZodOptional<z.ZodString>;
     qualification: z.ZodOptional<z.ZodString>;
-    experienceYears: z.ZodOptional<z.ZodNumber>;
+    experienceYears: z.ZodEffects<z.ZodOptional<z.ZodNumber>, number | undefined, unknown>;
     specialization: z.ZodOptional<z.ZodString>;
-    salary: z.ZodOptional<z.ZodNumber>;
+    salary: z.ZodEffects<z.ZodOptional<z.ZodNumber>, number | undefined, unknown>;
 }, "strip", z.ZodTypeAny, {
     phone?: string | undefined;
     firstName?: string | undefined;
@@ -63,15 +63,15 @@ export declare const UpdateTeacherSchema: z.ZodObject<{
     specialization?: string | undefined;
     salary?: number | undefined;
 }, {
-    phone?: string | undefined;
+    phone?: unknown;
     firstName?: string | undefined;
     lastName?: string | undefined;
-    dateOfBirth?: string | undefined;
+    dateOfBirth?: unknown;
     address?: string | undefined;
     qualification?: string | undefined;
-    experienceYears?: number | undefined;
+    experienceYears?: unknown;
     specialization?: string | undefined;
-    salary?: number | undefined;
+    salary?: unknown;
 }>;
 export declare const TeacherResponseSchema: z.ZodObject<{
     id: z.ZodEffects<z.ZodString, string, string>;

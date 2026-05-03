@@ -23,6 +23,14 @@
   .sa-date { font-size: 13px; color: rgba(255,255,255,.5); }
 }
 
+.sa-schools-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+  border-radius: 8px; background: rgba(99,102,241,.2); border: 1px solid rgba(99,102,241,.4);
+  color: #818cf8; font-size: 13px; cursor: pointer; text-decoration: none; transition: all .18s;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover { background: rgba(99,102,241,.35); color: #a5b4fc; }
+}
+
 .sa-logout-btn {
   display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
   border-radius: 8px; border: 1px solid rgba(255,255,255,.15); background: transparent;
@@ -109,6 +117,14 @@
   gap: 12px; margin-bottom: 18px;
   h3 { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 2px; }
   .card-sub { font-size: 12px; color: rgba(255,255,255,.4); margin: 0; }
+}
+
+.card-link {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 13px; color: #818cf8; text-decoration: none; white-space: nowrap;
+  flex-shrink: 0;
+  mat-icon { font-size: 16px; }
+  &:hover { color: #a5b4fc; }
 }
 
 // ─── Schools Table ────────────────────────────────────────────────────────────

@@ -1,0 +1,14 @@
+node_modules
+dist
+.angular
+.cache
+npm-debug.log*
+.env
+*.md
+karma.conf.js
+src/**/*.spec.ts
+coverage
+.vscode
+.idea
+.DS_Store
+Thumbs.db

@@ -8,14 +8,18 @@ exports.IdSchema = zod_1.z.string().min(1, 'ID is required').refine((id) => {
     return uuidRegex.test(id) || isNumber || id.length > 0;
 }, 'Invalid ID format');
 exports.PaginationSchema = zod_1.z.object({
-    page: zod_1.z.string().optional().default('1').transform(val => {
+    page: zod_1.z.string().optional().default('1').superRefine((val, ctx) => {
         const num = Number(val);
-        return isNaN(num) ? 1 : Math.max(1, num);
-    }),
-    limit: zod_1.z.string().optional().default('10').transform(val => {
+        if (isNaN(num) || !Number.isInteger(num) || num < 1) {
+            ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: 'Page must be a positive integer >= 1' });
+        }
+    }).transform(val => Number(val)),
+    limit: zod_1.z.string().optional().default('10').superRefine((val, ctx) => {
         const num = Number(val);
-        return isNaN(num) ? 10 : Math.max(1, Math.min(100, num));
-    }),
+        if (isNaN(num) || !Number.isInteger(num) || num < 1 || num > 100) {
+            ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: 'Limit must be an integer between 1 and 100' });
+        }
+    }).transform(val => Number(val)),
     sortBy: zod_1.z.string().optional(),
     sortOrder: zod_1.z.enum(['asc', 'desc']).optional().default('asc'),
 });

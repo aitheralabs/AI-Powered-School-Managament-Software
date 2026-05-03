@@ -17,7 +17,7 @@ export const CreateFeeCategorySchema = z.object({
   amount: z.number().min(0, 'Amount cannot be negative'),
   frequency: FeeFrequencySchema,
   isMandatory: z.boolean().optional().default(true),
-  academicYearId: IdSchema,
+  academicYearId: IdSchema.optional(),
 });
 
 export const UpdateFeeCategorySchema = CreateFeeCategorySchema.partial().omit({ academicYearId: true });

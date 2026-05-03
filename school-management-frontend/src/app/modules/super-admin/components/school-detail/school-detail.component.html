@@ -1,0 +1,164 @@
+<div class="detail-page">
+
+  <!-- Back nav -->
+  <div class="breadcrumb">
+    <a routerLink="/super-admin/schools"><mat-icon>arrow_back</mat-icon> All Schools</a>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-wrap" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" *ngIf="error && !isLoading">
+    <mat-icon>error_outline</mat-icon> {{ error }}
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!isLoading && school">
+
+    <!-- School header -->
+    <div class="school-header">
+      <div class="school-avatar" [style.background]="planColor(school.plan) + '20'" [style.color]="planColor(school.plan)">
+        {{ school.name?.charAt(0)?.toUpperCase() }}
+      </div>
+      <div class="header-info">
+        <h1>{{ school.name }}</h1>
+        <div class="header-meta">
+          <span class="badge plan-badge" [style.background]="planColor(school.plan) + '20'" [style.color]="planColor(school.plan)">{{ school.plan | titlecase }}</span>
+          <span class="badge status-badge" [style.background]="statusColor(school.subscription_status) + '20'" [style.color]="statusColor(school.subscription_status)">{{ school.subscription_status | titlecase }}</span>
+          <span class="school-slug">{{ school.slug }}</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-impersonate" (click)="impersonate()" [disabled]="actionLoading" matTooltip="Open school portal as their admin (15 min session)">
+          <mat-icon>manage_accounts</mat-icon> Log In As Admin
+        </button>
+        <button *ngIf="!isSuspended()" class="btn-danger" (click)="suspend()" [disabled]="actionLoading" matTooltip="Suspend all access">
+          <mat-icon>block</mat-icon> Suspend
+        </button>
+        <button *ngIf="isSuspended()" class="btn-success" (click)="reactivate()" [disabled]="actionLoading">
+          <mat-icon>check_circle</mat-icon> Reactivate
+        </button>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="action-banner success" *ngIf="actionSuccess"><mat-icon>check_circle</mat-icon> {{ actionSuccess }}</div>
+    <div class="action-banner error"   *ngIf="actionError">  <mat-icon>error</mat-icon>         {{ actionError }}</div>
+
+    <!-- Grid -->
+    <div class="detail-grid">
+
+      <!-- School Info -->
+      <div class="card">
+        <div class="card-title"><mat-icon>info</mat-icon> School Information</div>
+        <div class="info-row"><span>Email</span><span>{{ school.email }}</span></div>
+        <div class="info-row"><span>Phone</span><span>{{ school.phone || '—' }}</span></div>
+        <div class="info-row"><span>City</span><span>{{ school.city || '—' }}</span></div>
+        <div class="info-row"><span>State</span><span>{{ school.state || '—' }}</span></div>
+        <div class="info-row"><span>Country</span><span>{{ school.country || '—' }}</span></div>
+        <div class="info-row"><span>Timezone</span><span>{{ school.timezone || '—' }}</span></div>
+        <div class="info-row"><span>Joined</span><span>{{ school.created_at | date:'MMM d, y' }}</span></div>
+        <div class="info-row"><span>Onboarded</span><span>{{ school.onboarded_at ? (school.onboarded_at | date:'MMM d, y') : '—' }}</span></div>
+      </div>
+
+      <!-- Usage -->
+      <div class="card">
+        <div class="card-title"><mat-icon>bar_chart</mat-icon> Usage</div>
+        <div class="usage-item">
+          <div class="usage-label">
+            <span>Students</span>
+            <span class="usage-nums">{{ school.student_count ?? 0 }} / {{ school.max_students }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(school.student_count ?? 0, school.max_students)"
+                 [class.high]="usagePct(school.student_count ?? 0, school.max_students) >= 80"></div>
+          </div>
+        </div>
+        <div class="usage-item">
+          <div class="usage-label">
+            <span>Teachers</span>
+            <span class="usage-nums">{{ school.teacher_count ?? 0 }} / {{ school.max_teachers }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(school.teacher_count ?? 0, school.max_teachers)"
+                 [class.high]="usagePct(school.teacher_count ?? 0, school.max_teachers) >= 80"></div>
+          </div>
+        </div>
+        <div class="usage-item">
+          <div class="usage-label">
+            <span>Staff</span>
+            <span class="usage-nums">{{ school.staff_count ?? 0 }} / {{ school.max_staff }}</span>
+          </div>
+          <div class="usage-bar">
+            <div class="usage-fill" [style.width.%]="usagePct(school.staff_count ?? 0, school.max_staff)"
+                 [class.high]="usagePct(school.staff_count ?? 0, school.max_staff) >= 80"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription -->
+      <div class="card">
+        <div class="card-title">
+          <mat-icon>workspace_premium</mat-icon> Subscription
+          <button class="btn-edit" (click)="showSubEdit = !showSubEdit"><mat-icon>edit</mat-icon></button>
+        </div>
+
+        <ng-container *ngIf="!showSubEdit">
+          <div class="info-row"><span>Plan</span>
+            <span class="badge plan-badge" [style.background]="planColor(school.plan) + '20'" [style.color]="planColor(school.plan)">{{ school.plan | titlecase }}</span>
+          </div>
+          <div class="info-row"><span>Status</span>
+            <span class="badge status-badge" [style.background]="statusColor(school.subscription_status) + '20'" [style.color]="statusColor(school.subscription_status)">{{ school.subscription_status | titlecase }}</span>
+          </div>
+          <div class="info-row"><span>Trial Ends</span><span>{{ school.trial_ends_at ? (school.trial_ends_at | date:'MMM d, y') : '—' }}</span></div>
+          <div class="info-row"><span>Sub Ends</span><span>{{ school.subscription_ends_at ? (school.subscription_ends_at | date:'MMM d, y') : '—' }}</span></div>
+          <div class="info-row"><span>Stripe Customer</span><span class="mono">{{ school.stripe_customer_id || '—' }}</span></div>
+        </ng-container>
+
+        <ng-container *ngIf="showSubEdit">
+          <div class="field-group">
+            <label>Plan</label>
+            <select [(ngModel)]="subForm.plan">
+              <option *ngFor="let p of plans" [value]="p">{{ p | titlecase }}</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Subscription Ends At</label>
+            <input type="date" [(ngModel)]="subForm.subscriptionEndsAt" />
+          </div>
+          <div class="sub-edit-actions">
+            <button class="btn-cancel" (click)="showSubEdit = false">Cancel</button>
+            <button class="btn-save" (click)="saveSubscription()" [disabled]="actionLoading">
+              <mat-spinner *ngIf="actionLoading" diameter="14"></mat-spinner>
+              {{ actionLoading ? 'Saving…' : 'Save Changes' }}
+            </button>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Features -->
+      <div class="card">
+        <div class="card-title"><mat-icon>toggle_on</mat-icon> Plan Features</div>
+        <div class="feature-row" *ngFor="let f of [
+          ['AI Insights',      school.feature_ai_insights],
+          ['Library',          school.feature_library],
+          ['Transport',        school.feature_transport],
+          ['Hostel',           school.feature_hostel],
+          ['Messaging',        school.feature_messaging],
+          ['API Access',       school.feature_api_access]
+        ]">
+          <span>{{ f[0] }}</span>
+          <span class="feature-toggle" [class.on]="f[1]">
+            <mat-icon>{{ f[1] ? 'check_circle' : 'cancel' }}</mat-icon>
+            {{ f[1] ? 'Enabled' : 'Disabled' }}
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+
+</div>

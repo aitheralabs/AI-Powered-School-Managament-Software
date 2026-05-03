@@ -7,14 +7,14 @@ export const CreateStudentSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   phone: z.string().optional(),
   dateOfBirth: DateSchema.optional(),
   address: z.string().optional(),
-  
+
   // Student-specific information
   studentId: z.string().min(1, 'Student ID is required'),
-  classId: IdSchema,
+  classId: z.string().optional().nullable().transform(v => v || null),
   enrollmentDate: DateSchema,
   guardianName: z.string().min(2, 'Guardian name must be at least 2 characters'),
   guardianPhone: z.string().min(10, 'Guardian phone must be at least 10 characters'),

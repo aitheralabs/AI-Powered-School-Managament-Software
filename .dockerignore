@@ -1,0 +1,49 @@
+# Version control
+.git
+.gitignore
+
+# Documentation
+*.md
+DEPLOYMENT_GUIDE.md
+
+# Node dependencies (installed inside container)
+node_modules
+npm-debug.log*
+
+# Test artifacts
+coverage
+test-results
+e2e/report
+*.spec.ts
+*.test.ts
+
+# Environment files (never bake secrets into image)
+.env
+.env.*
+!.env.example
+
+# Local build artifacts (rebuilt inside container)
+dist
+
+# Frontend source (built by nginx/Dockerfile separately)
+school-management-frontend
+
+# Editor / OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Debug / one-off scripts
+check-*.js
+create-*.js
+debug*.js
+test-*.js
+test.json
+server.log
+
+# Runtime data (volume-mounted)
+uploads
+logs
+dump.rdb

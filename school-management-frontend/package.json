@@ -9,7 +9,9 @@
     "test": "ng test --watch=false --browsers=ChromeHeadless",
     "test:watch": "ng test --watch",
     "test:coverage": "ng test --watch=false --browsers=ChromeHeadless --coverage",
-    "serve:ssr:school-management-frontend": "node dist/school-management-frontend/server/server.mjs"
+    "serve:ssr:school-management-frontend": "node dist/school-management-frontend/server/server.mjs",
+    "build:prod": "ng build --configuration=production",
+    "lint": "ng lint"
   },
   "private": true,
   "dependencies": {

@@ -29,5 +29,9 @@ router.get('/student-fees', (0, validation_1.validateQuery)(fee_1.FeeQuerySchema
 router.get('/student-fees/:id', (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), feeController_1.getStudentFeeById);
 router.put('/student-fees/:id', (0, auth_1.authorize)('admin'), (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), (0, validation_1.validateBody)(fee_1.UpdateStudentFeeSchema), feeController_1.updateStudentFee);
 router.delete('/student-fees/:id', (0, auth_1.authorize)('admin'), (0, validation_1.validateParams)(zod_1.z.object({ id: common_1.IdSchema })), feeController_1.deleteStudentFee);
+router.post('/send-reminder', (0, auth_1.authorize)('admin', 'staff'), (0, validation_1.validateBody)(zod_1.z.object({
+    studentIds: zod_1.z.array(common_1.IdSchema).min(1, 'At least one student ID is required'),
+    message: zod_1.z.string().optional(),
+})), feeController_1.sendFeeReminder);
 exports.default = router;
 //# sourceMappingURL=fees.js.map

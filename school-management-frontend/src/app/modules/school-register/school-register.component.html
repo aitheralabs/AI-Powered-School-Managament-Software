@@ -1,0 +1,160 @@
+<div class="register-page">
+  <!-- Left panel -->
+  <div class="register-left">
+    <div class="brand">
+      <div class="brand-icon"><mat-icon>school</mat-icon></div>
+      <span class="brand-name">EduSaaS</span>
+    </div>
+    <div class="left-content">
+      <h1>Start your 30-day free trial</h1>
+      <p>Set up your school in minutes. No credit card required.</p>
+      <ul class="benefit-list">
+        <li><mat-icon>check_circle</mat-icon> Full access to all features</li>
+        <li><mat-icon>check_circle</mat-icon> Up to 100 students during trial</li>
+        <li><mat-icon>check_circle</mat-icon> Attendance, fees &amp; grades</li>
+        <li><mat-icon>check_circle</mat-icon> Dedicated admin portal</li>
+        <li><mat-icon>check_circle</mat-icon> Cancel anytime</li>
+      </ul>
+    </div>
+    <a routerLink="/" class="back-link"><mat-icon>arrow_back</mat-icon> Back to home</a>
+  </div>
+
+  <!-- Right panel -->
+  <div class="register-right">
+    <div class="form-card">
+
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        <div class="step-pill" [class.active]="currentStep === 1" [class.done]="currentStep > 1">
+          <span class="step-dot"><mat-icon *ngIf="currentStep > 1">check</mat-icon><span *ngIf="currentStep <= 1">1</span></span>
+          School Info
+        </div>
+        <div class="step-line" [class.done]="currentStep > 1"></div>
+        <div class="step-pill" [class.active]="currentStep === 2">
+          <span class="step-dot">2</span>
+          Admin Account
+        </div>
+      </div>
+
+      <!-- Success state -->
+      <div class="success-state" *ngIf="success">
+        <div class="success-icon"><mat-icon>check_circle</mat-icon></div>
+        <h2>You're all set!</h2>
+        <p>{{ success }}</p>
+        <div class="spinner-wrap"><mat-spinner diameter="24"></mat-spinner></div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="!success">
+
+        <!-- ── Step 1: School Info ── -->
+        <div *ngIf="currentStep === 1">
+          <h2>Tell us about your school</h2>
+          <p class="form-sub">Basic information to set up your tenant account.</p>
+
+          <div class="field-group">
+            <label>School Name <span class="req">*</span></label>
+            <input formControlName="name" (input)="onNameInput()" placeholder="e.g. St. Mary's High School" />
+            <span class="field-err" *ngIf="fieldError('name')">{{ fieldError('name') }}</span>
+          </div>
+
+          <div class="field-group">
+            <label>Subdomain / Slug <span class="req">*</span></label>
+            <div class="slug-wrap">
+              <span class="slug-prefix">edusaas.in/</span>
+              <input formControlName="slug" placeholder="st-marys-school" />
+            </div>
+            <span class="field-hint">Lowercase letters, numbers, hyphens only. This becomes your school's URL.</span>
+            <span class="field-err" *ngIf="fieldError('slug')">{{ fieldError('slug') }}</span>
+          </div>
+
+          <div class="form-row">
+            <div class="field-group">
+              <label>School Contact Email <span class="req">*</span></label>
+              <input formControlName="email" type="email" placeholder="principal@stmarys.com" />
+              <span class="field-err" *ngIf="fieldError('email')">{{ fieldError('email') }}</span>
+            </div>
+            <div class="field-group">
+              <label>Phone</label>
+              <input formControlName="phone" placeholder="+91 98765 43210" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field-group">
+              <label>City</label>
+              <input formControlName="city" placeholder="Mumbai" />
+            </div>
+            <div class="field-group">
+              <label>State</label>
+              <input formControlName="state" placeholder="Maharashtra" />
+            </div>
+          </div>
+
+          <button type="button" class="btn-next" (click)="nextStep()">
+            Continue <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+
+        <!-- ── Step 2: Admin Account ── -->
+        <div *ngIf="currentStep === 2">
+          <h2>Create your admin account</h2>
+          <p class="form-sub">These credentials will be used to log in to your school's admin portal.</p>
+
+          <div class="form-row">
+            <div class="field-group">
+              <label>First Name <span class="req">*</span></label>
+              <input formControlName="adminFirstName" placeholder="Ravi" />
+              <span class="field-err" *ngIf="fieldError('adminFirstName')">{{ fieldError('adminFirstName') }}</span>
+            </div>
+            <div class="field-group">
+              <label>Last Name <span class="req">*</span></label>
+              <input formControlName="adminLastName" placeholder="Sharma" />
+              <span class="field-err" *ngIf="fieldError('adminLastName')">{{ fieldError('adminLastName') }}</span>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Admin Login Email <span class="req">*</span></label>
+            <input formControlName="adminEmail" type="email" placeholder="admin@stmarys.com" />
+            <span class="field-err" *ngIf="fieldError('adminEmail')">{{ fieldError('adminEmail') }}</span>
+          </div>
+
+          <div class="field-group">
+            <label>Admin Password <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input formControlName="adminPassword" [type]="showPassword ? 'text' : 'password'"
+                     placeholder="Min 8 characters" />
+              <button type="button" class="pwd-eye" (click)="showPassword = !showPassword">
+                <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+            <span class="field-err" *ngIf="fieldError('adminPassword')">{{ fieldError('adminPassword') }}</span>
+          </div>
+
+          <!-- Error -->
+          <div class="form-banner error" *ngIf="error">
+            <mat-icon>error</mat-icon> {{ error }}
+          </div>
+
+          <div class="step2-actions">
+            <button type="button" class="btn-back" (click)="prevStep()">
+              <mat-icon>arrow_back</mat-icon> Back
+            </button>
+            <button type="submit" class="btn-submit" [disabled]="isLoading">
+              <mat-spinner *ngIf="isLoading" diameter="16"></mat-spinner>
+              <mat-icon *ngIf="!isLoading">rocket_launch</mat-icon>
+              {{ isLoading ? 'Creating…' : 'Create My School' }}
+            </button>
+          </div>
+
+          <p class="terms-note">
+            By registering, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          </p>
+        </div>
+
+      </form>
+
+      <p class="signin-link">Already have an account? <a routerLink="/auth/login">Sign In</a></p>
+    </div>
+  </div>
+</div>

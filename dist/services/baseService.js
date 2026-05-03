@@ -58,16 +58,21 @@ class BaseService {
     }
     async checkEntityExists(tableName, id, altIdColumn) {
         const isUUID = this.validateUUID(id);
-        const schoolFilter = this.schoolId ? ` AND school_id = '${this.schoolId}'` : '';
+        const params = [id];
+        let schoolCondition = '';
+        if (this.schoolId) {
+            params.push(this.schoolId);
+            schoolCondition = ` AND school_id = $${params.length}`;
+        }
         let result;
         if (isUUID) {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id = $1${schoolFilter}`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id = $1${schoolCondition}`, params);
         }
         else if (altIdColumn) {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolFilter}`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolCondition}`, params);
         }
         else {
-            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id::text = $1${schoolFilter}`, [id]);
+            result = await this.executeQuery(`SELECT * FROM ${tableName} WHERE id::text = $1${schoolCondition}`, params);
         }
         if (result.rows.length === 0) {
             const entityName = tableName.replace(/_/g, ' ').slice(0, -1);

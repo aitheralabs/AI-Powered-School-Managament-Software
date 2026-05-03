@@ -1,17 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStudentFeesByStudentId = exports.getFeeStats = exports.deleteStudentFee = exports.updateStudentFee = exports.getStudentFeeById = exports.assignFeesToClass = exports.getStudentFees = exports.assignFeesToStudents = exports.deleteFeeCategory = exports.updateFeeCategory = exports.getFeeCategoryById = exports.getFeeCategories = exports.createFeeCategory = void 0;
+exports.getStudentFeesByStudentId = exports.sendFeeReminder = exports.getFeeStats = exports.deleteStudentFee = exports.updateStudentFee = exports.getStudentFeeById = exports.assignFeesToClass = exports.getStudentFees = exports.assignFeesToStudents = exports.deleteFeeCategory = exports.updateFeeCategory = exports.getFeeCategoryById = exports.getFeeCategories = exports.createFeeCategory = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
 const feeService_1 = require("../services/feeService");
 const connection_1 = require("../database/connection");
 const feeService = new feeService_1.FeeService();
 exports.createFeeCategory = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const feeCategory = await feeService.forSchool(req.schoolId).createFeeCategory(req.body);
-    res.status(201).json({ success: true, message: 'Fee category created successfully', data: feeCategory });
+    res.status(201).json({ success: true, message: 'Fee category created successfully', data: { feeCategory } });
 });
 exports.getFeeCategories = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await feeService.forSchool(req.schoolId).getFeeCategories(req);
-    res.json({ success: true, data: result.feeCategories, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.getFeeCategoryById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const feeCategory = await feeService.forSchool(req.schoolId).getFeeCategoryById(req.params.id);
@@ -31,7 +31,7 @@ exports.assignFeesToStudents = (0, errorHandler_1.asyncHandler)(async (req, res)
 });
 exports.getStudentFees = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await feeService.forSchool(req.schoolId).getStudentFees(req);
-    res.json({ success: true, data: result.studentFees, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.assignFeesToClass = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await feeService.forSchool(req.schoolId).assignFeesToClass(req.body);
@@ -99,6 +99,40 @@ exports.getFeeStats = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         },
     });
 });
+exports.sendFeeReminder = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const schoolId = req.schoolId;
+    const { studentIds, message } = req.body;
+    if (!studentIds || studentIds.length === 0) {
+        res.status(400).json({ success: false, message: 'studentIds array is required' });
+        return;
+    }
+    const placeholders = studentIds.map((_, i) => `$${i + 2}`).join(', ');
+    const result = await (0, connection_1.query)(`SELECT s.id, u.first_name, u.last_name, u.email,
+            COALESCE(SUM(sf.amount) - COALESCE(SUM(p.total_paid), 0), 0) AS outstanding_amount
+     FROM students s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN student_fees sf ON sf.student_id = s.id AND sf.status IN ('pending', 'overdue')
+     LEFT JOIN (
+       SELECT student_fee_id, SUM(amount) AS total_paid
+       FROM payments
+       WHERE school_id = $1
+       GROUP BY student_fee_id
+     ) p ON p.student_fee_id = sf.id
+     WHERE s.school_id = $1 AND s.id IN (${placeholders})
+     GROUP BY s.id, u.first_name, u.last_name, u.email`, [schoolId, ...studentIds]);
+    const notified = result.rows.map((r) => ({
+        studentId: r.id,
+        studentName: `${r.first_name} ${r.last_name}`,
+        email: r.email || null,
+        outstandingAmount: parseFloat(r.outstanding_amount || '0'),
+        reminded: !!(r.email),
+    }));
+    res.json({
+        success: true,
+        message: `Fee reminder sent to ${notified.filter((n) => n.reminded).length} student(s)`,
+        data: notified,
+    });
+});
 exports.getStudentFeesByStudentId = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const schoolId = req.schoolId;
     const { studentId } = req.params;
@@ -107,6 +141,6 @@ exports.getStudentFeesByStudentId = (0, errorHandler_1.asyncHandler)(async (req,
      LEFT JOIN fee_categories fc ON fc.id = sf.fee_category_id
      WHERE sf.student_id = $1 AND sf.school_id = $2
      ORDER BY sf.due_date ASC`, [studentId, schoolId]);
-    res.json({ success: true, data: result.rows });
+    res.json({ success: true, data: { fees: result.rows } });
 });
 //# sourceMappingURL=feeController.js.map

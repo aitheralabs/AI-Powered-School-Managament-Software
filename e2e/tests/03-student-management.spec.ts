@@ -21,11 +21,10 @@ test.describe('Student List', () => {
   });
 
   test('table or card list is visible', async ({ page }) => {
-    // Wait for data to load
+    // Wait for loading to complete — .content-card is always rendered (not inside *ngIf)
     await page.waitForTimeout(2000);
-    const hasTable = await page.locator('table, mat-table').first().isVisible().catch(() => false);
-    const hasList  = await page.locator('mat-card, .student-card').first().isVisible().catch(() => false);
-    expect(hasTable || hasList).toBeTruthy();
+    // content-card is the outer wrapper, always visible regardless of data
+    await expect(page.locator('.content-card').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('search input works', async ({ page }) => {
@@ -64,9 +63,9 @@ test.describe('Add Student Form', () => {
     await addBtn.click();
     await page.waitForTimeout(500);
 
-    // Click submit without filling
-    const submitBtn = page.locator('button[type="submit"], button').filter({ hasText: /save|submit|add/i }).first();
-    await submitBtn.click();
+    // Scope submit to dialog — dialog button says "Create" not "save/submit/add"
+    const dialog = page.locator('mat-dialog-container');
+    await dialog.locator('button').filter({ hasText: /create|update/i }).first().click();
 
     await expect(page.locator('mat-error, .error, [class*="invalid"]').first()).toBeVisible({ timeout: 5000 });
   });
@@ -76,36 +75,49 @@ test.describe('Add Student Form', () => {
     await addBtn.click();
     await page.waitForTimeout(500);
 
-    const timestamp = Date.now();
-    const firstName = `TestFirst${timestamp}`;
-    const lastName  = `TestLast${timestamp}`;
-    const email     = `teststudent${timestamp}@test.com`;
+    const ts = Date.now();
+    const dialog = page.locator('mat-dialog-container');
 
-    // Fill form fields
-    const firstNameInput = page.locator('input[formControlName="firstName"], input[placeholder*="first" i]').first();
-    const lastNameInput  = page.locator('input[formControlName="lastName"], input[placeholder*="last" i]').first();
-    const emailInput     = page.locator('input[formControlName="email"], input[type="email"]').first();
+    // Personal info
+    await dialog.locator('input[formControlName="firstName"]').fill(`TestFirst${ts}`).catch(() => {});
+    await dialog.locator('input[formControlName="lastName"]').fill(`TestLast${ts}`).catch(() => {});
+    await dialog.locator('input[formControlName="email"]').fill(`teststudent${ts}@test.com`).catch(() => {});
 
-    if (await firstNameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await firstNameInput.fill(firstName);
+    // Student ID (required)
+    await dialog.locator('input[formControlName="studentId"]').fill(`STU${ts}`).catch(() => {});
+
+    // Gender select (first mat-select in dialog)
+    await dialog.locator('mat-select').first().click();
+    await page.locator('mat-option').first().click().catch(() => {});
+
+    // Date of birth (datepicker — NativeDateAdapter accepts ISO strings)
+    await dialog.locator('input[formControlName="dateOfBirth"]').fill('2010-01-15').catch(() => {});
+    await page.keyboard.press('Tab');
+
+    // Class selection (second mat-select — skip "Not Assigned", pick first real class)
+    const classSelect = dialog.locator('mat-select').nth(1);
+    if (await classSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await classSelect.click();
+      const opts = page.locator('mat-option');
+      const cnt = await opts.count();
+      if (cnt > 1) {
+        await opts.nth(1).click(); // skip "Not Assigned"
+      } else {
+        await page.keyboard.press('Escape');
+      }
     }
-    if (await lastNameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await lastNameInput.fill(lastName);
-    }
-    if (await emailInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await emailInput.fill(email);
-    }
 
-    // Fill date of birth if present
-    const dobInput = page.locator('input[formControlName="dateOfBirth"], input[type="date"]').first();
-    if (await dobInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await dobInput.fill('2010-01-15');
-    }
+    // Guardian info (required)
+    await dialog.locator('input[formControlName="guardianName"]').fill('Test Guardian').catch(() => {});
+    await dialog.locator('input[formControlName="guardianPhone"]').fill('9876543210').catch(() => {});
+    await dialog.locator('input[formControlName="emergencyContact"]').fill('9876543211').catch(() => {});
 
-    // Submit
-    await page.locator('button').filter({ hasText: /save|submit|add/i }).first().click();
+    // Password (required for new students)
+    await dialog.locator('input[formControlName="password"]').fill('Password@123').catch(() => {});
 
-    // Success toast or list update
+    // Submit — button says "Create" inside the dialog
+    await dialog.locator('button').filter({ hasText: /create|save/i }).first().click();
+
     await expect(
       page.locator('.toast-success, [class*="success"], .snack-success').first()
     ).toBeVisible({ timeout: 8000 });

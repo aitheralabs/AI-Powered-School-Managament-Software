@@ -28,6 +28,10 @@ export declare class EmailService {
     sendPasswordResetEmail(to: string, userName: string, resetToken: string, resetUrl: string): Promise<void>;
     sendReportCard(to: string, studentName: string, semester: string, attachmentPath?: string): Promise<void>;
     sendCustomEmail(to: string | string[], subject: string, message: string): Promise<void>;
+    sendEmailVerification(to: string, schoolName: string, verifyUrl: string): Promise<void>;
+    sendSchoolWelcomeEmail(to: string, adminName: string, schoolName: string, trialDays?: number): Promise<void>;
+    sendTrialExpiryEmail(to: string, schoolName: string, daysLeft: number): Promise<void>;
+    sendPaymentFailedEmail(to: string, schoolName: string, amount: number, currency?: string): Promise<void>;
     private getWelcomeEmailTemplate;
     private getFeeReminderTemplate;
     private getAttendanceAlertTemplate;

@@ -1,61 +1,72 @@
 version: '3.9'
 
-# ─────────────────────────────────────────────────────────────
-# Production-grade docker-compose for the School SaaS platform
-# Usage:
-#   Development:  docker-compose up
-#   Production:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# ─────────────────────────────────────────────────────────────
+# =============================================================================
+# School Management SaaS — Docker Compose
+#
+# Quick start:
+#   cp .env.example .env    # fill in secrets
+#   make ssl-cert           # generate self-signed cert for local HTTPS
+#   docker compose up -d
+#
+# Production deploy:
+#   docker compose up -d --build
+# =============================================================================
 
 services:
 
-  # ── PostgreSQL ──────────────────────────────────────────────
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: school_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-school_management}
-      POSTGRES_USER: ${DB_USER:-school_admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB:       ${DB_NAME:-school_management}
+      POSTGRES_USER:     ${DB_USER:-school_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA:            /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./src/database/migrations:/docker-entrypoint-initdb.d:ro  # auto-run on first start
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"   # loopback-only — not exposed publicly
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-school_admin} -d ${DB_NAME:-school_management}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test:         ["CMD-SHELL", "pg_isready -U ${DB_USER:-school_admin} -d ${DB_NAME:-school_management}"]
+      interval:     10s
+      timeout:       5s
+      retries:       5
+      start_period: 20s
     networks:
       - school_net
 
-  # ── Redis ───────────────────────────────────────────────────
+  # ── Redis ──────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: school_redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
     volumes:
       - redis_data:/data
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"  # loopback-only
     healthcheck:
-      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD:-changeme}", "ping"]
+      test:     ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout:   5s
+      retries:   5
     networks:
       - school_net
 
-  # ── Backend API ─────────────────────────────────────────────
+  # ── Backend API ────────────────────────────────────────────────────────────
   api:
     build:
-      context: .
+      context:    .
       dockerfile: Dockerfile
-      target: production
+      target:     production
     container_name: school_api
     restart: unless-stopped
     depends_on:
@@ -63,83 +74,107 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Run DB migrations before starting the server (idempotent — safe every time)
+    command: sh -c "node dist/database/migrate.js && node dist/index.js"
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-school_management}
-      DB_USER: ${DB_USER:-school_admin}
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
-      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV:    production
+      PORT:        3000
+      # Database
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-school_management}
+      DB_USER:     ${DB_USER:-school_admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Auth
+      JWT_SECRET:             ${JWT_SECRET}
+      JWT_EXPIRES_IN:         ${JWT_EXPIRES_IN:-7d}
       SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200}
-      REDIS_ENABLED: "true"
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      # CORS — comma-separated origins (e.g. https://school.com,https://www.school.com)
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://localhost}
+      # Redis
+      REDIS_ENABLED:    "true"
+      REDIS_HOST:       redis
+      REDIS_PORT:       6379
+      REDIS_PASSWORD:   ${REDIS_PASSWORD}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-300}
+      # Email
+      SMTP_HOST:   ${SMTP_HOST}
+      SMTP_PORT:   ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      SENTRY_DSN: ${SENTRY_DSN}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SMTP_USER:   ${SMTP_USER}
+      SMTP_PASS:   ${SMTP_PASS}
+      SMTP_FROM:   ${SMTP_FROM}
+      # App
+      APP_URL:  ${APP_URL:-https://localhost}
+      APP_NAME: ${APP_NAME:-School Management}
+      # File uploads
+      UPLOAD_DIR:    /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      # Integrations (all optional)
+      SENTRY_DSN:              ${SENTRY_DSN}
+      ANTHROPIC_API_KEY:       ${ANTHROPIC_API_KEY}
+      RAZORPAY_KEY_ID:         ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET:     ${RAZORPAY_KEY_SECRET}
       RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_SECRET_KEY:       ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET:   ${STRIPE_WEBHOOK_SECRET}
     volumes:
       - uploads:/app/uploads
-    ports:
-      - "3000:3000"
+      - api_logs:/app/logs
+    expose:
+      - "3000"     # internal only — nginx proxies from public ports
     networks:
       - school_net
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
         max-size: "10m"
-        max-file: "5"
+        max-file:  "5"
 
-  # ── Nginx reverse proxy ─────────────────────────────────────
+  # ── Nginx: serves Angular SPA + proxies API ────────────────────────────────
   nginx:
-    image: nginx:alpine
+    build:
+      context:    .
+      dockerfile: nginx/Dockerfile
     container_name: school_nginx
     restart: unless-stopped
     depends_on:
       - api
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./school-management-frontend/dist:/usr/share/nginx/html:ro
       - nginx_logs:/var/log/nginx
+      - nginx_ssl:/etc/nginx/ssl         # mount real certs here in production
+      - certbot_www:/var/www/certbot     # for Let's Encrypt ACME challenges
     ports:
       - "80:80"
       - "443:443"
     networks:
       - school_net
 
-  # ── Notification worker (background job processor) ──────────
+  # ── Background notification worker ────────────────────────────────────────
   worker:
     build:
-      context: .
+      context:    .
       dockerfile: Dockerfile
-      target: production
+      target:     production
     container_name: school_worker
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["node", "dist/workers/notificationWorker.js"]
+    command: node dist/workers/notificationWorker.js
     environment:
-      NODE_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-school_management}
-      DB_USER: ${DB_USER:-school_admin}
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
+      NODE_ENV:    production
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-school_management}
+      DB_USER:     ${DB_USER:-school_admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SMTP_HOST:   ${SMTP_HOST}
+      SMTP_PORT:   ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER:   ${SMTP_USER}
+      SMTP_PASS:   ${SMTP_PASS}
+      SMTP_FROM:   ${SMTP_FROM}
     networks:
       - school_net
 
@@ -147,7 +182,10 @@ volumes:
   postgres_data:
   redis_data:
   uploads:
+  api_logs:
   nginx_logs:
+  nginx_ssl:
+  certbot_www:
 
 networks:
   school_net:

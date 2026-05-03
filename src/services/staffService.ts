@@ -9,11 +9,17 @@ import {
 } from '../types/staff';
 import { BaseService } from './baseService';
 import bcrypt from 'bcrypt';
+import { SchoolService } from './schoolService';
+
+const schoolService = new SchoolService();
 
 export class StaffService extends BaseService {
 
   async createStaff(staffData: CreateStaff, adminUserId: string): Promise<StaffResponse> {
     const schoolId = this.requireSchool();
+
+    await schoolService.checkLimit(schoolId, 'staff');
+
     const client = await getClient();
 
     try {
@@ -31,7 +37,8 @@ export class StaffService extends BaseService {
       );
       if (employeeIdCheck.rows.length > 0) throw new AppError('Employee ID already exists', 409);
 
-      const hashedPassword = await bcrypt.hash(staffData.password, 10);
+      const staffPassword = staffData.password || `Staff@${staffData.employeeId || Date.now()}`;
+      const hashedPassword = await bcrypt.hash(staffPassword, 10);
 
       const userResult = await client.query(
         `INSERT INTO users (first_name, last_name, email, password_hash, role, phone, date_of_birth, address, is_active, school_id)

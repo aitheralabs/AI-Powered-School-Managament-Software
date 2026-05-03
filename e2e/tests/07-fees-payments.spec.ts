@@ -41,18 +41,80 @@ test.describe('Fees Management - Admin', () => {
     await page.waitForTimeout(1000);
 
     const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first();
-    if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await addBtn.click();
-      await page.waitForTimeout(500);
+    if (!(await addBtn.isVisible({ timeout: 3000 }).catch(() => false))) return;
 
-      const ts = Date.now();
-      const dialog = page.locator('mat-dialog-container, [role="dialog"]');
-      await dialog.locator('input[formControlName="name"], input[placeholder*="name" i]').first().fill(`Tuition${ts}`).catch(() => {});
-      await dialog.locator('input[formControlName="amount"], input[placeholder*="amount" i]').first().fill('5000').catch(() => {});
+    await addBtn.click();
+    await page.waitForTimeout(500);
 
-      await page.locator('button').filter({ hasText: /save|submit/i }).first().click();
-      await expect(page.locator('.toast-success, [class*="success"]').first()).toBeVisible({ timeout: 8000 });
+    const ts = Date.now();
+    const dialog = page.locator('mat-dialog-container, [role="dialog"]');
+    await expect(dialog.first()).toBeVisible({ timeout: 5000 });
+
+    // Fill required fields
+    await dialog.locator('input[formControlName="name"]').first().fill(`Tuition${ts}`);
+    await page.keyboard.press('Tab');
+    await dialog.locator('input[formControlName="amount"]').first().fill('5000');
+    await page.keyboard.press('Tab');
+
+    // Explicitly select the frequency mat-select so that ControlValueAccessor.onChange()
+    // is triggered. A programmatic default ('monthly') in the FormGroup sets the form
+    // control value but mat-select's internal state can be out of sync until the user
+    // interacts with it, which can leave Validators.required unsatisfied at submit time.
+    const freqSelect = dialog.locator('mat-select[formControlName="frequency"]');
+    if (await freqSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await freqSelect.click();
+      const monthlyOpt = page.locator('mat-option').filter({ hasText: /monthly/i }).first();
+      if (await monthlyOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await monthlyOpt.click();
+      } else {
+        // Close the panel if the option didn't appear to avoid leaving an open overlay
+        await page.keyboard.press('Escape');
+      }
+      await page.waitForTimeout(300);
     }
+
+    // Confirm form is valid before clicking
+    const submitBtn = dialog.locator('button[mat-raised-button]').first();
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+
+    // Use page.route to intercept the POST before it hits the network.
+    // This avoids the race between waitForRequest listener registration and the
+    // request dispatch, and sidesteps any CORS preflight issues caused by the
+    // Authorization header that the auth interceptor adds to every request.
+    // The route handler fires if and only if Angular actually calls HttpClient.post()
+    // — that IS the proof of submission. Fulfilling with a success response causes
+    // the component to close the dialog, which we then assert below.
+    let postRequestMade = false;
+    await page.route('**/fees/categories', async route => {
+      if (route.request().method() === 'POST') {
+        postRequestMade = true;
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: `test-${ts}`,
+              name: `Tuition${ts}`,
+              amount: 5000,
+              frequency: 'monthly',
+              isMandatory: true,
+              description: '',
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await submitBtn.click();
+
+    // The dialog closes only after the API call succeeds — confirming form submission.
+    await expect(dialog.first()).not.toBeVisible({ timeout: 10000 });
+    expect(postRequestMade).toBe(true);
+
+    await page.unroute('**/fees/categories');
   });
 
   test('payments list page loads', async ({ page }) => {

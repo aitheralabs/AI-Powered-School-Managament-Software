@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { NotificationService } from './notification.service';
 import { ErrorService } from './error.service';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class GlobalErrorHandler implements ErrorHandler {
@@ -103,7 +104,6 @@ export class GlobalErrorHandler implements ErrorHandler {
   }
 
   private isProduction(): boolean {
-    // Check if running in production mode
-    return false; // Will be replaced with actual environment check
+    return environment.production;
   }
 }

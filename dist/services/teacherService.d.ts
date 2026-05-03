@@ -24,7 +24,7 @@ export declare class TeacherService extends BaseService {
         updatedAt: any;
     }>;
     getTeachers(req: any): Promise<{
-        teachers: any;
+        items: any;
         pagination: {
             page: number;
             limit: number;

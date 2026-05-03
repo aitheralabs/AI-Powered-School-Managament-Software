@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAttendanceStats = exports.getStudentAttendanceList = exports.getClassAttendance = exports.getAttendanceRecords = exports.getStudentAttendanceSummary = exports.deleteAttendance = exports.updateAttendance = exports.getAttendanceById = exports.getAttendance = exports.markBulkAttendance = exports.markAttendance = void 0;
+exports.getAttendanceStats = exports.getClassAttendanceSummary = exports.getStudentAttendanceList = exports.getClassAttendance = exports.getAttendanceRecords = exports.getStudentAttendanceSummary = exports.deleteAttendance = exports.updateAttendance = exports.getAttendanceById = exports.getAttendance = exports.markBulkAttendance = exports.markAttendance = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
 const attendanceService_1 = require("../services/attendanceService");
 const connection_1 = require("../database/connection");
 const attendanceService = new attendanceService_1.AttendanceService();
 exports.markAttendance = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const attendance = await attendanceService.forSchool(req.schoolId).markAttendance(req.body, req.user.id);
-    res.status(201).json({ success: true, message: 'Attendance marked successfully', data: attendance });
+    res.status(201).json({ success: true, message: 'Attendance marked successfully', data: { attendance } });
 });
 exports.markBulkAttendance = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await attendanceService.forSchool(req.schoolId).markBulkAttendance(req.body, req.user.id);
@@ -15,7 +15,7 @@ exports.markBulkAttendance = (0, errorHandler_1.asyncHandler)(async (req, res) =
 });
 exports.getAttendance = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await attendanceService.forSchool(req.schoolId).getAttendance(req);
-    res.json({ success: true, data: result.attendance, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.getAttendanceById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const attendance = await attendanceService.forSchool(req.schoolId).getAttendanceById(req.params.id);
@@ -57,7 +57,75 @@ exports.getStudentAttendanceList = (0, errorHandler_1.asyncHandler)(async (req, 
      LEFT JOIN subjects s ON s.id = a.subject_id
      ${whereClause}
      ORDER BY a.date DESC`, sqlParams);
-    res.json({ success: true, data: result.rows });
+    res.json({ success: true, data: { attendance: result.rows } });
+});
+exports.getClassAttendanceSummary = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const schoolId = req.schoolId;
+    const { classId } = req.params;
+    const { startDate, endDate } = req.query;
+    let dateFilter = '';
+    const sqlParams = [classId, schoolId];
+    if (startDate) {
+        dateFilter += ` AND a.date >= $${sqlParams.length + 1}`;
+        sqlParams.push(startDate);
+    }
+    if (endDate) {
+        dateFilter += ` AND a.date <= $${sqlParams.length + 1}`;
+        sqlParams.push(endDate);
+    }
+    const [summaryRes, byStudentRes] = await Promise.all([
+        (0, connection_1.query)(`SELECT
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE a.status = 'present') AS present,
+         COUNT(*) FILTER (WHERE a.status = 'absent')  AS absent,
+         COUNT(*) FILTER (WHERE a.status = 'late')    AS late,
+         COUNT(*) FILTER (WHERE a.status = 'excused') AS excused
+       FROM attendance a
+       WHERE a.class_id = $1 AND a.school_id = $2 ${dateFilter}`, sqlParams),
+        (0, connection_1.query)(`SELECT
+         s.id AS student_id,
+         u.first_name || ' ' || u.last_name AS student_name,
+         COUNT(*) FILTER (WHERE a.status = 'present') AS present,
+         COUNT(*) FILTER (WHERE a.status = 'absent')  AS absent,
+         COUNT(*) FILTER (WHERE a.status = 'late')    AS late,
+         COUNT(*) FILTER (WHERE a.status = 'excused') AS excused,
+         COUNT(*) AS total
+       FROM attendance a
+       JOIN students s ON s.id = a.student_id
+       JOIN users u ON u.id = s.user_id
+       WHERE a.class_id = $1 AND a.school_id = $2 ${dateFilter}
+       GROUP BY s.id, u.first_name, u.last_name
+       ORDER BY u.first_name`, sqlParams),
+    ]);
+    const s = summaryRes.rows[0];
+    const total = parseInt(s.total, 10);
+    const present = parseInt(s.present, 10);
+    res.json({
+        success: true,
+        data: {
+            classId,
+            summary: {
+                total,
+                present,
+                absent: parseInt(s.absent, 10),
+                late: parseInt(s.late, 10),
+                excused: parseInt(s.excused, 10),
+                attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
+            },
+            byStudent: byStudentRes.rows.map((r) => ({
+                studentId: r.student_id,
+                studentName: r.student_name,
+                present: parseInt(r.present, 10),
+                absent: parseInt(r.absent, 10),
+                late: parseInt(r.late, 10),
+                excused: parseInt(r.excused, 10),
+                total: parseInt(r.total, 10),
+                attendanceRate: parseInt(r.total, 10) > 0
+                    ? Math.round((parseInt(r.present, 10) / parseInt(r.total, 10)) * 100)
+                    : 0,
+            })),
+        },
+    });
 });
 exports.getAttendanceStats = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const schoolId = req.schoolId;

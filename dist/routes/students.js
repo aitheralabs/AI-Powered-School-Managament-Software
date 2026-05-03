@@ -25,6 +25,7 @@ router.get('/class/:classId', (0, auth_1.authorize)('admin', 'teacher'), (0, val
 })), (0, caching_1.cacheResponse)(300), studentController_1.getStudentsByClass);
 router.post('/import-csv', (0, auth_1.authorize)('admin'), fileUpload_1.uploadCSV, bulkUploadController_1.importStudentsCSV);
 router.get('/csv-template', (0, auth_1.authorize)('admin', 'staff'), bulkUploadController_1.getStudentCSVTemplate);
+router.get('/export', (0, auth_1.authorize)('admin', 'staff'), studentController_1.exportStudents);
 router.patch('/bulk-update', (0, auth_1.authorize)('admin'), (0, validation_1.validateBody)(zod_1.z.object({
     studentIds: zod_1.z.array(common_1.IdSchema).min(1, 'At least one student ID is required'),
     updateData: zod_1.z.object({

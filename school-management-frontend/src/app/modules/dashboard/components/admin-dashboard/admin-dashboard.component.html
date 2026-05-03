@@ -9,6 +9,16 @@
   <!-- Dashboard Content -->
   <div *ngIf="!isLoading" class="dashboard-content">
 
+    <!-- ===== TRIAL BANNER ===== -->
+    <div *ngIf="trialDaysLeft !== null && trialDaysLeft <= 7" class="trial-banner" [class.urgent]="trialDaysLeft <= 2">
+      <mat-icon>{{ trialDaysLeft <= 2 ? 'warning' : 'schedule' }}</mat-icon>
+      <span *ngIf="trialDaysLeft > 0">
+        Your free trial expires in <strong>{{ trialDaysLeft }} day{{ trialDaysLeft !== 1 ? 's' : '' }}</strong>. Upgrade to keep access.
+      </span>
+      <span *ngIf="trialDaysLeft === 0">Your free trial has expired. Upgrade now to continue using the platform.</span>
+      <a routerLink="/billing" class="trial-banner-link">Upgrade Now →</a>
+    </div>
+
     <!-- ===== HEADER ===== -->
     <div class="dashboard-header">
       <div class="header-left">

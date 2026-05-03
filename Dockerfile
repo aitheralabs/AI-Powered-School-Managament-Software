@@ -31,8 +31,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy compiled JS from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy migrations
-COPY src/database/migrations ./src/database/migrations
+# Copy migrations to match compiled path (__dirname = dist/database in the JS output)
+COPY src/database/migrations ./dist/database/migrations
 
 # Create directories
 RUN mkdir -p uploads/exports logs && chown -R nodejs:nodejs /app

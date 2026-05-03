@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStudentStats = exports.bulkUpdateStudents = exports.getStudentsByClass = exports.getStudentClassHistory = exports.getStudentSummary = exports.deleteStudent = exports.updateStudent = exports.getStudentById = exports.getStudents = exports.createStudent = void 0;
+exports.getStudentStats = exports.exportStudents = exports.bulkUpdateStudents = exports.getStudentsByClass = exports.getStudentClassHistory = exports.getStudentSummary = exports.deleteStudent = exports.updateStudent = exports.getStudentById = exports.getStudents = exports.createStudent = void 0;
 const errorHandler_1 = require("../middleware/errorHandler");
 const studentService_1 = require("../services/studentService");
 const connection_1 = require("../database/connection");
@@ -11,11 +11,11 @@ exports.createStudent = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 });
 exports.getStudents = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await studentService.forSchool(req.schoolId).getStudents(req);
-    res.json({ success: true, data: result.students, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.getStudentById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const student = await studentService.forSchool(req.schoolId).getStudentById(req.params.id);
-    res.json({ success: true, data: student });
+    res.json({ success: true, data: { student } });
 });
 exports.updateStudent = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const student = await studentService.forSchool(req.schoolId).updateStudent(req.params.id, req.body);
@@ -46,6 +46,42 @@ exports.bulkUpdateStudents = (0, errorHandler_1.asyncHandler)(async (req, res) =
     const { studentIds, updateData } = req.body;
     const result = await studentService.forSchool(req.schoolId).bulkUpdateStudents(studentIds, updateData);
     res.json({ success: true, message: `Successfully updated ${result.updatedCount} students`, data: result });
+});
+exports.exportStudents = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const schoolId = req.schoolId;
+    const format = req.query.format || 'csv';
+    const result = await (0, connection_1.query)(`SELECT s.id, u.first_name, u.last_name, u.email, u.phone,
+            u.date_of_birth, u.address,
+            s.student_id, s.guardian_name, s.guardian_phone, s.is_active,
+            c.name AS class_name, s.enrollment_date, s.created_at
+     FROM students s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN classes c ON c.id = s.class_id
+     WHERE s.school_id = $1
+     ORDER BY u.first_name, u.last_name`, [schoolId]);
+    const rows = result.rows;
+    if (format === 'csv') {
+        const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Date of Birth',
+            'Address', 'Student ID', 'Guardian Name', 'Guardian Phone',
+            'Class', 'Enrollment Date', 'Active', 'Created At'];
+        const csvRows = rows.map((r) => [
+            r.id, r.first_name, r.last_name, r.email || '', r.phone || '',
+            r.date_of_birth ? new Date(r.date_of_birth).toISOString().split('T')[0] : '',
+            `"${(r.address || '').replace(/"/g, '""')}"`,
+            r.student_id || '', r.guardian_name || '', r.guardian_phone || '',
+            r.class_name || '',
+            r.enrollment_date ? new Date(r.enrollment_date).toISOString().split('T')[0] : '',
+            r.is_active ? 'Yes' : 'No',
+            new Date(r.created_at).toISOString().split('T')[0],
+        ].join(','));
+        const csv = [headers.join(','), ...csvRows].join('\n');
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
+        res.send(csv);
+    }
+    else {
+        res.json({ success: true, data: rows });
+    }
 });
 exports.getStudentStats = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const schoolId = req.schoolId;

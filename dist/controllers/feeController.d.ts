@@ -11,5 +11,6 @@ export declare const getStudentFeeById: (req: Request, res: Response, next: impo
 export declare const updateStudentFee: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const deleteStudentFee: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getFeeStats: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const sendFeeReminder: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getStudentFeesByStudentId: (req: Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=feeController.d.ts.map

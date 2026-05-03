@@ -7,10 +7,17 @@ const pagination_1 = require("../utils/pagination");
 class FeeService extends baseService_1.BaseService {
     async createFeeCategory(feeCategoryData) {
         const schoolId = this.requireSchool();
-        const academicYearExists = await this.executeQuery('SELECT id, name FROM academic_years WHERE id = $1 AND school_id = $2 AND is_active = true', [feeCategoryData.academicYearId, schoolId]);
+        let academicYearId = feeCategoryData.academicYearId;
+        if (!academicYearId) {
+            const activeYear = await this.executeQuery('SELECT id, name FROM academic_years WHERE school_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1', [schoolId]);
+            if (activeYear.rows.length === 0)
+                throw new errorHandler_1.AppError('No active academic year found', 404);
+            academicYearId = activeYear.rows[0].id;
+        }
+        const academicYearExists = await this.executeQuery('SELECT id, name FROM academic_years WHERE id = $1 AND school_id = $2 AND is_active = true', [academicYearId, schoolId]);
         if (academicYearExists.rows.length === 0)
             throw new errorHandler_1.AppError('Academic year not found or inactive', 404);
-        const existingCategory = await this.executeQuery('SELECT id FROM fee_categories WHERE name = $1 AND academic_year_id = $2 AND school_id = $3', [feeCategoryData.name, feeCategoryData.academicYearId, schoolId]);
+        const existingCategory = await this.executeQuery('SELECT id FROM fee_categories WHERE name = $1 AND academic_year_id = $2 AND school_id = $3', [feeCategoryData.name, academicYearId, schoolId]);
         if (existingCategory.rows.length > 0) {
             throw new errorHandler_1.AppError('Fee category with this name already exists for the academic year', 409);
         }
@@ -19,7 +26,7 @@ class FeeService extends baseService_1.BaseService {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, alt_id, name, description, amount, frequency, is_mandatory, academic_year_id, is_active, created_at, updated_at`, [
             feeCategoryData.name, feeCategoryData.description || null, feeCategoryData.amount,
-            feeCategoryData.frequency, feeCategoryData.isMandatory, feeCategoryData.academicYearId,
+            feeCategoryData.frequency, feeCategoryData.isMandatory, academicYearId,
             sequentialId, schoolId
         ]);
         const feeCategory = result.rows[0];

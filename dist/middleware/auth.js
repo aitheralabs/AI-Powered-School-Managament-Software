@@ -9,13 +9,8 @@ const env_1 = __importDefault(require("../config/env"));
 const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 exports.authenticate = (0, errorHandler_1.asyncHandler)(async (req, res, next) => {
-    console.log('🔐 Authentication middleware called');
-    console.log('Request URL:', req.url);
-    console.log('Request method:', req.method);
-    console.log('Authorization header:', req.headers.authorization);
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        console.log('❌ No authorization header found');
         throw new errorHandler_1.AppError('Access token is required', 401);
     }
     const parts = authHeader.split(' ');
@@ -25,17 +20,10 @@ exports.authenticate = (0, errorHandler_1.asyncHandler)(async (req, res, next) =
     const token = parts[1];
     try {
         const decoded = jsonwebtoken_1.default.verify(token, env_1.default.JWT_SECRET);
-        console.log('Token decoded successfully:', {
-            id: decoded.id,
-            userId: decoded.userId,
-            email: decoded.email,
-            role: decoded.role
-        });
         const userId = decoded.id || decoded.userId;
         const email = decoded.email;
         const role = decoded.role;
         if (!userId || !email || !role) {
-            console.log('Missing required fields in token:', { userId, email, role });
             throw new errorHandler_1.AppError('Invalid token payload', 401);
         }
         if (env_1.default.NODE_ENV === 'test') {
@@ -60,7 +48,6 @@ exports.authenticate = (0, errorHandler_1.asyncHandler)(async (req, res, next) =
         next();
     }
     catch (error) {
-        console.log('JWT verification error:', error);
         if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
             throw new errorHandler_1.AppError('Access token has expired. Please refresh your token.', 401);
         }

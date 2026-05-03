@@ -74,7 +74,20 @@
       "Bash(grep -n \"schoolId\\\\|req\\\\.schoolId\" src/middleware/*.ts)",
       "Bash(psql \"postgresql://postgres:Kishan8051@localhost:5432/SMS\" -c \"SELECT c.conname, a.attname, cf.relname FROM pg_constraint c JOIN pg_attribute a ON a.attnum = ANY\\(c.conkey\\) AND a.attrelid = c.conrelid JOIN pg_class cf ON cf.oid = c.confrelid WHERE cf.relname = 'users' AND c.contype = 'f';\")",
       "Bash(psql \"postgresql://postgres:Kishan8051@localhost/SMS\" -U postgres -c \"SELECT tc.table_name, kcu.column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.referential_constraints rc ON tc.constraint_name = rc.constraint_name JOIN information_schema.table_constraints tc2 ON rc.unique_constraint_name = tc2.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY' AND tc2.table_name = 'users';\")",
-      "Bash(wc -l src/app.ts src/index.ts src/services/*.ts)"
+      "Bash(wc -l src/app.ts src/index.ts src/services/*.ts)",
+      "Bash(npx playwright:*)",
+      "Bash(taskkill:*)",
+      "Bash(redis-cli FLUSHALL)",
+      "Bash(node dist/server.js)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(wmic process:*)",
+      "Bash(kill 33736)",
+      "Bash(Read \"C:\\\\Users\\\\ABHI\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--SCHOOL-MANAGEMNET\\\\44648e40-b5d5-449f-b764-67a605a72f80\\\\tasks\\\\bnrw2z6ou.output\")",
+      "Bash(break)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('token','NO TOKEN'\\)[:50] if d.get\\('token'\\) else str\\(d\\)[:200]\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(str\\(d\\)[:200]\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(str\\(d\\)[:300]\\)\")",
+      "Bash(findstr \":3000\")"
     ]
   }
 }

@@ -8,7 +8,9 @@
 import { query, getClient } from '../database/connection';
 import { AppError } from '../middleware/errorHandler';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { invalidateTenantCache } from '../middleware/tenant';
+import { emailService } from './emailService';
 
 export interface CreateSchoolInput {
   // School info
@@ -57,16 +59,18 @@ export class SchoolService {
     try {
       await client.query('BEGIN');
 
-      // 1. Create the school
+      // 1. Create the school (generate email verification token)
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
       const schoolResult = await client.query(
         `INSERT INTO schools
            (name, slug, email, phone, address, city, state, country, postal_code, website, timezone,
             plan, subscription_status, trial_ends_at,
             max_students, max_teachers, max_staff,
-            feature_messaging)
+            feature_messaging, email_verification_token)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
                  'trial','trialing', NOW() + INTERVAL '30 days',
-                 100, 20, 10, true)
+                 100, 20, 10, true, $12)
          RETURNING *`,
         [
           input.name, input.slug, input.email,
@@ -74,6 +78,7 @@ export class SchoolService {
           input.city || null, input.state || null,
           input.country || 'India', input.postalCode || null,
           input.website || null, input.timezone || 'Asia/Kolkata',
+          verificationToken,
         ]
       );
 
@@ -104,6 +109,22 @@ export class SchoolService {
       );
 
       await client.query('COMMIT');
+
+      // Send welcome + verification email asynchronously (never block registration)
+      const appUrl = process.env.APP_URL || 'http://localhost:4200';
+      const verifyUrl = `${appUrl}/verify-email?token=${verificationToken}`;
+      emailService.sendSchoolWelcomeEmail(
+        admin.email,
+        `${input.adminFirstName} ${input.adminLastName}`,
+        input.name,
+      ).catch(err => console.error('[SchoolService] Welcome email failed:', err));
+
+      emailService.sendEmailVerification(
+        input.email,
+        input.name,
+        verifyUrl,
+      ).catch(err => console.error('[SchoolService] Verification email failed:', err));
+
       return { school, admin };
     } catch (err) {
       await client.query('ROLLBACK');

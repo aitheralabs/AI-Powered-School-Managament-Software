@@ -76,23 +76,29 @@ export abstract class BaseService {
     altIdColumn?: string
   ): Promise<any> {
     const isUUID = this.validateUUID(id);
-    const schoolFilter = this.schoolId ? ` AND school_id = '${this.schoolId}'` : '';
+    // Use parameterized query for schoolId to prevent SQL injection
+    const params: any[] = [id];
+    let schoolCondition = '';
+    if (this.schoolId) {
+      params.push(this.schoolId);
+      schoolCondition = ` AND school_id = $${params.length}`;
+    }
 
     let result;
     if (isUUID) {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE id = $1${schoolFilter}`,
-        [id]
+        `SELECT * FROM ${tableName} WHERE id = $1${schoolCondition}`,
+        params
       );
     } else if (altIdColumn) {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolFilter}`,
-        [id]
+        `SELECT * FROM ${tableName} WHERE (${altIdColumn} = $1 OR id::text = $1)${schoolCondition}`,
+        params
       );
     } else {
       result = await this.executeQuery(
-        `SELECT * FROM ${tableName} WHERE id::text = $1${schoolFilter}`,
-        [id]
+        `SELECT * FROM ${tableName} WHERE id::text = $1${schoolCondition}`,
+        params
       );
     }
 

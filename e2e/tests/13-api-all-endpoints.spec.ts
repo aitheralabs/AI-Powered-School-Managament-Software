@@ -144,7 +144,7 @@ test.describe('Students API', () => {
     if (!adminToken) return;
     const json = await apiRequest('GET', '/students', adminToken);
     expect(json.success).toBe(true);
-    expect(Array.isArray(json.data?.students ?? json.data)).toBe(true);
+    expect(Array.isArray(json.data?.students ?? json.data?.items ?? json.data)).toBe(true);
   });
 
   test('GET /students - unauthorized without token', async () => {

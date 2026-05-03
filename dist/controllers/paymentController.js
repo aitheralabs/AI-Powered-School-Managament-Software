@@ -6,11 +6,11 @@ const paymentService_1 = require("../services/paymentService");
 const paymentService = new paymentService_1.PaymentService();
 exports.recordPayment = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const payment = await paymentService.forSchool(req.schoolId).recordPayment(req.body, req.user.id);
-    res.status(201).json({ success: true, message: 'Payment recorded successfully', data: payment });
+    res.status(201).json({ success: true, message: 'Payment recorded successfully', data: { payment } });
 });
 exports.getPayments = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const result = await paymentService.forSchool(req.schoolId).getPayments(req);
-    res.json({ success: true, data: result.payments, pagination: result.pagination });
+    res.json({ success: true, data: result });
 });
 exports.getPaymentById = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const payment = await paymentService.forSchool(req.schoolId).getPaymentById(req.params.id);

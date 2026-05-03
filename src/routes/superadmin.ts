@@ -184,4 +184,74 @@ router.get('/stats', asyncHandler(async (_req: Request, res: Response) => {
   });
 }));
 
+/**
+ * POST /api/v1/superadmin/schools/:id/impersonate
+ *
+ * Generates a short-lived (15 min) JWT scoped to the school's first admin user.
+ * Lets a super-admin log in as a school admin for support purposes.
+ * The token carries an `impersonated: true` flag for audit logging.
+ */
+router.post('/schools/:id/impersonate', asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // Find the school
+  const schoolResult = await query(
+    'SELECT id, name, slug FROM schools WHERE id = $1 AND is_active = true',
+    [id]
+  );
+  if (schoolResult.rows.length === 0) throw new AppError('School not found or suspended', 404);
+  const school = schoolResult.rows[0];
+
+  // Find the first active admin user of this school
+  const userResult = await query(
+    `SELECT id, first_name, last_name, email, role
+     FROM users
+     WHERE school_id = $1 AND role = 'admin' AND is_active = true
+     ORDER BY created_at ASC
+     LIMIT 1`,
+    [id]
+  );
+  if (userResult.rows.length === 0) throw new AppError('No active admin found for this school', 404);
+  const admin = userResult.rows[0];
+
+  // Build a short-lived JWT (15 min) — uses the same JWT_SECRET so existing authenticate middleware accepts it
+  const JWT_SECRET = process.env.JWT_SECRET!;
+  const token = jwt.sign(
+    {
+      id:           admin.id,
+      email:        admin.email,
+      role:         admin.role,
+      schoolId:     school.id,
+      impersonated: true,
+      impersonatedBy: (req as any).superAdminId,
+    },
+    JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+
+  // Audit this action
+  console.log(`[SuperAdmin] Impersonation: admin ${(req as any).superAdminId} → school ${school.name} (${id}) as user ${admin.email}`);
+
+  res.json({
+    success: true,
+    message: `Impersonation token issued for ${admin.email} at ${school.name}. Expires in 15 minutes.`,
+    data: {
+      token,
+      user: {
+        id:        admin.id,
+        email:     admin.email,
+        firstName: admin.first_name,
+        lastName:  admin.last_name,
+        role:      admin.role,
+        schoolId:  school.id,
+      },
+      school: {
+        id:   school.id,
+        name: school.name,
+        slug: school.slug,
+      },
+    },
+  });
+}));
+
 export default router;

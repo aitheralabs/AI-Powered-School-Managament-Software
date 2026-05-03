@@ -12,7 +12,7 @@ exports.CreateFeeCategorySchema = zod_1.z.object({
     amount: zod_1.z.number().min(0, 'Amount cannot be negative'),
     frequency: exports.FeeFrequencySchema,
     isMandatory: zod_1.z.boolean().optional().default(true),
-    academicYearId: common_1.IdSchema,
+    academicYearId: common_1.IdSchema.optional(),
 });
 exports.UpdateFeeCategorySchema = exports.CreateFeeCategorySchema.partial().omit({ academicYearId: true });
 exports.FeeCategoryResponseSchema = zod_1.z.object({

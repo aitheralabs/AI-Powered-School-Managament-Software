@@ -1,0 +1,115 @@
+<div class="schools-list">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h2>All Schools</h2>
+      <p>{{ total }} tenant{{ total !== 1 ? 's' : '' }} on the platform</p>
+    </div>
+    <button class="btn-create" routerLink="/super-admin/dashboard">
+      <mat-icon>arrow_back</mat-icon> Dashboard
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-wrap">
+      <mat-icon>search</mat-icon>
+      <input [ngModel]="searchQuery" (ngModelChange)="onSearch($event)" placeholder="Search schools…" />
+    </div>
+    <select [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+      <option value="">All Statuses</option>
+      <option value="trialing">Trialing</option>
+      <option value="active">Active</option>
+      <option value="past_due">Past Due</option>
+      <option value="suspended">Suspended</option>
+      <option value="canceled">Canceled</option>
+    </select>
+    <select [(ngModel)]="planFilter" (ngModelChange)="onFilterChange()">
+      <option value="">All Plans</option>
+      <option value="trial">Trial</option>
+      <option value="basic">Basic</option>
+      <option value="standard">Standard</option>
+      <option value="premium">Premium</option>
+      <option value="enterprise">Enterprise</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-wrap" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" *ngIf="error && !isLoading">
+    <mat-icon>error_outline</mat-icon> {{ error }}
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap" *ngIf="!isLoading && !error">
+    <table>
+      <thead>
+        <tr>
+          <th>School</th>
+          <th>Plan</th>
+          <th>Status</th>
+          <th>Students</th>
+          <th>Teachers</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of schools" (click)="openSchool(s.id)" class="school-row">
+          <td>
+            <div class="school-cell">
+              <div class="school-avatar" [style.background]="planColor(s.plan) + '20'" [style.color]="planColor(s.plan)">
+                {{ s.name?.charAt(0)?.toUpperCase() }}
+              </div>
+              <div>
+                <div class="school-name">{{ s.name }}</div>
+                <div class="school-slug">{{ s.slug }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge plan-badge" [style.background]="planColor(s.plan) + '20'" [style.color]="planColor(s.plan)">
+              {{ s.plan | titlecase }}
+            </span>
+          </td>
+          <td>
+            <span class="badge status-badge" [style.background]="statusColor(s.subscription_status || s.status) + '20'" [style.color]="statusColor(s.subscription_status || s.status)">
+              {{ (s.subscription_status || s.status) | titlecase }}
+            </span>
+          </td>
+          <td class="num-cell">{{ s.student_count ?? '—' }}</td>
+          <td class="num-cell">{{ s.teacher_count ?? '—' }}</td>
+          <td class="date-cell">{{ s.created_at | date:'MMM d, y' }}</td>
+          <td>
+            <button class="btn-detail" matTooltip="View details" (click)="$event.stopPropagation(); openSchool(s.id)">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="schools.length === 0">
+          <td colspan="7" class="empty-row">
+            <mat-icon>domain</mat-icon>
+            <span>No schools found.</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="!isLoading && pages > 1">
+    <button (click)="prevPage()" [disabled]="page === 1">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span>Page {{ page }} of {{ pages }}</span>
+    <button (click)="nextPage()" [disabled]="page >= pages">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+</div>

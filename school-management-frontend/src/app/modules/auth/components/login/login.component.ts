@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -19,6 +19,7 @@ import { ErrorService } from '../../../../services/error.service';
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -65,6 +66,11 @@ export class LoginComponent implements OnInit {
 
     // Get return url from route parameters or default to '/dashboard'
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+
+    // Show verification success toast when redirected after email verification
+    if (this.route.snapshot.queryParams['verified'] === '1') {
+      this.notificationService.success('Email verified successfully! You can now log in.', 'Email Verified');
+    }
 
     // If already logged in, redirect to dashboard
     if (this.authService.isAuthenticated()) {

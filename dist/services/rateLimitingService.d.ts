@@ -13,6 +13,7 @@ export declare class RateLimitingService extends BaseService {
     cleanupOldEntries(): Promise<void>;
     detectSuspiciousActivity(): Promise<any[]>;
     private getRuleForEndpoint;
+    private transformEntry;
     private getRateLimitEntry;
     private createRateLimitEntry;
     private resetRateLimitWindow;

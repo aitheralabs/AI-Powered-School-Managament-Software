@@ -125,7 +125,7 @@ class ClassService extends baseService_1.BaseService {
                 academicYear: { id: cls.academic_year_id, name: cls.academic_year_name },
                 teacher: cls.teacher_first_name ? { id: cls.teacher_id, name: `${cls.teacher_first_name} ${cls.teacher_last_name}` } : null,
             }));
-            return { classes, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+            return { items: classes, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
         }, cacheService_1.CacheTTL.FIVE_MINUTES);
     }
     async getClassById(id) {
@@ -202,6 +202,53 @@ class ClassService extends baseService_1.BaseService {
         await cacheService_1.default.delPattern(`${cacheService_1.CacheKeys.CLASS}:${schoolId}:*`);
         await cacheService_1.default.delPattern(`${cacheService_1.CacheKeys.CLASSES_ALL}:${schoolId}:*`);
         return { success: true };
+    }
+    async assignSubjectToClass(classId, subjectId, teacherId) {
+        const schoolId = this.requireSchool();
+        const classInfo = await this.checkEntityExists('classes', classId, 'alt_id');
+        const subjectExists = await this.executeQuery('SELECT id FROM subjects WHERE id = $1 AND (school_id = $2 OR school_id IS NULL) AND is_active = true', [subjectId, schoolId]);
+        if (subjectExists.rows.length === 0)
+            throw new errorHandler_1.AppError('Subject not found', 404);
+        let resolvedTeacherId = null;
+        if (teacherId) {
+            const userRow = await this.executeQuery("SELECT id FROM users WHERE id = $1 AND role = 'teacher' AND school_id = $2", [teacherId, schoolId]);
+            if (userRow.rows.length > 0) {
+                resolvedTeacherId = userRow.rows[0].id;
+            }
+            else {
+                const teacherRow = await this.executeQuery('SELECT user_id FROM teachers WHERE id = $1 AND school_id = $2', [teacherId, schoolId]);
+                if (teacherRow.rows.length > 0)
+                    resolvedTeacherId = teacherRow.rows[0].user_id;
+            }
+        }
+        const result = await this.executeQuery(`INSERT INTO class_subjects (class_id, subject_id, teacher_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (class_id, subject_id) DO UPDATE SET teacher_id = EXCLUDED.teacher_id
+       RETURNING id, class_id, subject_id, teacher_id, created_at`, [classInfo.id, subjectId, resolvedTeacherId]);
+        await cacheService_1.default.delPattern(`${cacheService_1.CacheKeys.CLASS}:${schoolId}:*`);
+        return result.rows[0];
+    }
+    async getClassSubjects(classId) {
+        const schoolId = this.requireSchool();
+        const classInfo = await this.checkEntityExists('classes', classId, 'alt_id');
+        const result = await this.executeQuery(`SELECT cs.id as assignment_id, s.id, s.name, s.code, s.credit_hours, s.description,
+              u.first_name as teacher_first_name, u.last_name as teacher_last_name, u.id as teacher_user_id
+       FROM class_subjects cs
+       JOIN subjects s ON cs.subject_id = s.id
+       LEFT JOIN users u ON cs.teacher_id = u.id
+       WHERE cs.class_id = $1 AND s.is_active = true
+       ORDER BY s.name`, [classInfo.id]);
+        return {
+            subjects: result.rows.map((s) => ({
+                assignmentId: s.assignment_id,
+                id: s.id,
+                name: s.name,
+                code: s.code,
+                creditHours: s.credit_hours,
+                description: s.description,
+                teacher: s.teacher_first_name ? { id: s.teacher_user_id, name: `${s.teacher_first_name} ${s.teacher_last_name}` } : null,
+            })),
+        };
     }
     transformClassResponse(cls) {
         return {

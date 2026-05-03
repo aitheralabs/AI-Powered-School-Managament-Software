@@ -8,9 +8,12 @@ const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 const baseService_1 = require("./baseService");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const schoolService_1 = require("./schoolService");
+const schoolService = new schoolService_1.SchoolService();
 class StaffService extends baseService_1.BaseService {
     async createStaff(staffData, adminUserId) {
         const schoolId = this.requireSchool();
+        await schoolService.checkLimit(schoolId, 'staff');
         const client = await (0, connection_1.getClient)();
         try {
             await client.query('BEGIN');
@@ -20,7 +23,8 @@ class StaffService extends baseService_1.BaseService {
             const employeeIdCheck = await client.query('SELECT id FROM staff WHERE employee_id = $1 AND school_id = $2', [staffData.employeeId, schoolId]);
             if (employeeIdCheck.rows.length > 0)
                 throw new errorHandler_1.AppError('Employee ID already exists', 409);
-            const hashedPassword = await bcrypt_1.default.hash(staffData.password, 10);
+            const staffPassword = staffData.password || `Staff@${staffData.employeeId || Date.now()}`;
+            const hashedPassword = await bcrypt_1.default.hash(staffPassword, 10);
             const userResult = await client.query(`INSERT INTO users (first_name, last_name, email, password_hash, role, phone, date_of_birth, address, is_active, school_id)
          VALUES ($1, $2, $3, $4, 'staff', $5, $6, $7, true, $8)
          RETURNING *`, [staffData.firstName, staffData.lastName, staffData.email, hashedPassword, staffData.phone || null, staffData.dateOfBirth || null, staffData.address || null, schoolId]);

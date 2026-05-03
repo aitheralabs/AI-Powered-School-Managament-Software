@@ -17,8 +17,9 @@ test.describe('Teacher Management', () => {
   });
 
   test('teachers table/list is visible', async ({ page }) => {
+    // .table-wrapper appears when loading is done (regardless of row count)
     await page.waitForTimeout(2000);
-    const hasContent = await page.locator('table, mat-table, .teacher-card, mat-card').first().isVisible().catch(() => false);
+    const hasContent = await page.locator('table, mat-table, .teacher-card, mat-card, .table-wrapper').first().isVisible().catch(() => false);
     expect(hasContent).toBeTruthy();
   });
 
@@ -46,21 +47,32 @@ test.describe('Teacher Management', () => {
 
   test('can add a new teacher', async ({ page }) => {
     await page.locator('button').filter({ hasText: /add|new|create/i }).first().click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
     const ts = Date.now();
-    const dialogs = page.locator('mat-dialog-container, [role="dialog"], .form-container');
+    const dialog = page.locator('mat-dialog-container, [role="dialog"]').first();
+    await expect(dialog).toBeVisible({ timeout: 5000 });
 
-    await dialogs.locator('input[formControlName="firstName"], input[placeholder*="first" i]').first().fill(`TFirst${ts}`).catch(() => {});
-    await dialogs.locator('input[formControlName="lastName"], input[placeholder*="last" i]').first().fill(`TLast${ts}`).catch(() => {});
-    await dialogs.locator('input[type="email"], input[formControlName="email"]').first().fill(`teacher${ts}@test.com`).catch(() => {});
-    await dialogs.locator('input[formControlName="phone"], input[placeholder*="phone" i]').first().fill('9876543210').catch(() => {});
+    // Personal info
+    await dialog.locator('input[formControlName="firstName"]').fill(`TFirst${ts}`);
+    await dialog.locator('input[formControlName="lastName"]').fill(`TLast${ts}`);
+    await dialog.locator('input[formControlName="email"]').fill(`teacher${ts}@test.com`);
+    await dialog.locator('input[formControlName="phone"]').fill('9876543210').catch(() => {});
 
-    await page.locator('button').filter({ hasText: /save|submit|add/i }).first().click();
+    // Required professional fields
+    await dialog.locator('input[formControlName="employeeId"]').fill(`EMP${ts}`);
+    await dialog.locator('input[formControlName="qualification"]').fill('M.Ed');
+    await dialog.locator('input[formControlName="specialization"]').fill('Mathematics');
+
+    // dateOfJoining defaults to new Date() — leave as-is, just blur to mark as touched
+    await page.keyboard.press('Tab');
+
+    // Submit — use mat-raised-button directive attribute (always preserved in DOM)
+    await dialog.locator('button[mat-raised-button]').first().click();
 
     await expect(
       page.locator('.toast-success, [class*="success"]').first()
-    ).toBeVisible({ timeout: 8000 });
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('search/filter works', async ({ page }) => {

@@ -16,6 +16,7 @@ const router = (0, express_1.Router)();
 router.use(auth_1.authenticate, tenant_1.resolveTenant, tenant_1.requireActiveSubscription);
 router.post('/import-csv', (0, auth_1.authorize)('admin'), fileUpload_1.uploadCSV, bulkUploadController_1.importTeachersCSV);
 router.get('/csv-template', (0, auth_1.authorize)('admin'), bulkUploadController_1.getTeacherCSVTemplate);
+router.get('/export', (0, auth_1.authorize)('admin', 'staff'), teacherController_1.exportTeachers);
 router.post('/', (0, auth_1.authorize)('admin'), sanitization_1.sanitizeTeacher, (0, validation_1.validateBody)(teacher_1.CreateTeacherSchema), (0, caching_1.invalidateCache)(['teachers:*', 'teacher:*']), teacherController_1.createTeacher);
 router.get('/', (0, validation_1.validateQuery)(common_1.PaginationSchema.extend({
     isActive: zod_1.z.string().optional().transform(val => val === 'true'),

@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import { processNotificationQueue, notifyFeeDue, notifyLowAttendance } from '../services/notificationService';
 import { testConnection, closePool } from '../database/connection';
 import { query } from '../database/connection';
+import { emailService } from '../services/emailService';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -116,21 +117,39 @@ async function main() {
 
   // ── Trial expiry warnings (daily at 10 AM) ─────────────────
   cron.schedule('0 10 * * *', async () => {
+    console.log('[Worker] Running trial expiry warning job...');
     try {
-      // Schools whose trial expires in exactly 7 days
+      // Find schools expiring in 7 days AND 1 day (send at each milestone)
       const expiring = await query(`
-        SELECT s.id, s.name, s.email
+        SELECT s.id, s.name, s.email,
+               EXTRACT(DAY FROM (s.trial_ends_at - NOW()))::INT AS days_left,
+               u.email AS admin_email, u.first_name, u.last_name
         FROM schools s
+        LEFT JOIN users u ON u.school_id = s.id AND u.role = 'admin' AND u.is_active = true
         WHERE s.subscription_status = 'trialing'
-          AND s.trial_ends_at::DATE = (NOW() + INTERVAL '7 days')::DATE
+          AND s.trial_ends_at > NOW()
+          AND EXTRACT(DAY FROM (s.trial_ends_at - NOW()))::INT IN (7, 3, 1)
+        ORDER BY s.id, u.created_at ASC
       `);
 
-      const { default: nodemailer } = await import('nodemailer');
-      // Send trial expiry warning emails
-      for (const school of expiring.rows) {
-        console.log(`[Worker] Trial expiry warning for: ${school.name} (${school.email})`);
-        // In production, send email via notificationService.sendEmail
+      // Deduplicate: one email per school (first admin)
+      const sent = new Set<string>();
+      for (const row of expiring.rows) {
+        if (sent.has(row.id)) continue;
+        sent.add(row.id);
+
+        const recipient = row.admin_email || row.email;
+        const daysLeft = Math.max(1, row.days_left);
+
+        try {
+          await emailService.sendTrialExpiryEmail(recipient, row.name, daysLeft);
+          console.log(`[Worker] Trial expiry email sent: ${row.name} (${daysLeft}d left)`);
+        } catch (emailErr) {
+          console.error(`[Worker] Failed to send trial expiry email to ${recipient}:`, emailErr);
+        }
       }
+
+      console.log(`[Worker] Trial expiry job done. Processed ${sent.size} schools.`);
     } catch (err) {
       console.error('[Worker] Trial expiry warning error:', err);
     }

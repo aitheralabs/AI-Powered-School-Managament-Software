@@ -81,14 +81,53 @@ test.describe('Staff Management - Admin', () => {
       await page.waitForTimeout(500);
 
       const ts = Date.now();
-      const dialog = page.locator('mat-dialog-container, [role="dialog"]');
-      if (await dialog.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await dialog.locator('input[formControlName="firstName"], input[placeholder*="first" i]').first().fill(`Staff${ts}`).catch(() => {});
-        await dialog.locator('input[formControlName="lastName"], input[placeholder*="last" i]').first().fill(`Member`).catch(() => {});
-        await dialog.locator('input[type="email"]').first().fill(`staff${ts}@test.com`).catch(() => {});
+      const dialog = page.locator('mat-dialog-container, [role="dialog"]').first();
+      if (await dialog.isVisible({ timeout: 5000 }).catch(() => false)) {
+        // Personal info
+        await dialog.locator('input[formControlName="firstName"]').fill(`Staff${ts}`);
+        await dialog.locator('input[formControlName="lastName"]').fill(`Member`);
+        await dialog.locator('input[formControlName="email"]').fill(`staff${ts}@test.com`);
 
-        await page.locator('button').filter({ hasText: /save|submit/i }).first().click();
-        await expect(page.locator('.toast-success, [class*="success"]').first()).toBeVisible({ timeout: 8000 });
+        // Required employment fields
+        await dialog.locator('input[formControlName="employeeId"]').fill(`EMP${ts}`);
+        await dialog.locator('input[formControlName="joiningDate"]').fill('2024-01-01').catch(() => {});
+
+        // Department select (first mat-select in dialog)
+        const deptSelect = dialog.locator('mat-select').nth(0);
+        if (await deptSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await deptSelect.click();
+          await page.waitForTimeout(300);
+          const deptOption = page.locator('mat-option').first();
+          if (await deptOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await deptOption.click();
+          } else {
+            await page.keyboard.press('Escape');
+          }
+        }
+
+        // Position select (second mat-select in dialog)
+        const posSelect = dialog.locator('mat-select').nth(1);
+        if (await posSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await posSelect.click();
+          await page.waitForTimeout(300);
+          const posOption = page.locator('mat-option').first();
+          if (await posOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await posOption.click();
+          } else {
+            await page.keyboard.press('Escape');
+          }
+        }
+
+        // Password (required for new staff)
+        await dialog.locator('input[formControlName="password"]').fill('Password@123').catch(() => {});
+
+        // Submit — wait for API response (201 Created) rather than a toast
+        const staffResponsePromise = page.waitForResponse(
+          resp => resp.url().includes('/staff') && resp.status() === 201,
+          { timeout: 15000 }
+        );
+        await dialog.locator('button[mat-raised-button]').first().click();
+        await staffResponsePromise;
       }
     }
   });

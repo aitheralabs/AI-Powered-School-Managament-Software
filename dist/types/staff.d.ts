@@ -3,18 +3,17 @@ export declare const CreateStaffSchema: z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
     email: z.ZodString;
-    password: z.ZodString;
-    phone: z.ZodOptional<z.ZodString>;
-    dateOfBirth: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    password: z.ZodOptional<z.ZodString>;
+    phone: z.ZodEffects<z.ZodOptional<z.ZodString>, string | undefined, unknown>;
+    dateOfBirth: z.ZodEffects<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>, string | undefined, unknown>;
     address: z.ZodOptional<z.ZodString>;
     employeeId: z.ZodString;
     department: z.ZodString;
     position: z.ZodString;
     joiningDate: z.ZodEffects<z.ZodString, string, string>;
-    salary: z.ZodOptional<z.ZodNumber>;
+    salary: z.ZodEffects<z.ZodOptional<z.ZodNumber>, number | undefined, unknown>;
     responsibilities: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    password: string;
     email: string;
     firstName: string;
     lastName: string;
@@ -22,13 +21,13 @@ export declare const CreateStaffSchema: z.ZodObject<{
     joiningDate: string;
     department: string;
     position: string;
+    password?: string | undefined;
     phone?: string | undefined;
     dateOfBirth?: string | undefined;
     address?: string | undefined;
     salary?: number | undefined;
     responsibilities?: string | undefined;
 }, {
-    password: string;
     email: string;
     firstName: string;
     lastName: string;
@@ -36,21 +35,22 @@ export declare const CreateStaffSchema: z.ZodObject<{
     joiningDate: string;
     department: string;
     position: string;
-    phone?: string | undefined;
-    dateOfBirth?: string | undefined;
+    password?: string | undefined;
+    phone?: unknown;
+    dateOfBirth?: unknown;
     address?: string | undefined;
-    salary?: number | undefined;
+    salary?: unknown;
     responsibilities?: string | undefined;
 }>;
 export declare const UpdateStaffSchema: z.ZodObject<{
     firstName: z.ZodOptional<z.ZodString>;
     lastName: z.ZodOptional<z.ZodString>;
-    phone: z.ZodOptional<z.ZodString>;
-    dateOfBirth: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    phone: z.ZodEffects<z.ZodOptional<z.ZodString>, string | undefined, unknown>;
+    dateOfBirth: z.ZodEffects<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>, string | undefined, unknown>;
     address: z.ZodOptional<z.ZodString>;
     department: z.ZodOptional<z.ZodString>;
     position: z.ZodOptional<z.ZodString>;
-    salary: z.ZodOptional<z.ZodNumber>;
+    salary: z.ZodEffects<z.ZodOptional<z.ZodNumber>, number | undefined, unknown>;
     responsibilities: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     phone?: string | undefined;
@@ -63,12 +63,12 @@ export declare const UpdateStaffSchema: z.ZodObject<{
     position?: string | undefined;
     responsibilities?: string | undefined;
 }, {
-    phone?: string | undefined;
+    phone?: unknown;
     firstName?: string | undefined;
     lastName?: string | undefined;
-    dateOfBirth?: string | undefined;
+    dateOfBirth?: unknown;
     address?: string | undefined;
-    salary?: number | undefined;
+    salary?: unknown;
     department?: string | undefined;
     position?: string | undefined;
     responsibilities?: string | undefined;

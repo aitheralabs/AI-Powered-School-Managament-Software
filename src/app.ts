@@ -98,11 +98,22 @@ app.use(speedLimiter);
 // Additional security headers for XSS protection
 app.use(addSecurityHeaders);
 
-// CORS configuration
-app.use(cors({
-  origin: env.CORS_ORIGIN,
-  credentials: true,
-}));
+// CORS — supports comma-separated origins: CORS_ORIGIN=https://a.com,https://b.com
+const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow server-to-server calls, health checks, and Postman (no Origin header)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-School-ID', 'X-Request-ID'],
+    exposedHeaders: ['X-Request-ID', 'RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+  })
+);
 
 // Logging middleware
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));

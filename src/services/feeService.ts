@@ -7,15 +7,25 @@ export class FeeService extends BaseService {
   async createFeeCategory(feeCategoryData: CreateFeeCategory) {
     const schoolId = this.requireSchool();
 
+    let academicYearId = feeCategoryData.academicYearId;
+    if (!academicYearId) {
+      const activeYear = await this.executeQuery(
+        'SELECT id, name FROM academic_years WHERE school_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1',
+        [schoolId]
+      );
+      if (activeYear.rows.length === 0) throw new AppError('No active academic year found', 404);
+      academicYearId = activeYear.rows[0].id;
+    }
+
     const academicYearExists = await this.executeQuery(
       'SELECT id, name FROM academic_years WHERE id = $1 AND school_id = $2 AND is_active = true',
-      [feeCategoryData.academicYearId, schoolId]
+      [academicYearId, schoolId]
     );
     if (academicYearExists.rows.length === 0) throw new AppError('Academic year not found or inactive', 404);
 
     const existingCategory = await this.executeQuery(
       'SELECT id FROM fee_categories WHERE name = $1 AND academic_year_id = $2 AND school_id = $3',
-      [feeCategoryData.name, feeCategoryData.academicYearId, schoolId]
+      [feeCategoryData.name, academicYearId, schoolId]
     );
     if (existingCategory.rows.length > 0) {
       throw new AppError('Fee category with this name already exists for the academic year', 409);
@@ -29,7 +39,7 @@ export class FeeService extends BaseService {
        RETURNING id, alt_id, name, description, amount, frequency, is_mandatory, academic_year_id, is_active, created_at, updated_at`,
       [
         feeCategoryData.name, feeCategoryData.description || null, feeCategoryData.amount,
-        feeCategoryData.frequency, feeCategoryData.isMandatory, feeCategoryData.academicYearId,
+        feeCategoryData.frequency, feeCategoryData.isMandatory, academicYearId,
         sequentialId, schoolId
       ]
     );

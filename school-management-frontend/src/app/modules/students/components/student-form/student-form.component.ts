@@ -83,10 +83,11 @@ export class StudentFormComponent implements OnInit {
     this.apiService.getPaginated<Class>('classes').subscribe({
       next: (response: any) => {
         if (response.success && response.data) {
-          this.classes = response.data.items;
+          this.classes = response.data.items || (response.data as any).classes || [];
         }
       },
       error: () => {
+        this.classes = [];
         this.notificationService.error('Failed to load classes');
       }
     });
@@ -108,7 +109,7 @@ export class StudentFormComponent implements OnInit {
       dateOfBirth: [student?.dateOfBirth ? new Date(student.dateOfBirth) : '', Validators.required],
       gender: [student?.gender || '', Validators.required],
       enrollmentDate: [student?.enrollmentDate ? new Date(student.enrollmentDate) : new Date(), Validators.required],
-      classId: [student?.classId || '', Validators.required],
+      classId: [student?.classId || ''],
       guardianName: [student?.guardianName || '', [Validators.required, Validators.minLength(2)]],
       guardianPhone: [student?.guardianPhone || '', [Validators.required, Validators.minLength(10)]],
       emergencyContact: [student?.emergencyContact || '', [Validators.required, Validators.minLength(10)]],

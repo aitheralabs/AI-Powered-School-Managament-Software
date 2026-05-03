@@ -36,14 +36,24 @@ const envSchema = z.object({
   REDIS_ENABLED: z.string().default('false').transform(val => val === 'true'),
 
   // Email / SMTP
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.string().default('587').transform(Number),
+  SMTP_HOST:   z.string().optional(),
+  SMTP_PORT:   z.string().default('587').transform(Number),
   SMTP_SECURE: z.string().default('false').transform(val => val === 'true'),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
+  SMTP_USER:   z.string().optional(),
+  SMTP_PASS:   z.string().optional(),
+  SMTP_FROM:   z.string().optional(),
+
+  // Application metadata (used in emails and links)
+  APP_URL:  z.string().default('http://localhost:4200'),
+  APP_NAME: z.string().default('School Management'),
+
+  // File uploads
+  UPLOAD_DIR:           z.string().default('./uploads'),
+  MAX_FILE_SIZE:        z.string().default('5242880').transform(Number),
+  ALLOWED_FILE_TYPES:   z.string().default('jpg,jpeg,png,gif,pdf,docx,xlsx,csv,txt'),
 
   // Super-admin JWT (separate secret for platform operators)
-  SUPER_ADMIN_JWT_SECRET: z.string().optional(),
+  SUPER_ADMIN_JWT_SECRET: z.string().min(32, 'SUPER_ADMIN_JWT_SECRET must be at least 32 characters').optional(),
 
   // AI
   ANTHROPIC_API_KEY: z.string().optional(),

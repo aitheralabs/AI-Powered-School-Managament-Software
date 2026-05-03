@@ -27,7 +27,8 @@ export class TeacherService extends BaseService {
     if (existingEmployee.rows.length > 0) throw new AppError('Teacher with this employee ID already exists', 409);
 
     return await this.executeTransaction(async (client) => {
-      const passwordHash = await hashPassword(teacherData.password);
+      const password = teacherData.password || `Teacher@${teacherData.employeeId || Date.now()}`;
+      const passwordHash = await hashPassword(password);
       const userSequentialId = await this.generateSequentialId('users');
 
       const userResult = await client.query(
@@ -88,7 +89,7 @@ export class TeacherService extends BaseService {
     );
 
     return {
-      teachers: result.rows.map((t: any) => ({ ...this.transformTeacherResponse(t), user: this.transformUserResponse(t) })),
+      items: result.rows.map((t: any) => ({ ...this.transformTeacherResponse(t), user: this.transformUserResponse(t) })),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

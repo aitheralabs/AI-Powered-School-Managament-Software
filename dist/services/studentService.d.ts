@@ -27,7 +27,7 @@ export declare class StudentService extends BaseService {
         updatedAt: any;
     }>;
     getStudents(req: any): Promise<{
-        students: any;
+        items: any;
         pagination: {
             page: number;
             limit: number;

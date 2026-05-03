@@ -6,9 +6,6 @@ const authService_1 = require("../services/authService");
 const auditLogger_1 = require("../middleware/auditLogger");
 const authService = new authService_1.AuthService();
 exports.register = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    console.log('Register request received');
-    console.log('Request body:', req.body);
-    console.log('Request headers:', req.headers);
     const userData = req.body;
     try {
         const result = await authService.register(userData);
@@ -28,7 +25,6 @@ exports.register = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     }
 });
 exports.login = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    console.log('Login request received');
     const loginData = req.body;
     try {
         const result = await authService.login(loginData);
@@ -36,7 +32,6 @@ exports.login = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             userId: result.user.id,
             role: result.user.role,
         });
-        console.log('🎯 Login successful, generated token:', result.token.substring(0, 50) + '...');
         res.json({
             success: true,
             message: 'Login successful',
@@ -49,7 +44,6 @@ exports.login = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     }
 });
 exports.getCurrentUser = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    console.log('📋 Profile request for user:', req.user.id);
     const userId = req.user.id;
     const user = await authService.getCurrentUser(userId, { email: req.user.email, role: req.user.role });
     res.json({

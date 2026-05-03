@@ -118,7 +118,7 @@ export class ClassService extends BaseService {
         teacher: cls.teacher_first_name ? { id: cls.teacher_id, name: `${cls.teacher_first_name} ${cls.teacher_last_name}` } : null,
       }));
 
-      return { classes, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+      return { items: classes, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
     }, CacheTTL.FIVE_MINUTES);
   }
 

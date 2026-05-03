@@ -7,17 +7,17 @@ export const CreateStaffSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: EmailSchema,
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: PhoneSchema.optional(),
-  dateOfBirth: DateSchema.optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
+  phone: z.preprocess(val => (val === '' || val === null) ? undefined : val, PhoneSchema.optional()),
+  dateOfBirth: z.preprocess(val => (val === '' || val === null) ? undefined : val, DateSchema.optional()),
   address: z.string().optional(),
-  
+
   // Staff-specific information
   employeeId: z.string().min(1, 'Employee ID is required'),
   department: z.string().min(1, 'Department is required'),
   position: z.string().min(1, 'Position is required'),
   joiningDate: DateSchema,
-  salary: z.number().min(0, 'Salary cannot be negative').optional(),
+  salary: z.preprocess(val => (val === '' || val === null) ? undefined : Number(val), z.number().min(0, 'Salary cannot be negative').optional()),
   responsibilities: z.string().optional(),
 });
 
@@ -25,14 +25,14 @@ export const UpdateStaffSchema = z.object({
   // User information updates
   firstName: z.string().min(2, 'First name must be at least 2 characters').optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters').optional(),
-  phone: PhoneSchema.optional(),
-  dateOfBirth: DateSchema.optional(),
+  phone: z.preprocess(val => (val === '' || val === null) ? undefined : val, PhoneSchema.optional()),
+  dateOfBirth: z.preprocess(val => (val === '' || val === null) ? undefined : val, DateSchema.optional()),
   address: z.string().optional(),
   
   // Staff-specific updates
   department: z.string().min(1, 'Department is required').optional(),
   position: z.string().min(1, 'Position is required').optional(),
-  salary: z.number().min(0, 'Salary cannot be negative').optional(),
+  salary: z.preprocess(val => (val === '' || val === null) ? undefined : Number(val), z.number().min(0, 'Salary cannot be negative').optional()),
   responsibilities: z.string().optional(),
 });
 

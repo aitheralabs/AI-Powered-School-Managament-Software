@@ -8,9 +8,25 @@ const connection_1 = require("../database/connection");
 const errorHandler_1 = require("../middleware/errorHandler");
 const os_1 = __importDefault(require("os"));
 const env_1 = __importDefault(require("../config/env"));
+const fs_1 = require("fs");
+const path_1 = require("path");
+let _appVersion = '';
+function getAppVersion() {
+    if (!_appVersion) {
+        try {
+            const pkg = JSON.parse((0, fs_1.readFileSync)((0, path_1.join)(process.cwd(), 'package.json'), 'utf8'));
+            _appVersion = pkg.version || '1.0.0';
+        }
+        catch {
+            _appVersion = '1.0.0';
+        }
+    }
+    return _appVersion;
+}
 exports.healthCheck = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     res.status(200).json({
-        status: 'healthy',
+        success: true,
+        message: "Server is running",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: env_1.default.NODE_ENV,
@@ -18,35 +34,37 @@ exports.healthCheck = (0, errorHandler_1.asyncHandler)(async (req, res) => {
 });
 exports.healthCheckDetailed = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const startTime = Date.now();
-    let databaseStatus = 'unhealthy';
+    let databaseStatus = "unhealthy";
     let databaseLatency = 0;
     try {
         const dbStart = Date.now();
-        await connection_1.pool.query('SELECT 1');
+        await connection_1.pool.query("SELECT 1");
         databaseLatency = Date.now() - dbStart;
-        databaseStatus = 'healthy';
+        databaseStatus = "healthy";
     }
     catch (error) {
-        databaseStatus = 'unhealthy';
+        databaseStatus = "unhealthy";
     }
     const poolMetrics = (0, connection_1.getPoolMetrics)();
     const totalMemory = os_1.default.totalmem();
     const freeMemory = os_1.default.freemem();
     const usedMemory = totalMemory - freeMemory;
     const healthData = {
-        status: databaseStatus === 'healthy' ? 'healthy' : 'degraded',
+        status: databaseStatus === "healthy" ? "healthy" : "degraded",
         timestamp: new Date().toISOString(),
-        version: '1.0.0',
+        version: getAppVersion(),
         environment: env_1.default.NODE_ENV,
         checks: {
             database: {
                 status: databaseStatus,
                 latency: `${databaseLatency}ms`,
-                message: databaseStatus === 'healthy' ? 'Database connection successful' : 'Database connection failed',
+                message: databaseStatus === "healthy"
+                    ? "Database connection successful"
+                    : "Database connection failed",
             },
             api: {
-                status: 'healthy',
-                message: 'API service is running',
+                status: "healthy",
+                message: "API service is running",
             },
         },
         database_pool: poolMetrics,
@@ -73,27 +91,28 @@ exports.healthCheckDetailed = (0, errorHandler_1.asyncHandler)(async (req, res) 
         },
         responseTime: `${Date.now() - startTime}ms`,
     };
-    const statusCode = databaseStatus === 'healthy' ? 200 : 503;
+    const statusCode = databaseStatus === "healthy" ? 200 : 503;
     res.status(statusCode).json(healthData);
 });
 exports.readinessCheck = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     try {
-        await connection_1.pool.query('SELECT 1');
+        await connection_1.pool.query("SELECT 1");
         res.status(200).json({
-            status: 'ready',
+            status: "ready",
             timestamp: new Date().toISOString(),
         });
     }
     catch (error) {
         res.status(503).json({
-            status: 'not ready',
+            status: "not ready",
             timestamp: new Date().toISOString(),
-            error: 'Database not ready',
+            error: "Database not ready",
         });
     }
 });
 exports.livenessCheck = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     res.status(200).json({
+        success: true,
         status: 'alive',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
@@ -142,7 +161,7 @@ exports.databaseStats = (0, errorHandler_1.asyncHandler)(async (req, res) => {
       FROM pg_statio_user_tables
     `);
         res.json({
-            status: 'success',
+            status: "success",
             data: {
                 tableSizes: tableSizes.rows,
                 topIndexes: indexUsage.rows,
@@ -154,8 +173,8 @@ exports.databaseStats = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     }
     catch (error) {
         res.status(500).json({
-            status: 'error',
-            message: 'Failed to retrieve database statistics',
+            status: "error",
+            message: "Failed to retrieve database statistics",
             error: error.message,
         });
     }

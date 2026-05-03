@@ -21,14 +21,18 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
-    // Load user and token from localStorage on service initialization
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (token && user) {
-      this.tokenSubject.next(token);
-      this.currentUserSubject.next(JSON.parse(user));
-      this.startRefreshTokenTimer();
+    // Load user and token from localStorage on service initialization.
+    // Wrapped in try/catch for SSR compatibility (localStorage unavailable on server).
+    try {
+      const token = localStorage.getItem('token');
+      const user  = localStorage.getItem('user');
+      if (token && user) {
+        this.tokenSubject.next(token);
+        this.currentUserSubject.next(JSON.parse(user));
+        this.startRefreshTokenTimer();
+      }
+    } catch {
+      // localStorage unavailable (SSR/server context) — start with no session
     }
   }
 
@@ -87,9 +91,11 @@ export class AuthService {
     this.stopRefreshTokenTimer();
     
     // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+    } catch { /* SSR safe */ }
     
     // Clear subjects
     this.tokenSubject.next(null);
@@ -104,7 +110,8 @@ export class AuthService {
   }
 
   refreshToken(): Observable<ApiResponse<any>> {
-    const refreshToken = localStorage.getItem('refreshToken');
+    let refreshToken: string | null = null;
+    try { refreshToken = localStorage.getItem('refreshToken'); } catch { /* SSR safe */ }
     
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token available'));

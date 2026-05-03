@@ -218,35 +218,47 @@ class RateLimitingService extends baseService_1.BaseService {
         }
         return rule;
     }
+    transformEntry(row) {
+        return {
+            id: row.id,
+            identifier: row.identifier,
+            endpoint: row.endpoint,
+            requestCount: row.request_count,
+            windowStart: new Date(row.window_start),
+            windowEnd: new Date(row.window_end),
+            isBlocked: row.is_blocked,
+            lastRequest: new Date(row.last_request),
+        };
+    }
     async getRateLimitEntry(identifier, endpoint, windowStart) {
         const result = await this.executeQuery(`SELECT id, identifier, endpoint, request_count, window_start, window_end, is_blocked, last_request
-       FROM rate_limit_entries 
+       FROM rate_limit_entries
        WHERE identifier = $1 AND endpoint = $2 AND window_end > $3
        ORDER BY window_start DESC
        LIMIT 1`, [identifier, endpoint, windowStart]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        return result.rows.length > 0 ? this.transformEntry(result.rows[0]) : null;
     }
     async createRateLimitEntry(identifier, endpoint, now, windowMs) {
         const windowEnd = new Date(now.getTime() + windowMs);
         const result = await this.executeQuery(`INSERT INTO rate_limit_entries (identifier, endpoint, request_count, window_start, window_end, is_blocked, last_request)
        VALUES ($1, $2, 0, $3, $4, false, $5)
        ON CONFLICT (identifier, endpoint)
-       DO UPDATE SET 
+       DO UPDATE SET
          request_count = 0,
          window_start = EXCLUDED.window_start,
          window_end = EXCLUDED.window_end,
          is_blocked = false,
          last_request = EXCLUDED.last_request
        RETURNING id, identifier, endpoint, request_count, window_start, window_end, is_blocked, last_request`, [identifier, endpoint, now, windowEnd, now]);
-        return result.rows[0];
+        return this.transformEntry(result.rows[0]);
     }
     async resetRateLimitWindow(entryId, now, windowMs) {
         const windowEnd = new Date(now.getTime() + windowMs);
-        const result = await this.executeQuery(`UPDATE rate_limit_entries 
+        const result = await this.executeQuery(`UPDATE rate_limit_entries
        SET request_count = 0, window_start = $2, window_end = $3, is_blocked = false, last_request = $4
        WHERE id = $1
        RETURNING id, identifier, endpoint, request_count, window_start, window_end, is_blocked, last_request`, [entryId, now, windowEnd, now]);
-        return result.rows[0];
+        return this.transformEntry(result.rows[0]);
     }
     async incrementRequestCount(entryId) {
         await this.executeQuery(`UPDATE rate_limit_entries 

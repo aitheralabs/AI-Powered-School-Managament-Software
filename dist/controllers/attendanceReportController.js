@@ -17,7 +17,18 @@ exports.getAttendanceStatistics = (0, errorHandler_1.asyncHandler)(async (req, r
     const report = await attendanceReportService.forSchool(req.schoolId).getAttendanceStatistics(period, req.user.id, req.user.role);
     res.json({ success: true, data: report });
 });
-exports.exportAttendanceData = (0, errorHandler_1.asyncHandler)(async (_req, res) => {
-    res.status(501).json({ success: false, message: 'Not implemented yet' });
+exports.exportAttendanceData = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { format = 'csv', ...reportQuery } = req.query;
+    const result = await attendanceReportService
+        .forSchool(req.schoolId)
+        .exportAttendanceData(format, reportQuery, req.user.id, req.user.role);
+    if (format === 'json') {
+        res.json({ success: true, data: result });
+        return;
+    }
+    const { csvData, filename, mimeType } = result;
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
 });
 //# sourceMappingURL=attendanceReportController.js.map

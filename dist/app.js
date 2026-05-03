@@ -44,6 +44,7 @@ const settings_1 = __importDefault(require("./routes/settings"));
 const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const timetable_1 = __importDefault(require("./routes/timetable"));
 const notifications_1 = __importDefault(require("./routes/notifications"));
+const audit_1 = __importDefault(require("./routes/audit"));
 const monitoringService_1 = require("./services/monitoringService");
 const requestTiming_1 = require("./middleware/requestTiming");
 const express_status_monitor_1 = __importDefault(require("express-status-monitor"));
@@ -84,9 +85,19 @@ app.use(rateLimiting_1.rateLimitLogger);
 app.use(rateLimiting_1.generalRateLimit);
 app.use(rateLimiting_1.speedLimiter);
 app.use(sanitization_1.addSecurityHeaders);
+const allowedOrigins = env_1.default.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
 app.use((0, cors_1.default)({
-    origin: env_1.default.CORS_ORIGIN,
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.includes(origin))
+            return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-School-ID', 'X-Request-ID'],
+    exposedHeaders: ['X-Request-ID', 'RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
 }));
 app.use((0, morgan_1.default)(env_1.default.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express_1.default.json({ limit: '10mb' }));
@@ -105,16 +116,6 @@ app.use('/api/v1/webhooks/stripe', express_1.default.raw({ type: 'application/js
 app.use('/api/v1/webhooks', webhooks_1.default);
 app.use('/health', health_1.default);
 app.use('/api/v1/health', health_1.default);
-app.post('/test', (req, res) => {
-    console.log('Test endpoint - Headers:', req.headers);
-    console.log('Test endpoint - Body:', req.body);
-    res.json({
-        success: true,
-        message: 'Test endpoint working',
-        receivedBody: req.body,
-        contentType: req.headers['content-type'],
-    });
-});
 app.use('/api/v1/auth', auth_1.default);
 app.use('/api/v1/users', users_1.default);
 app.use('/api/v1/academic-years', academicYears_1.default);
@@ -141,6 +142,7 @@ app.use('/api/v1/settings', settings_1.default);
 app.use('/api/v1/dashboard', dashboard_1.default);
 app.use('/api/v1/timetable', timetable_1.default);
 app.use('/api/v1/notifications', notifications_1.default);
+app.use('/api/v1/audit', audit_1.default);
 app.use('/api/v1/schools', schools_1.default);
 app.use('/api/v1/ai', aiInsights_1.default);
 app.use('/api/v1/superadmin', superadmin_1.default);
@@ -153,13 +155,16 @@ app.use('/uploads', (req, res, next) => {
     }
     next();
 }, express_1.default.static('uploads'));
-app.get('/api/v1', (0, caching_1.cacheResponse)(300), (req, res) => {
+app.get('/api/v1', (0, caching_1.cacheResponse)(300), (_req, res) => {
     res.json({
         success: true,
         message: 'School Management API v1',
+        version: '1.0.0',
         endpoints: {
             auth: '/api/v1/auth',
             users: '/api/v1/users',
+            schools: '/api/v1/schools',
+            superadmin: '/api/v1/superadmin',
             academicYears: '/api/v1/academic-years',
             semesters: '/api/v1/semesters',
             subjects: '/api/v1/subjects',
@@ -167,6 +172,7 @@ app.get('/api/v1', (0, caching_1.cacheResponse)(300), (req, res) => {
             students: '/api/v1/students',
             parents: '/api/v1/parents',
             teachers: '/api/v1/teachers',
+            staff: '/api/v1/staff',
             attendance: '/api/v1/attendance',
             attendanceReports: '/api/v1/attendance-reports',
             fees: '/api/v1/fees',
@@ -175,9 +181,17 @@ app.get('/api/v1', (0, caching_1.cacheResponse)(300), (req, res) => {
             grades: '/api/v1/grades',
             assessmentTypes: '/api/v1/assessment-types',
             reportCards: '/api/v1/report-cards',
-            staff: '/api/v1/staff',
+            timetable: '/api/v1/timetable',
             reports: '/api/v1/reports',
-            reportExports: '/api/v1/reports',
+            dashboard: '/api/v1/dashboard',
+            notifications: '/api/v1/notifications',
+            settings: '/api/v1/settings',
+            files: '/api/v1/files',
+            ai: '/api/v1/ai',
+            audit: '/api/v1/audit',
+            health: '/api/v1/health',
+            cache: '/api/v1/cache',
+            monitoring: '/api/v1/monitoring',
         },
     });
 });

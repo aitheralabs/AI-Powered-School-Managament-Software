@@ -18,9 +18,11 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType, Chart, registerables } from 'chart.js';
 
+import { HttpClient } from '@angular/common/http';
 import { DashboardService } from '../../../../services/dashboard.service';
 import { GradeService } from '../../../../services/grade.service';
 import { AuthService } from '../../../../services/auth.service';
+import { environment } from '../../../../../environments/environment';
 
 Chart.register(...registerables);
 
@@ -60,6 +62,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   isLoading = true;
   currentDate = new Date();
+  trialDaysLeft: number | null = null;
 
   kpiCards: KpiCard[] = [];
   recentActivity: ActivityItem[] = [];
@@ -160,11 +163,28 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     private gradeService: GradeService,
     private authService: AuthService,
+    private http: HttpClient,
     private router: Router,
   ) {}
 
   ngOnInit() {
     this.loadDashboardData();
+    this.loadUsageBanner();
+  }
+
+  private loadUsageBanner() {
+    this.http.get<any>(`${environment.apiUrl}/schools/me/usage`)
+      .pipe(catchError(() => of(null)))
+      .subscribe(res => {
+        const data = res?.data;
+        if (!data) return;
+        if (data.subscriptionStatus === 'trialing' && data.trialEndsAt) {
+          const daysLeft = Math.max(0, Math.ceil(
+            (new Date(data.trialEndsAt).getTime() - Date.now()) / 86400000
+          ));
+          this.trialDaysLeft = daysLeft;
+        }
+      });
   }
 
   ngOnDestroy() {
