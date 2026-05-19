@@ -11,10 +11,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Skip auth header for auth endpoints (login, register, refresh)
-  const isAuthEndpoint = req.url.includes('/auth/login') || 
-                         req.url.includes('/auth/register') || 
+  // Skip auth header for auth endpoints (login, register, refresh) and super-admin endpoints
+  // (super-admin components manage their own token via explicit headers)
+  const isAuthEndpoint = req.url.includes('/auth/login') ||
+                         req.url.includes('/auth/register') ||
                          req.url.includes('/auth/refresh');
+
+  const isSuperAdminEndpoint = req.url.includes('/superadmin');
 
   // Get the auth token from the service
   const authToken = authService.getToken();
@@ -28,8 +31,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   // Handle the request and catch any errors
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isAuthEndpoint) {
-        // Token expired or invalid, attempt to refresh
+      if (error.status === 401 && !isAuthEndpoint && !isSuperAdminEndpoint) {
+        // Token expired or invalid, attempt to refresh (school users only)
         return handle401Error(authReq, next, authService, router);
       }
       return throwError(() => error);
@@ -38,6 +41,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 };
 
 function addToken(request: HttpRequest<any>, token: string): HttpRequest<any> {
+  // Don't overwrite a header that was explicitly set by the caller (e.g. super-admin token)
+  if (request.headers.has('Authorization')) {
+    return request;
+  }
   return request.clone({
     headers: request.headers.set('Authorization', `Bearer ${token}`)
   });

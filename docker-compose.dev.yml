@@ -1,0 +1,123 @@
+# =============================================================================
+# School Management SaaS — Development Docker Compose Override
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   OR just:  make dev-up
+#
+# What this override does:
+#   - Replaces the compiled-Node API with nodemon hot-reload
+#   - Exposes DB and Redis ports to localhost so you can connect from host tools
+#   - Mounts source code as a volume for live reload
+#   - Disables nginx (Angular dev server runs separately via `ng serve`)
+#   - Uses .env.development config file
+# =============================================================================
+
+services:
+
+  # ── Hot-reload API ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context:    .
+      dockerfile: Dockerfile
+      target:     builder           # Use the build stage (has dev dependencies)
+    command: npx nodemon --watch src --ext ts,json --exec "ts-node -r tsconfig-paths/register src/index.ts"
+    environment:
+      NODE_ENV: development
+      PORT:     3000
+      # Override .env with dev-specific values
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-school_management_dev}
+      DB_USER:     ${DB_USER:-school_dev}
+      DB_PASSWORD: ${DB_PASSWORD:-school_dev_password}
+      JWT_SECRET:             ${JWT_SECRET:-dev_jwt_secret_not_for_production_must_be_32_chars}
+      JWT_EXPIRES_IN:         ${JWT_EXPIRES_IN:-7d}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET:-dev_super_admin_secret_not_for_production_32ch}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200,http://localhost:3000}
+      REDIS_ENABLED: "false"
+      SMTP_HOST:   ${SMTP_HOST:-localhost}
+      SMTP_PORT:   ${SMTP_PORT:-1025}
+      SMTP_SECURE: "false"
+      APP_URL:     ${APP_URL:-http://localhost:4200}
+      APP_NAME:    ${APP_NAME:-EduSaaS Dev}
+      UPLOAD_DIR:  /app/uploads
+    volumes:
+      - ./src:/app/src:delegated         # Live source reload
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - uploads_dev:/app/uploads
+    ports:
+      - "3000:3000"                      # Direct API access (no nginx proxy in dev)
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Remove the worker healthcheck — nodemon handles restarts
+    healthcheck:
+      test:         ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval:     15s
+      timeout:       5s
+      start_period: 30s
+      retries:       3
+
+  # ── Expose PostgreSQL to host for psql / pgAdmin / TablePlus ───────────────
+  postgres:
+    ports:
+      - "5432:5432"                      # Direct DB access from host
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-school_management_dev}
+      POSTGRES_USER:     ${DB_USER:-school_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-school_dev_password}
+
+  # ── Expose Redis to host for redis-cli / RedisInsight ──────────────────────
+  redis:
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+
+  # ── Mailhog — catches all outbound emails, viewable at localhost:8025 ───────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: school_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"    # SMTP
+      - "8025:8025"    # Web UI  →  http://localhost:8025
+    networks:
+      - school_net
+
+  # ── Disable nginx in dev (Angular dev server serves the SPA directly) ───────
+  nginx:
+    profiles:
+      - disabled        # docker compose --profile disabled to skip
+
+  # ── Worker: hot-reload too ──────────────────────────────────────────────────
+  worker:
+    build:
+      context:    .
+      dockerfile: Dockerfile
+      target:     builder
+    command: npx nodemon --watch src --ext ts --exec "ts-node -r tsconfig-paths/register src/workers/notificationWorker.ts"
+    environment:
+      NODE_ENV:    development
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-school_management_dev}
+      DB_USER:     ${DB_USER:-school_dev}
+      DB_PASSWORD: ${DB_PASSWORD:-school_dev_password}
+      SMTP_HOST:   mailhog
+      SMTP_PORT:   "1025"
+      APP_URL:     http://localhost:4200
+    volumes:
+      - ./src:/app/src:delegated
+      - ./tsconfig.json:/app/tsconfig.json:ro
+    depends_on:
+      - postgres
+      - mailhog
+    networks:
+      - school_net
+
+volumes:
+  uploads_dev:

@@ -110,6 +110,11 @@ services:
       # File uploads
       UPLOAD_DIR:    /app/uploads
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      # Billing contacts
+      BILLING_EMAIL: ${BILLING_EMAIL:-billing@edusaas.in}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@edusaas.in}
+      # Status dashboard Basic Auth (username: admin)
+      STATUS_DASHBOARD_PASSWORD: ${STATUS_DASHBOARD_PASSWORD}
       # Integrations (all optional)
       SENTRY_DSN:              ${SENTRY_DSN}
       ANTHROPIC_API_KEY:       ${ANTHROPIC_API_KEY}
@@ -161,6 +166,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     command: node dist/workers/notificationWorker.js
     environment:
       NODE_ENV:    production
@@ -169,14 +176,36 @@ services:
       DB_NAME:     ${DB_NAME:-school_management}
       DB_USER:     ${DB_USER:-school_admin}
       DB_PASSWORD: ${DB_PASSWORD}
+      # Auth — worker may sign notification tokens
+      JWT_SECRET:             ${JWT_SECRET}
+      SUPER_ADMIN_JWT_SECRET: ${SUPER_ADMIN_JWT_SECRET}
+      # Redis — worker uses job queues
+      REDIS_ENABLED:  "true"
+      REDIS_HOST:     redis
+      REDIS_PORT:     6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Email
       SMTP_HOST:   ${SMTP_HOST}
       SMTP_PORT:   ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER:   ${SMTP_USER}
       SMTP_PASS:   ${SMTP_PASS}
       SMTP_FROM:   ${SMTP_FROM}
+      # App
+      APP_URL:        ${APP_URL:-https://localhost}
+      APP_NAME:       ${APP_NAME:-School Management}
+      BILLING_EMAIL:  ${BILLING_EMAIL:-billing@edusaas.in}
+      SUPPORT_EMAIL:  ${SUPPORT_EMAIL:-support@edusaas.in}
+      SENTRY_DSN:     ${SENTRY_DSN}
+    volumes:
+      - api_logs:/app/logs
     networks:
       - school_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file:  "3"
 
 volumes:
   postgres_data:

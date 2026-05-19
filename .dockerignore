@@ -43,6 +43,9 @@ test-*.js
 test.json
 server.log
 
+# One-off dev/debug scripts
+scripts/
+
 # Runtime data (volume-mounted)
 uploads
 logs

@@ -1,25 +1,33 @@
 name: CI / CD
 
+# ─────────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────────
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, staging]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+
+# Cancel any in-progress run for the same branch on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Backend: lint, typecheck, test
+  # Backend: lint, security audit, typecheck, test, build
   # ─────────────────────────────────────────────────────────────
   backend:
-    name: Backend (Node.js)
+    name: Backend (Node.js 20)
     runs-on: ubuntu-latest
 
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: school_test
-          POSTGRES_USER: test_user
+          POSTGRES_DB:       school_test
+          POSTGRES_USER:     test_user
           POSTGRES_PASSWORD: test_pass
         options: >-
           --health-cmd pg_isready
@@ -30,15 +38,15 @@ jobs:
           - 5432:5432
 
     env:
-      NODE_ENV: test
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_NAME: school_test
-      DB_USER: test_user
-      DB_PASSWORD: test_pass
-      JWT_SECRET: test_jwt_secret_minimum_32_characters_ok
+      NODE_ENV:               test
+      DB_HOST:                localhost
+      DB_PORT:                5432
+      DB_NAME:                school_test
+      DB_USER:                test_user
+      DB_PASSWORD:            test_pass
+      JWT_SECRET:             test_jwt_secret_minimum_32_characters_ok
       SUPER_ADMIN_JWT_SECRET: test_super_admin_secret_32_chars_ok
-      REDIS_ENABLED: "false"
+      REDIS_ENABLED:          "false"
 
     steps:
       - uses: actions/checkout@v4
@@ -52,27 +60,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit dependencies for known vulnerabilities
+        run: npm audit --audit-level=high
+
       - name: TypeScript type check
         run: npx tsc --noEmit
 
       - name: Lint
         run: npm run lint
 
-      - name: Run tests
-        run: npm test -- --coverage --coverageReporters=lcov
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=lcov --coverageReporters=text-summary
 
       - name: Build
         run: npm run build
 
-      - name: Upload coverage
+      - name: Write git SHA to dist/VERSION (used by /health endpoint)
+        run: echo "${{ github.sha }}" | cut -c1-8 > dist/VERSION
+
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
         with:
           files: ./coverage/lcov.info
           flags: backend
+          fail_ci_if_error: false
 
   # ─────────────────────────────────────────────────────────────
-  # Frontend: build check
+  # Frontend: build check (Angular)
   # ─────────────────────────────────────────────────────────────
   frontend:
     name: Frontend (Angular)
@@ -98,17 +113,17 @@ jobs:
       - name: Lint
         run: npx ng lint --no-progress || true
 
-      - name: Build production
+      - name: Build production bundle
         run: npx ng build --configuration=production
 
   # ─────────────────────────────────────────────────────────────
-  # Docker build validation
+  # Docker build validation (runs on all main-path branches)
   # ─────────────────────────────────────────────────────────────
-  docker:
-    name: Docker Build
+  docker-build:
+    name: Docker Build (validate)
     runs-on: ubuntu-latest
     needs: [backend, frontend]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/develop'
 
     steps:
       - uses: actions/checkout@v4
@@ -116,24 +131,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build API image (no push)
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
           tags: school-management-api:${{ github.sha }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to:   type=gha,mode=max
+
+      - name: Build Nginx+SPA image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file:    nginx/Dockerfile
+          push:    false
+          tags:    school-management-nginx:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
 
   # ─────────────────────────────────────────────────────────────
-  # Deploy to production (only on main branch)
+  # Deploy to STAGING  (develop → staging server)
   # ─────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy
+  deploy-staging:
+    name: Deploy → Staging
     runs-on: ubuntu-latest
-    needs: [docker]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
+    needs: [docker-build]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
 
     steps:
       - uses: actions/checkout@v4
@@ -144,24 +169,135 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/school-management-api:latest
-            ${{ secrets.DOCKER_USERNAME }}/school-management-api:${{ github.sha }}
+      - name: Build and push staging images
+        run: |
+          VERSION="${{ github.sha }}"
+          REPO="${{ secrets.DOCKER_USERNAME }}/school-management"
 
-      - name: Deploy via SSH
+          # API
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg GIT_COMMIT_SHA="${VERSION:0:8}" \
+            --tag "$REPO-api:staging" \
+            --tag "$REPO-api:$VERSION" \
+            --push .
+
+          # Nginx + SPA
+          docker buildx build \
+            --platform linux/amd64 \
+            --file nginx/Dockerfile \
+            --tag "$REPO-nginx:staging" \
+            --tag "$REPO-nginx:$VERSION" \
+            --push .
+
+      - name: Deploy to staging server via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host:     ${{ secrets.STAGING_DEPLOY_HOST }}
+          username: ${{ secrets.STAGING_DEPLOY_USER }}
+          key:      ${{ secrets.STAGING_DEPLOY_SSH_KEY }}
           script: |
-            cd /opt/school-management
-            docker compose pull api worker
-            docker compose up -d --no-deps api worker
-            docker compose exec api node dist/database/migrate.js
+            set -e
+            cd /opt/school-management-staging
+
+            export DEPLOY_VERSION="${{ github.sha }}"
+
+            # Pull latest staging images
+            docker compose \
+              -f docker-compose.yml \
+              -f docker-compose.staging.yml \
+              --env-file .env.staging \
+              pull api worker nginx
+
+            # Bring up updated services (leave postgres+redis running)
+            docker compose \
+              -f docker-compose.yml \
+              -f docker-compose.staging.yml \
+              --env-file .env.staging \
+              up -d --no-deps api worker nginx
+
+            # Wait for API to become healthy
+            timeout 90 bash -c \
+              'until docker inspect --format="{{.State.Health.Status}}" school_api 2>/dev/null | grep -q healthy; do sleep 3; done' \
+              && echo "✅ Staging API is healthy" \
+              || (echo "❌ Staging API did not become healthy"; docker compose logs --tail=50 api; exit 1)
+
             docker image prune -f
+            echo "✅ Staging deploy complete — SHA: $DEPLOY_VERSION"
+
+  # ─────────────────────────────────────────────────────────────
+  # Deploy to PRODUCTION  (main → production server)
+  # ─────────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy → Production
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production      # Requires manual approval in GitHub Environments settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push production images
+        run: |
+          VERSION="${{ github.sha }}"
+          REPO="${{ secrets.DOCKER_USERNAME }}/school-management"
+
+          # API
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg GIT_COMMIT_SHA="${VERSION:0:8}" \
+            --tag "$REPO-api:latest" \
+            --tag "$REPO-api:$VERSION" \
+            --push .
+
+          # Nginx + SPA
+          docker buildx build \
+            --platform linux/amd64 \
+            --file nginx/Dockerfile \
+            --tag "$REPO-nginx:latest" \
+            --tag "$REPO-nginx:$VERSION" \
+            --push .
+
+      - name: Deploy to production server via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/school-management
+
+            export DEPLOY_VERSION="${{ github.sha }}"
+
+            # Pull latest production images
+            docker compose pull api worker nginx
+
+            # Bring up updated services (leave postgres+redis running)
+            docker compose up -d --no-deps api worker nginx
+
+            # Wait for API healthcheck (migrations run automatically on startup)
+            timeout 90 bash -c \
+              'until docker inspect --format="{{.State.Health.Status}}" school_api 2>/dev/null | grep -q healthy; do sleep 3; done' \
+              && echo "✅ Production API is healthy" \
+              || (echo "❌ Production API did not become healthy"; docker compose logs --tail=50 api; exit 1)
+
+            docker image prune -f
+            echo "✅ Production deploy complete — SHA: $DEPLOY_VERSION"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "::notice title=Deployed to Production::SHA ${{ github.sha }} is live on production"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "::error title=Production Deploy Failed::SHA ${{ github.sha }} failed to deploy. Check logs above."

@@ -8,10 +8,12 @@
  *
  * Attaches `req.schoolId` and `req.school` to every authenticated request.
  * All downstream service calls MUST include school_id in every DB query.
+ *
+ * Also sets `app.current_school_id` in the database session for RLS enforcement.
  */
 
 import { Request, Response, NextFunction } from "express";
-import { query } from "../database/connection";
+import { query, tenantContext } from "../database/connection";
 import { AppError, asyncHandler } from "./errorHandler";
 
 // Extend Request to carry tenant context
@@ -141,7 +143,11 @@ export const resolveTenant = asyncHandler(
         },
         isActive: true,
       };
-      return next();
+      // Set tenant context for RLS in tests
+      tenantContext.run({ schoolId: mockSchoolId }, () => {
+        return next();
+      });
+      return;
     }
 
     // Try JWT payload first
@@ -174,7 +180,11 @@ export const resolveTenant = asyncHandler(
 
     req.schoolId = resolvedId;
     req.school = school;
-    next();
+
+    // Set tenant context for RLS (defence-in-depth)
+    tenantContext.run({ schoolId: resolvedId }, () => {
+      next();
+    });
   },
 );
 

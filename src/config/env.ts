@@ -53,7 +53,12 @@ const envSchema = z.object({
   ALLOWED_FILE_TYPES:   z.string().default('jpg,jpeg,png,gif,pdf,docx,xlsx,csv,txt'),
 
   // Super-admin JWT (separate secret for platform operators)
+  // Required in production; optional only in dev/test so local spin-up stays easy
   SUPER_ADMIN_JWT_SECRET: z.string().min(32, 'SUPER_ADMIN_JWT_SECRET must be at least 32 characters').optional(),
+
+  // Billing / support contact addresses used in dunning and invoice emails
+  BILLING_EMAIL: z.string().email().default('billing@edusaas.in'),
+  SUPPORT_EMAIL: z.string().email().default('support@edusaas.in'),
 
   // AI
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -72,19 +77,28 @@ const envSchema = z.object({
 // Validate and export environment variables
 const validateEnv = () => {
   try {
-    return envSchema.parse(process.env);
+    const parsed = envSchema.parse(process.env);
+
+    // In production, SUPER_ADMIN_JWT_SECRET must be explicitly set.
+    // Omitting it falls back to JWT_SECRET which creates a privilege-escalation risk.
+    if (parsed.NODE_ENV === 'production' && !parsed.SUPER_ADMIN_JWT_SECRET) {
+      console.error('❌ SUPER_ADMIN_JWT_SECRET must be set in production. Generate one with: openssl rand -hex 32');
+      process.exit(1);
+    }
+
+    return parsed;
   } catch (error) {
     console.error('❌ Invalid environment variables:', error);
-    
+
     // In test environment, provide more helpful error info
     if (process.env.NODE_ENV === 'test') {
       console.error('Test environment variables:', {
         NODE_ENV: process.env.NODE_ENV,
         JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-        DB_PASSWORD: process.env.DB_PASSWORD ? 'SET' : 'NOT SET'
+        DB_PASSWORD: process.env.DB_PASSWORD ? 'SET' : 'NOT SET',
       });
     }
-    
+
     process.exit(1);
   }
 };

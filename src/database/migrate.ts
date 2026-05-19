@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { query, testConnection, closePool } from './connection';
+import logger from '../utils/logger';
 
 // PostgreSQL error codes that mean "object already exists" — safe to skip
 const ALREADY_EXISTS_CODES = new Set([
@@ -80,7 +81,7 @@ const splitStatements = (sql: string): string[] => {
 
 // Run migrations
 const runMigrations = async () => {
-  console.log('🔄 Starting database migrations...');
+  logger.info('Starting database migrations');
 
   const connected = await testConnection();
   if (!connected) throw new Error('Database connection failed');
@@ -99,13 +100,14 @@ const runMigrations = async () => {
 
   const executedMigrations = await getExecutedMigrations();
 
+  let newCount = 0;
   for (const file of migrationFiles) {
     if (executedMigrations.includes(file)) {
-      console.log(`⏭️  Already executed: ${file}`);
+      logger.debug('Migration already executed — skipping', { file });
       continue;
     }
 
-    console.log(`📝 Running migration: ${file}`);
+    logger.info('Running migration', { file });
     const filePath = path.join(migrationsDir, file);
     const sql = fs.readFileSync(filePath, 'utf8');
     const statements = splitStatements(sql);
@@ -116,37 +118,33 @@ const runMigrations = async () => {
         await query(stmt);
       } catch (err: any) {
         if (ALREADY_EXISTS_CODES.has(err.code)) {
-          // Object already exists from a previous partial run — safe to skip
           skippedCount++;
-          console.warn(
-            `   ⚠️  Skipped (already exists): ${err.message.split('\n')[0]}`
-          );
+          logger.warn('Skipped statement (already exists)', { hint: err.message.split('\n')[0] });
         } else {
-          // Real error — abort
-          console.error(`   ❌ Failed statement:\n${stmt}\n`);
+          logger.error('Migration statement failed', { file, stmt });
           throw err;
         }
       }
     }
 
     await markMigrationExecuted(file);
-    const note = skippedCount > 0 ? ` (${skippedCount} stmt(s) skipped — already existed)` : '';
-    console.log(`✅ Migration completed: ${file}${note}`);
+    newCount++;
+    logger.info('Migration completed', { file, skippedStatements: skippedCount });
   }
 
-  console.log('🎉 All migrations completed successfully!');
+  logger.info('All migrations completed', { new: newCount, total: migrationFiles.length });
 };
 
 // CLI execution
 if (require.main === module) {
   runMigrations()
     .then(() => {
-      console.log('✅ Migration process completed');
+      logger.info('Migration process completed');
       closePool();
       process.exit(0);
     })
     .catch((error) => {
-      console.error('❌ Migration process failed:', error);
+      logger.fatal('Migration process failed', { error: (error as Error).message });
       closePool();
       process.exit(1);
     });

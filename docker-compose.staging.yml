@@ -1,0 +1,48 @@
+# =============================================================================
+# School Management SaaS — Staging Docker Compose
+#
+# Usage (on staging server):
+#   cp .env.staging.example .env.staging
+#   # fill in all values in .env.staging
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml \
+#     --env-file .env.staging up -d --build
+#
+# Staging differences vs production:
+#   - Uses test payment gateway keys (rzp_test_ / sk_test_)
+#   - Uses Mailtrap / sandbox SMTP (no real emails sent)
+#   - Slightly relaxed rate limits for QA ease
+#   - Sentry reports to a separate staging project
+#   - DB name isolated from production
+# =============================================================================
+
+services:
+
+  postgres:
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-school_management_staging}
+      POSTGRES_USER:     ${DB_USER:-school_staging}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+  api:
+    environment:
+      NODE_ENV:    staging
+      DB_NAME:     ${DB_NAME:-school_management_staging}
+      DB_USER:     ${DB_USER:-school_staging}
+      # Slightly relaxed rate limits for QA
+      RATE_LIMIT_MAX_REQUESTS: "200"
+    # Staging-specific labels for easy identification
+    labels:
+      com.school.environment: staging
+      com.school.version:     "${DEPLOY_VERSION:-latest}"
+
+  worker:
+    environment:
+      NODE_ENV: staging
+      DB_NAME:  ${DB_NAME:-school_management_staging}
+      DB_USER:  ${DB_USER:-school_staging}
+    labels:
+      com.school.environment: staging
+
+  nginx:
+    labels:
+      com.school.environment: staging

@@ -1,14 +1,18 @@
-# Environment Variables
+# ─── Environment Variables ────────────────────────────────────────────────────
+# .env.development is intentionally committed (contains no real secrets)
+# All other .env files are gitignored
 .env
 .env.local
 .env.*.local
+.env.staging
+.env.production
 
-# Dependencies
+# ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+# package-lock.json is intentionally committed (reproducible installs)
 yarn.lock
 
 # Build Output
@@ -92,6 +96,12 @@ dump.rdb
 
 # Sentry
 .sentryclirc
+
+# One-off dev/debug scripts (not for production)
+scripts/
+
+# nginx SSL certificates (generated locally, never committed)
+nginx/ssl/
 
 # Misc
 .cache/

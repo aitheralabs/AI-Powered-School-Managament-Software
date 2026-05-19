@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { pool, getPoolMetrics } from "../database/connection";
 import { asyncHandler } from "../middleware/errorHandler";
+import { cacheService } from "../services/cacheService";
 import os from "os";
 import env from "../config/env";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 let _appVersion = '';
@@ -19,13 +20,42 @@ function getAppVersion(): string {
   return _appVersion;
 }
 
-// Basic health check - lightweight
-export const healthCheck = asyncHandler(async (req: Request, res: Response) => {
+/** Git commit SHA — written by CI into dist/VERSION at build time (optional) */
+function getGitSha(): string {
+  try {
+    const versionFile = join(process.cwd(), 'dist', 'VERSION');
+    if (existsSync(versionFile)) return readFileSync(versionFile, 'utf8').trim();
+  } catch {}
+  return process.env.GIT_COMMIT_SHA || process.env.GITHUB_SHA?.slice(0, 8) || 'unknown';
+}
+
+/** Check Redis connectivity with a PING */
+async function checkRedis(): Promise<{ status: string; latencyMs: number; message: string }> {
+  if (!env.REDIS_ENABLED) {
+    return { status: 'disabled', latencyMs: 0, message: 'Redis is disabled (REDIS_ENABLED=false)' };
+  }
+  const start = Date.now();
+  try {
+    const stats = await cacheService.getStats();
+    const latencyMs = Date.now() - start;
+    if (stats.connected) {
+      return { status: 'healthy', latencyMs, message: 'Redis connection successful' };
+    }
+    return { status: 'unhealthy', latencyMs, message: 'Redis not connected' };
+  } catch {
+    return { status: 'unhealthy', latencyMs: Date.now() - start, message: 'Redis ping failed' };
+  }
+}
+
+// Basic health check — lightweight, no DB call, used by load balancer / nginx
+export const healthCheck = asyncHandler(async (_req: Request, res: Response) => {
   res.status(200).json({
-    success: true,
-    message: "Server is running",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
+    success:     true,
+    status:      'ok',
+    timestamp:   new Date().toISOString(),
+    uptime:      Math.floor(process.uptime()),
+    version:     getAppVersion(),
+    commit:      getGitSha(),
     environment: env.NODE_ENV,
   });
 });
@@ -43,9 +73,12 @@ export const healthCheckDetailed = asyncHandler(
       await pool.query("SELECT 1");
       databaseLatency = Date.now() - dbStart;
       databaseStatus = "healthy";
-    } catch (error) {
+    } catch {
       databaseStatus = "unhealthy";
     }
+
+    // Redis health check
+    const redisCheck = await checkRedis();
 
     // Get pool metrics
     const poolMetrics = getPoolMetrics();
@@ -55,24 +88,31 @@ export const healthCheckDetailed = asyncHandler(
     const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
 
+    const overallStatus = databaseStatus === "healthy" ? "healthy" : "degraded";
+
     const healthData = {
-      status: databaseStatus === "healthy" ? "healthy" : "degraded",
-      timestamp: new Date().toISOString(),
-      version: getAppVersion(),
+      status:      overallStatus,
+      timestamp:   new Date().toISOString(),
+      version:     getAppVersion(),
+      commit:      getGitSha(),
       environment: env.NODE_ENV,
 
       // Service checks
       checks: {
         database: {
-          status: databaseStatus,
+          status:  databaseStatus,
           latency: `${databaseLatency}ms`,
-          message:
-            databaseStatus === "healthy"
-              ? "Database connection successful"
-              : "Database connection failed",
+          message: databaseStatus === "healthy"
+            ? "Database connection successful"
+            : "Database connection failed",
+        },
+        redis: {
+          status:  redisCheck.status,
+          latency: `${redisCheck.latencyMs}ms`,
+          message: redisCheck.message,
         },
         api: {
-          status: "healthy",
+          status:  "healthy",
           message: "API service is running",
         },
       },
@@ -107,29 +147,37 @@ export const healthCheckDetailed = asyncHandler(
       responseTime: `${Date.now() - startTime}ms`,
     };
 
-    const statusCode = databaseStatus === "healthy" ? 200 : 503;
+    const statusCode = overallStatus === "healthy" ? 200 : 503;
     res.status(statusCode).json(healthData);
   },
 );
 
-// Readiness check - for Kubernetes/container orchestration
+// Readiness check — for container orchestrators (Docker HEALTHCHECK, K8s readinessProbe)
+// Returns 200 only when ALL critical dependencies are reachable.
 export const readinessCheck = asyncHandler(
-  async (req: Request, res: Response) => {
-    try {
-      // Check if database is ready
-      await pool.query("SELECT 1");
+  async (_req: Request, res: Response) => {
+    const checks: Record<string, { ok: boolean; message: string }> = {};
 
-      res.status(200).json({
-        status: "ready",
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      res.status(503).json({
-        status: "not ready",
-        timestamp: new Date().toISOString(),
-        error: "Database not ready",
-      });
+    // Database
+    try {
+      await pool.query("SELECT 1");
+      checks.database = { ok: true, message: 'ok' };
+    } catch (err: any) {
+      checks.database = { ok: false, message: err.message };
     }
+
+    // Redis (only if enabled)
+    if (env.REDIS_ENABLED) {
+      const redis = await checkRedis();
+      checks.redis = { ok: redis.status === 'healthy', message: redis.message };
+    }
+
+    const allOk = Object.values(checks).every(c => c.ok);
+    res.status(allOk ? 200 : 503).json({
+      status:    allOk ? 'ready' : 'not ready',
+      timestamp: new Date().toISOString(),
+      checks,
+    });
   },
 );
 
