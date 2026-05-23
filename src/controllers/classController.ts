@@ -15,7 +15,7 @@ export const createClass = asyncHandler(async (req: Request, res: Response) => {
 
 export const getClasses = asyncHandler(async (req: Request, res: Response) => {
   const result = await classService.forSchool(req.schoolId!).getClasses(req);
-  res.json({ success: true, data: result });
+  res.json({ success: true, data: { classes: result.items, pagination: result.pagination } });
 });
 
 export const getClassById = asyncHandler(async (req: Request, res: Response) => {

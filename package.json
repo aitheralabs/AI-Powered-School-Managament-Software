@@ -32,7 +32,14 @@
     "e2e:debug": "npx playwright test --debug",
     "e2e:api": "npx playwright test e2e/tests/13-api-all-endpoints.spec.ts",
     "e2e:auth": "npx playwright test e2e/tests/01-login-flows.spec.ts",
-    "seed:test-users": "ts-node e2e/seed-test-users.ts"
+    "seed:test-users": "ts-node e2e/seed-test-users.ts",
+    "test:backend": "jest --detectOpenHandles --forceExit --testTimeout=30000",
+    "test:backend:coverage": "jest --coverage --detectOpenHandles --forceExit --testTimeout=30000",
+    "test:frontend": "cd school-management-frontend && npm test",
+    "test:frontend:coverage": "cd school-management-frontend && npm run test:coverage",
+    "test:all": "npm run test:backend && npm run test:frontend",
+    "test:all:coverage": "npm run test:backend:coverage && npm run test:frontend:coverage",
+    "test:ci": "npm run typecheck && npm run test:backend:coverage && npm run test:frontend:coverage"
   },
   "keywords": [
     "nodejs",
@@ -142,6 +149,7 @@
     "setupFilesAfterEnv": [
       "<rootDir>/src/tests/setup.ts"
     ],
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "maxWorkers": 4
   }
 }

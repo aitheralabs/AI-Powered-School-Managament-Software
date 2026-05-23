@@ -87,7 +87,7 @@ jobs:
           fail_ci_if_error: false
 
   # ─────────────────────────────────────────────────────────────
-  # Frontend: build check (Angular)
+  # Frontend: lint, test, build (Angular)
   # ─────────────────────────────────────────────────────────────
   frontend:
     name: Frontend (Angular)
@@ -113,8 +113,19 @@ jobs:
       - name: Lint
         run: npx ng lint --no-progress || true
 
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
       - name: Build production bundle
         run: npx ng build --configuration=production
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: school-management-frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
 
   # ─────────────────────────────────────────────────────────────
   # Docker build validation (runs on all main-path branches)

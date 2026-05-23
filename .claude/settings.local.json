@@ -89,7 +89,19 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(str\\(d\\)[:300]\\)\")",
       "Bash(findstr \":3000\")",
       "Bash(cat nginx/*.conf)",
-      "Bash(ls \"D:\\\\SCHOOL MANAGEMNET\"/*.js)"
+      "Bash(ls \"D:\\\\SCHOOL MANAGEMNET\"/*.js)",
+      "Bash(wc -l \"D:/SCHOOL MANAGEMNET/e2e/tests\"/*.spec.ts)",
+      "Bash(wc -l \"D:/SCHOOL MANAGEMNET/src/tests\"/*.test.ts)",
+      "Bash(grep:*)",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT name FROM subscription_plans LIMIT 5;\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"\\\\d schools\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'subscription_plans' ORDER BY ordinal_position;\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'schools' AND column_name LIKE '%max%' OR \\(table_name = 'schools' AND column_name LIKE '%storage%'\\) ORDER BY ordinal_position;\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'schools' AND column_name LIKE '%dunning%';\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'billing_events' LIMIT 5;\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'schools' AND column_name LIKE '%stripe%';\")",
+      "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT stripe_customer_id, stripe_subscription_id FROM schools WHERE id = '00000000-0000-0000-0000-000000000001';\")",
+      "Bash(npx tsx -e ':*)"
     ]
   }
 }

@@ -114,13 +114,16 @@ export const resolveTenant = asyncHandler(
     // Skip for super-admin routes and public routes
     if (!req.user) return next();
 
-    // In test environment, create a mock school context for testing
+    // In test environment, use the test school from DB so that
+    // subscription/feature changes made during tests are reflected.
     const isTestEnv = process.env.NODE_ENV === "test";
     if (isTestEnv) {
-      // For tests, create a mock school context
       const mockSchoolId = "00000000-0000-0000-0000-000000000001";
       req.schoolId = mockSchoolId;
-      req.school = {
+      // Clear cache so DB updates within the same test run are visible
+      tenantCache.delete(mockSchoolId);
+      const school = await resolveSchool(mockSchoolId);
+      req.school = school || {
         id: mockSchoolId,
         name: "Test School",
         slug: "test",

@@ -506,7 +506,10 @@ describe("Basic API Integration Tests", () => {
     });
 
     it("should return proper CORS headers", async () => {
-      const response = await request(app).get("/health").expect(200);
+      const response = await request(app)
+        .get("/health")
+        .set("Origin", "http://localhost:3000")
+        .expect(200);
 
       expect(response.headers["access-control-allow-origin"]).toBeTruthy();
     });

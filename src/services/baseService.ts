@@ -40,6 +40,9 @@ export abstract class BaseService {
       if (code === '40P01') {
         throw new AppError('Service temporarily unavailable', 503);
       }
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        console.error('[BaseService] DB error:', error.message, 'code:', code);
+      }
       throw new AppError('Database operation failed', 500);
     }
   }

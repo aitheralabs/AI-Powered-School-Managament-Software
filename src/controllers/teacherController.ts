@@ -12,7 +12,7 @@ export const createTeacher = asyncHandler(async (req: Request, res: Response) =>
 
 export const getTeachers = asyncHandler(async (req: Request, res: Response) => {
   const result = await teacherService.forSchool(req.schoolId!).getTeachers(req);
-  res.json({ success: true, data: result });
+  res.json({ success: true, data: { teachers: result.items, pagination: result.pagination } });
 });
 
 export const getTeacherById = asyncHandler(async (req: Request, res: Response) => {

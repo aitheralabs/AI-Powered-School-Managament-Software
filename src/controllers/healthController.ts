@@ -52,6 +52,7 @@ export const healthCheck = asyncHandler(async (_req: Request, res: Response) => 
   res.status(200).json({
     success:     true,
     status:      'ok',
+    message:     'Server is running',
     timestamp:   new Date().toISOString(),
     uptime:      Math.floor(process.uptime()),
     version:     getAppVersion(),

@@ -171,7 +171,7 @@ router.post(
 
     if (STRIPE_WEBHOOK_SECRET && sig) {
       // Manual Stripe signature verification (avoids stripe npm dependency)
-      const payload = req.body.toString();
+      const payload = Buffer.isBuffer(req.body) ? req.body.toString() : JSON.stringify(req.body);
       const parts = sig.split(',');
       const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
       const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
@@ -186,7 +186,27 @@ router.post(
       }
     }
 
-    const event = JSON.parse(req.body.toString());
+    // req.body may be: a parsed object (express.json), a Buffer (express.raw),
+    // or a JSON-serialized Buffer {type:"Buffer",data:[...]} (supertest serializes Buffers this way)
+    let event: any;
+    if (Buffer.isBuffer(req.body)) {
+      const parsed = JSON.parse(req.body.toString());
+      // Handle double-serialized Buffer: {type:"Buffer", data:[...]}
+      if (parsed.type === 'Buffer' && Array.isArray(parsed.data)) {
+        event = JSON.parse(Buffer.from(parsed.data).toString());
+      } else {
+        event = parsed;
+      }
+    } else if (typeof req.body === 'object' && req.body !== null) {
+      // Handle supertest's Buffer serialization when express.json() parsed it
+      if (req.body.type === 'Buffer' && Array.isArray(req.body.data)) {
+        event = JSON.parse(Buffer.from(req.body.data).toString());
+      } else {
+        event = req.body;
+      }
+    } else {
+      event = JSON.parse(String(req.body));
+    }
 
     // Idempotency check
     const existing = await query(

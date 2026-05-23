@@ -165,7 +165,7 @@ export const errorHandler = (
   }
 
   // Log error details
-  if (env.NODE_ENV === 'development') {
+  if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
     console.error('❌ Error:', {
       message: error.message,
       stack: error.stack,
@@ -196,7 +196,7 @@ export const errorHandler = (
     message: sanitizedMessage,
     ...(errorCode && { errorCode }),
     ...(details && { details }),
-    ...(env.NODE_ENV === 'development' && { stack: error.stack }),
+    ...((env.NODE_ENV === 'development' || env.NODE_ENV === 'test') && { stack: error.stack }),
   });
 };
 

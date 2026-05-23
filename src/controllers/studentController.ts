@@ -12,7 +12,7 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
 
 export const getStudents = asyncHandler(async (req: Request, res: Response) => {
   const result = await studentService.forSchool(req.schoolId!).getStudents(req);
-  res.json({ success: true, data: result });
+  res.json({ success: true, data: { students: result.items, pagination: result.pagination } });
 });
 
 export const getStudentById = asyncHandler(async (req: Request, res: Response) => {

@@ -7,6 +7,7 @@ import logger from "../utils/logger";
 export const tenantContext = new AsyncLocalStorage<{ schoolId?: string }>();
 
 // Database configuration with optimized pooling
+const isTest = env.NODE_ENV === "test";
 const dbConfig = {
   host: env.DB_HOST,
   port: env.DB_PORT,
@@ -15,17 +16,19 @@ const dbConfig = {
   password: env.DB_PASSWORD,
 
   // Connection Pool Optimization (Phase 3.1.3)
-  max: 25, // Maximum number of clients (increased for production load)
-  min: 5, // Minimum pool size to maintain (keep connections warm)
-  idleTimeoutMillis: 60000, // Close idle clients after 60 seconds (increased from 30s)
-  connectionTimeoutMillis: 10000, // Wait up to 10s for connection (increased for stability)
+  // In test mode, each Jest worker gets its own pool — use smaller sizes to avoid
+  // exhausting PostgreSQL's max_connections when many workers run in parallel.
+  max: isTest ? 5 : 25,
+  min: isTest ? 1 : 5,
+  idleTimeoutMillis: isTest ? 10000 : 60000,
+  connectionTimeoutMillis: isTest ? 30000 : 10000,
 
   // Query Timeout
   query_timeout: 30000, // 30 second timeout for queries (prevent hung queries)
   statement_timeout: 30000, // 30 second statement timeout
 
   // Connection Settings
-  allowExitOnIdle: false, // Keep pool alive even when idle
+  allowExitOnIdle: isTest, // In test mode, allow pool to shut down when idle
 
   // Application Name (for monitoring)
   application_name: "school_management_system",
@@ -78,7 +81,7 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
     if (ctx?.schoolId) {
       const client = await pool.connect();
       try {
-        await client.query("SET app.current_school_id = $1", [ctx.schoolId]);
+        await client.query("SELECT set_config('app.current_school_id', $1, false)", [ctx.schoolId]);
         const res = await client.query(text, params);
         if (env.NODE_ENV === "development") {
           console.log("📊 Executed query", {
@@ -113,7 +116,7 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
 export const getClient = async (schoolId?: string): Promise<PoolClient> => {
   const client = await pool.connect();
   if (schoolId) {
-    await client.query("SET app.current_school_id = $1", [schoolId]);
+    await client.query("SELECT set_config('app.current_school_id', $1, false)", [schoolId]);
   }
   return client;
 };

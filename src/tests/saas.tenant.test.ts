@@ -553,7 +553,7 @@ describe('SaaS Tenant Routes', () => {
         [TEST_SCHOOL_ID]
       );
       const res = await request(app)
-        .get('/api/v1/ai/insights')
+        .get('/api/v1/ai/school-health')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).not.toBe(403);
     });
@@ -564,7 +564,7 @@ describe('SaaS Tenant Routes', () => {
         [TEST_SCHOOL_ID]
       );
       const res = await request(app)
-        .get('/api/v1/ai/insights')
+        .get('/api/v1/ai/school-health')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(403);
 
@@ -597,12 +597,15 @@ describe('SaaS Tenant Routes', () => {
         .post('/api/v1/students')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          firstName:   'Limit',
-          lastName:    'Test',
-          email:       `limit-test-${RUN_ID}@test.com`,
-          dateOfBirth: '2010-01-01',
-          gender:      'male',
-          studentId:   `LT${RUN_ID}`,
+          firstName:        'Limit',
+          lastName:         'Test',
+          email:            `limit-test-${RUN_ID}@test.com`,
+          dateOfBirth:      '2010-01-01',
+          studentId:        `LT${RUN_ID}`,
+          enrollmentDate:   new Date().toISOString().split('T')[0],
+          guardianName:     'Guardian Test',
+          guardianPhone:    '+1234567890',
+          emergencyContact: '+1234567891',
         })
         .expect(403);
 

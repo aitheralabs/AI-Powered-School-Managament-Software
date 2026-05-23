@@ -159,6 +159,21 @@ app.use(
 // Logging middleware
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
+// Webhook routes — MUST be before express.json() and sanitization middleware
+// so that webhook payloads are not corrupted by sanitization/SQL-injection middleware.
+// Stripe needs raw body for signature verification; Razorpay needs JSON parsing.
+app.use("/api/v1/webhooks", (req, res, next) => {
+  if (req.path === "/stripe" || req.path.startsWith("/stripe/")) {
+    express.raw({ type: "application/json" })(req, res, () => {
+      webhookRoutes(req, res, next);
+    });
+  } else {
+    express.json({ limit: "10mb" })(req, res, () => {
+      webhookRoutes(req, res, next);
+    });
+  }
+});
+
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -188,9 +203,7 @@ app.use(sanitizeInputs);
 // SQL Injection prevention middleware
 app.use(preventSQLInjection);
 
-// Webhook routes — raw body needed for Stripe signature verification
-app.use("/api/v1/webhooks/stripe", express.raw({ type: "application/json" }));
-app.use("/api/v1/webhooks", webhookRoutes);
+// Webhook routes are registered above (before body parsing/sanitization)
 
 // Health check endpoints (Phase 3.2.1)
 app.use("/health", healthRoutes);
@@ -295,6 +308,15 @@ app.get("/api/v1", cacheResponse(300), (_req, res) => {
       cache: "/api/v1/cache",
       monitoring: "/api/v1/monitoring",
     },
+  });
+});
+
+// Test endpoint (used by integration tests)
+app.post("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Test endpoint working",
+    receivedBody: req.body,
   });
 });
 

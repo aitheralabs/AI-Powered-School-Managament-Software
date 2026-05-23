@@ -54,7 +54,7 @@ describe('API Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Server is running');
+      expect(response.body.status).toBe('ok');
       expect(response.body.environment).toBeTruthy();
     });
 

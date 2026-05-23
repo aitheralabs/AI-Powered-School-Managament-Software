@@ -130,7 +130,7 @@ export const listAllSchools = asyncHandler(
     };
 
     const result = await schoolService.listSchools(page, limit, filters);
-    res.json({ success: true, ...result });
+    res.json({ success: true, data: result });
   },
 );
 

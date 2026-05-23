@@ -110,14 +110,16 @@ export const addSecurityHeaders = (req: Request, res: Response, next: NextFuncti
 export const validateContentType = (req: Request, res: Response, next: NextFunction) => {
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
     const contentType = req.headers['content-type'];
-    
-    if (!contentType || !contentType.includes('application/json')) {
+
+    // Skip validation for requests with no body (e.g. POST /2fa/setup)
+    const hasBody = req.headers['content-length'] && req.headers['content-length'] !== '0';
+    if (hasBody && (!contentType || !contentType.includes('application/json'))) {
       return res.status(400).json({
         success: false,
         message: 'Content-Type must be application/json',
       });
     }
   }
-  
+
   return next();
 };

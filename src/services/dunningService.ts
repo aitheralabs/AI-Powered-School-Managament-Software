@@ -89,7 +89,7 @@ export class DunningService {
         to: school.email,
         subject: `[Reminder] Payment still pending – ${school.name}`,
         html: buildDunningEmailHtml(school.name, 2, appUrl, appName, 7),
-      });
+      }).catch(err => console.error(`[Dunning] Step-2 email error:`, err));
       await query(
         `UPDATE schools SET dunning_step = 2, dunning_last_email_at = NOW() WHERE id = $1`,
         [school.id]
@@ -103,7 +103,7 @@ export class DunningService {
         to: school.email,
         subject: `[URGENT] Access restricted – payment overdue – ${school.name}`,
         html: buildDunningEmailHtml(school.name, 3, appUrl, appName, 7),
-      });
+      }).catch(err => console.error(`[Dunning] Step-3 email error:`, err));
       // Partial lock: disable AI insights and API access
       await query(
         `UPDATE schools
@@ -124,7 +124,7 @@ export class DunningService {
         to: school.email,
         subject: `Account suspended – ${school.name}`,
         html: buildDunningEmailHtml(school.name, 4, appUrl, appName, 0),
-      });
+      }).catch(err => console.error(`[Dunning] Step-4 email error:`, err));
       await query(
         `UPDATE schools
          SET dunning_step          = 4,
