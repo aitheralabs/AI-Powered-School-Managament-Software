@@ -25,7 +25,7 @@ A multi-tenant, AI-powered School Management System built with Node.js, Express,
 
 -  Schools as tenants with isolated data
 -  Subscription plans (Trial/Basic/Standard/Premium/Enterprise)
--  Stripe + Razorpay payment integration
+-  Razorpay payment integration
 -  Super-admin platform management
 
 ### AI-Powered
@@ -48,7 +48,7 @@ A multi-tenant, AI-powered School Management System built with Node.js, Express,
 | Cache            | Redis 7                                  |
 | AI               | Anthropic Claude API                     |
 | Auth             | JWT with refresh token rotation          |
-| Payments         | Razorpay (India), Stripe (International) |
+| Payments         | Razorpay                                 |
 | Containerization | Docker, Docker Compose                   |
 
 ---

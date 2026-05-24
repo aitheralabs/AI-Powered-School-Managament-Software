@@ -22,7 +22,7 @@ export interface GenerateInvoiceOptions {
   currency: string;
   planName: string;
   billingPeriod: "monthly" | "yearly";
-  gatewayInvoiceId?: string; // Stripe/Razorpay invoice/payment id
+  gatewayInvoiceId?: string; // Razorpay invoice/payment id
   periodStart?: Date;
   periodEnd?: Date;
 }

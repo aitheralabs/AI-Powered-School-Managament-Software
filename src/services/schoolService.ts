@@ -41,8 +41,8 @@ export interface UpdateSubscriptionInput {
   schoolId: string;
   plan: "trial" | "basic" | "standard" | "premium" | "enterprise";
   billingPeriod?: "monthly" | "yearly";
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
+  razorpayCustomerId?: string;
+  razorpaySubscriptionId?: string;
   subscriptionEndsAt?: Date;
 }
 
@@ -248,8 +248,8 @@ export class SchoolService {
          subscription_status = 'active',
          subscription_starts_at = NOW(),
          subscription_ends_at = $2,
-         stripe_customer_id = COALESCE($3, stripe_customer_id),
-         stripe_subscription_id = COALESCE($4, stripe_subscription_id),
+         razorpay_customer_id = COALESCE($3, razorpay_customer_id),
+         razorpay_subscription_id = COALESCE($4, razorpay_subscription_id),
          max_students = $5,
          max_teachers = $6,
          max_staff = $7,
@@ -264,8 +264,8 @@ export class SchoolService {
       [
         input.plan,
         input.subscriptionEndsAt || null,
-        input.stripeCustomerId || null,
-        input.stripeSubscriptionId || null,
+        input.razorpayCustomerId || null,
+        input.razorpaySubscriptionId || null,
         plan.max_students,
         plan.max_teachers,
         plan.max_staff,

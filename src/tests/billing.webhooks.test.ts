@@ -8,11 +8,6 @@
  *    - subscription.charged  → updates plan + clears dunning + creates billing_event
  *    - payment.failed        → sets past_due + triggers dunning
  *    - subscription.cancelled → sets canceled
- *  - POST /api/v1/webhooks/stripe
- *    - idempotency: duplicate event_id ignored
- *    - invoice.payment_succeeded → updates plan + clears dunning + creates billing_event
- *    - invoice.payment_failed    → sets past_due
- *    - customer.subscription.deleted → sets canceled
  *  - Webhook endpoints do NOT require Authorization header
  */
 
@@ -26,8 +21,6 @@ import { query } from '../database/connection';
 // ─────────────────────────────────────────────────────────────
 const TEST_SCHOOL_ID     = '00000000-0000-0000-0000-000000000001';
 const TEST_RAZORPAY_SUB  = `rzp_sub_test_${Date.now()}`;
-const TEST_STRIPE_CUS    = `cus_test_${Date.now()}`;
-const TEST_STRIPE_SUB    = `sub_test_${Date.now()}`;
 
 /** Reset test school to a clean active state */
 async function resetSchool() {
@@ -39,11 +32,10 @@ async function resetSchool() {
        dunning_step          = 0,
        dunning_started_at    = NULL,
        dunning_last_email_at = NULL,
-       stripe_customer_id    = $2,
-       stripe_subscription_id = $3,
+       razorpay_subscription_id = $2,
        subscription_ends_at  = NOW() + INTERVAL '30 days'
      WHERE id = $1`,
-    [TEST_SCHOOL_ID, TEST_STRIPE_CUS, TEST_RAZORPAY_SUB]
+    [TEST_SCHOOL_ID, TEST_RAZORPAY_SUB]
   );
 }
 
@@ -283,205 +275,5 @@ describe('Payment Gateway Webhooks', () => {
     });
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // Stripe
-  // ═══════════════════════════════════════════════════════════
-
-  describe('POST /api/v1/webhooks/stripe', () => {
-    it('accepts requests without Authorization header (no auth required)', async () => {
-      const payload = JSON.stringify({ id: `evt_noop_${Date.now()}`, type: 'unknown.type', data: { object: {} } });
-      const res = await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      expect(res.body.received).toBe(true);
-    });
-
-    it('processes invoice.payment_succeeded and updates plan to basic', async () => {
-      const stripeEventId = `evt_charged_${Date.now()}`;
-      const periodEnd     = Math.floor((Date.now() + 30 * 86400 * 1000) / 1000);
-      const periodStart   = Math.floor(Date.now() / 1000);
-
-      const payload = JSON.stringify({
-        id:   stripeEventId,
-        type: 'invoice.payment_succeeded',
-        data: {
-          object: {
-            customer:     TEST_STRIPE_CUS,
-            subscription: TEST_STRIPE_SUB,
-            amount_paid:  99900,
-            currency:     'inr',
-            lines: {
-              data: [{
-                period:   { start: periodStart, end: periodEnd },
-                metadata: { plan: 'basic', billing_period: 'monthly' },
-              }],
-            },
-          },
-        },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const school = await query(
-        'SELECT plan, subscription_status FROM schools WHERE id = $1',
-        [TEST_SCHOOL_ID]
-      );
-      expect(school.rows[0].plan).toBe('basic');
-      expect(school.rows[0].subscription_status).toBe('active');
-    });
-
-    it('creates billing_event on invoice.payment_succeeded', async () => {
-      const stripeEventId = `evt_be_${Date.now()}`;
-      const periodEnd     = Math.floor((Date.now() + 30 * 86400 * 1000) / 1000);
-
-      const payload = JSON.stringify({
-        id:   stripeEventId,
-        type: 'invoice.payment_succeeded',
-        data: {
-          object: {
-            customer:     TEST_STRIPE_CUS,
-            subscription: TEST_STRIPE_SUB,
-            amount_paid:  99900,
-            currency:     'inr',
-            lines: {
-              data: [{
-                period:   { start: Math.floor(Date.now() / 1000), end: periodEnd },
-                metadata: { plan: 'basic', billing_period: 'monthly' },
-              }],
-            },
-          },
-        },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const evtResult = await query(
-        "SELECT * FROM billing_events WHERE gateway_event_id = $1 AND gateway = 'stripe'",
-        [stripeEventId]
-      );
-      expect(evtResult.rows.length).toBe(1);
-      expect(evtResult.rows[0].school_id).toBe(TEST_SCHOOL_ID);
-      expect(evtResult.rows[0].status).toBe('success');
-    });
-
-    it('is idempotent — ignores duplicate Stripe event', async () => {
-      const stripeEventId = `evt_idem_${Date.now()}`;
-      const payload = JSON.stringify({
-        id:   stripeEventId,
-        type: 'invoice.payment_succeeded',
-        data: {
-          object: {
-            customer:     TEST_STRIPE_CUS,
-            amount_paid:  99900,
-            currency:     'inr',
-            lines: { data: [{ period: { start: 0, end: 0 }, metadata: { plan: 'basic', billing_period: 'monthly' } }] },
-          },
-        },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const res2 = await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      expect(res2.body.received).toBe(true);
-
-      const count = await query(
-        "SELECT COUNT(*) FROM billing_events WHERE gateway_event_id = $1",
-        [stripeEventId]
-      );
-      expect(parseInt(count.rows[0].count)).toBe(1);
-    });
-
-    it('clears dunning on Stripe payment success', async () => {
-      await query(
-        `UPDATE schools SET dunning_step = 2, dunning_started_at = NOW() - INTERVAL '5 days' WHERE id = $1`,
-        [TEST_SCHOOL_ID]
-      );
-
-      const stripeEventId = `evt_clr_${Date.now()}`;
-      const payload = JSON.stringify({
-        id:   stripeEventId,
-        type: 'invoice.payment_succeeded',
-        data: {
-          object: {
-            customer:     TEST_STRIPE_CUS,
-            amount_paid:  99900,
-            currency:     'inr',
-            lines: { data: [{ period: { start: 0, end: 0 }, metadata: { plan: 'basic' } }] },
-          },
-        },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const school = await query(
-        'SELECT dunning_step FROM schools WHERE id = $1',
-        [TEST_SCHOOL_ID]
-      );
-      expect(school.rows[0].dunning_step).toBe(0);
-    });
-
-    it('sets past_due on invoice.payment_failed', async () => {
-      const payload = JSON.stringify({
-        id:   `evt_fail_${Date.now()}`,
-        type: 'invoice.payment_failed',
-        data: { object: { customer: TEST_STRIPE_CUS } },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const school = await query(
-        'SELECT subscription_status FROM schools WHERE id = $1',
-        [TEST_SCHOOL_ID]
-      );
-      expect(school.rows[0].subscription_status).toBe('past_due');
-    });
-
-    it('cancels subscription on customer.subscription.deleted', async () => {
-      const payload = JSON.stringify({
-        id:   `evt_del_${Date.now()}`,
-        type: 'customer.subscription.deleted',
-        data: { object: { customer: TEST_STRIPE_CUS } },
-      });
-
-      await request(app)
-        .post('/api/v1/webhooks/stripe')
-        .set('Content-Type', 'application/json')
-        .send(Buffer.from(payload))
-        .expect(200);
-
-      const school = await query(
-        'SELECT subscription_status FROM schools WHERE id = $1',
-        [TEST_SCHOOL_ID]
-      );
-      expect(school.rows[0].subscription_status).toBe('canceled');
-    });
-  });
 });
+

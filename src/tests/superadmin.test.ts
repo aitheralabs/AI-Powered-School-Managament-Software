@@ -652,21 +652,21 @@ describe('Super-Admin Panel', () => {
         .send({
           plan:                'basic',
           subscriptionEndsAt:  endsAt,
-          stripeCustomerId:    'cus_test_123',
-          stripeSubscriptionId: 'sub_test_456',
+          razorpayCustomerId:    'cus_test_123',
+          razorpaySubscriptionId: 'sub_test_456',
         })
         .expect(200);
 
       expect(res.body.success).toBe(true);
     });
 
-    it('DB reflects updated plan and stripe IDs', async () => {
+    it('DB reflects updated plan and razorpay IDs', async () => {
       const row = await query(
-        'SELECT plan, stripe_customer_id, stripe_subscription_id FROM schools WHERE id = $1',
+        'SELECT plan, razorpay_customer_id, razorpay_subscription_id FROM schools WHERE id = $1',
         [createdSchoolId]
       );
       expect(row.rows[0].plan).toBe('basic');
-      expect(row.rows[0].stripe_customer_id).toBe('cus_test_123');
+      expect(row.rows[0].razorpay_customer_id).toBe('cus_test_123');
     });
 
     it('returns 400 for unknown plan name', async () => {

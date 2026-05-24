@@ -115,7 +115,7 @@
           </div>
           <div class="info-row"><span>Trial Ends</span><span>{{ school.trial_ends_at ? (school.trial_ends_at | date:'MMM d, y') : '—' }}</span></div>
           <div class="info-row"><span>Sub Ends</span><span>{{ school.subscription_ends_at ? (school.subscription_ends_at | date:'MMM d, y') : '—' }}</span></div>
-          <div class="info-row"><span>Stripe Customer</span><span class="mono">{{ school.stripe_customer_id || '—' }}</span></div>
+          <div class="info-row"><span>Razorpay Customer</span><span class="mono">{{ school.razorpay_customer_id || '—' }}</span></div>
         </ng-container>
 
         <ng-container *ngIf="showSubEdit">

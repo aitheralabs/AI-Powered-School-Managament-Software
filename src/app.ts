@@ -161,18 +161,7 @@ app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Webhook routes — MUST be before express.json() and sanitization middleware
 // so that webhook payloads are not corrupted by sanitization/SQL-injection middleware.
-// Stripe needs raw body for signature verification; Razorpay needs JSON parsing.
-app.use("/api/v1/webhooks", (req, res, next) => {
-  if (req.path === "/stripe" || req.path.startsWith("/stripe/")) {
-    express.raw({ type: "application/json" })(req, res, () => {
-      webhookRoutes(req, res, next);
-    });
-  } else {
-    express.json({ limit: "10mb" })(req, res, () => {
-      webhookRoutes(req, res, next);
-    });
-  }
-});
+app.use("/api/v1/webhooks", express.json({ limit: "10mb" }), webhookRoutes);
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));

@@ -1,16 +1,13 @@
 /**
  * Payment Gateway Webhooks
  *
- * Handles inbound webhook events from:
- *   - Razorpay (primary for India)
- *   - Stripe (international)
+ * Handles inbound webhook events from Razorpay.
  *
  * CRITICAL: These endpoints must NOT require authentication.
  * Instead, they verify the webhook signature to confirm the event
  * comes from the real payment gateway.
  *
  * POST /api/v1/webhooks/razorpay
- * POST /api/v1/webhooks/stripe
  */
 
 import { Router, Request, Response } from 'express';
@@ -69,7 +66,7 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
   let schoolId: string | null = null;
   if (subscriptionId) {
     const school = await query(
-      'SELECT id FROM schools WHERE stripe_subscription_id = $1', [subscriptionId]
+      'SELECT id FROM schools WHERE razorpay_subscription_id = $1', [subscriptionId]
     );
     if (school.rows.length > 0) schoolId = school.rows[0].id;
   }
@@ -91,7 +88,7 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
         await schoolService.updateSubscription({
           schoolId,
           plan: plan as any,
-          stripeSubscriptionId: subscriptionId,
+          razorpaySubscriptionId: subscriptionId,
           subscriptionEndsAt: nextDate,
         });
 
@@ -158,168 +155,5 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
 
   res.json({ success: true });
 }));
-
-// ─────────────────────────────────────────────────────────────
-// Stripe webhook (for international customers)
-// ─────────────────────────────────────────────────────────────
-
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-
-router.post(
-  '/stripe',
-  // Stripe requires raw body for signature verification
-  // In app.ts, add: app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }))
-  asyncHandler(async (req: Request, res: Response) => {
-    const sig = req.headers['stripe-signature'] as string;
-
-    if (!STRIPE_WEBHOOK_SECRET) {
-      console.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook');
-      throw new AppError('Webhook signature verification not configured', 500);
-    }
-
-    if (!sig) {
-      throw new AppError('Missing Stripe signature header', 401);
-    }
-
-    // Manual Stripe signature verification (avoids stripe npm dependency)
-    const payload = Buffer.isBuffer(req.body) ? req.body.toString() : JSON.stringify(req.body);
-    const parts = sig.split(',');
-    const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
-    const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
-
-    if (!timestamp || !v1) {
-      throw new AppError('Malformed Stripe signature', 401);
-    }
-
-    const expected = crypto
-      .createHmac('sha256', STRIPE_WEBHOOK_SECRET)
-      .update(`${timestamp}.${payload}`)
-      .digest('hex');
-
-    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) {
-      throw new AppError('Invalid Stripe webhook signature', 401);
-    }
-
-    // req.body may be: a parsed object (express.json), a Buffer (express.raw),
-    // or a JSON-serialized Buffer {type:"Buffer",data:[...]} (supertest serializes Buffers this way)
-    let event: any;
-    if (Buffer.isBuffer(req.body)) {
-      const parsed = JSON.parse(req.body.toString());
-      // Handle double-serialized Buffer: {type:"Buffer", data:[...]}
-      if (parsed.type === 'Buffer' && Array.isArray(parsed.data)) {
-        event = JSON.parse(Buffer.from(parsed.data).toString());
-      } else {
-        event = parsed;
-      }
-    } else if (typeof req.body === 'object' && req.body !== null) {
-      // Handle supertest's Buffer serialization when express.json() parsed it
-      if (req.body.type === 'Buffer' && Array.isArray(req.body.data)) {
-        event = JSON.parse(Buffer.from(req.body.data).toString());
-      } else {
-        event = req.body;
-      }
-    } else {
-      event = JSON.parse(String(req.body));
-    }
-
-    // Idempotency check
-    const existing = await query(
-      "SELECT id FROM billing_events WHERE gateway_event_id = $1 AND gateway = 'stripe'",
-      [event.id]
-    );
-    if (existing.rows.length > 0) {
-      res.json({ received: true });
-      return;
-    }
-
-    const customerId = event.data?.object?.customer;
-    let schoolId: string | null = null;
-
-    if (customerId) {
-      const school = await query('SELECT id FROM schools WHERE stripe_customer_id = $1', [customerId]);
-      if (school.rows.length > 0) schoolId = school.rows[0].id;
-    }
-
-    switch (event.type) {
-      case 'invoice.payment_succeeded': {
-        const stripeInvoice  = event.data.object;
-        const stripeSubId    = stripeInvoice.subscription;
-        const plan           = stripeInvoice.lines?.data?.[0]?.metadata?.plan || 'basic';
-        const billingPeriod  = stripeInvoice.lines?.data?.[0]?.metadata?.billing_period || 'monthly';
-        const periodEndTs    = stripeInvoice.lines?.data?.[0]?.period?.end;
-        const periodStartTs  = stripeInvoice.lines?.data?.[0]?.period?.start;
-        const amountPaid     = (stripeInvoice.amount_paid || 0) / 100;
-        const currency       = (stripeInvoice.currency || 'usd').toUpperCase();
-
-        if (schoolId) {
-          const subEnd = periodEndTs ? new Date(periodEndTs * 1000) : undefined;
-          await schoolService.updateSubscription({
-            schoolId,
-            plan: plan as any,
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: stripeSubId,
-            subscriptionEndsAt: subEnd,
-          });
-
-          const billingResult = await query(
-            `INSERT INTO billing_events
-               (school_id, event_type, amount, currency, plan_name, billing_period, gateway, gateway_event_id, gateway_payload, status)
-             VALUES ($1,$2,$3,$4,$5,$6,'stripe',$7,$8,'success')
-             RETURNING id`,
-            [schoolId, event.type, amountPaid, currency, plan, billingPeriod, event.id, JSON.stringify(event)]
-          );
-
-          // Auto-generate invoice + receipt email
-          if (amountPaid > 0) {
-            invoiceService.generateInvoice({
-              schoolId,
-              billingEventId:  billingResult.rows[0]?.id,
-              amountPaid,
-              currency,
-              planName:        plan,
-              billingPeriod:   billingPeriod as 'monthly' | 'yearly',
-              gatewayInvoiceId: event.id,
-              periodStart: periodStartTs ? new Date(periodStartTs * 1000) : undefined,
-              periodEnd:   subEnd,
-            }).catch(err => console.error('[Webhook/Stripe] Invoice generation failed:', err));
-          }
-
-          // Clear dunning on success
-          await query(
-            `UPDATE schools
-             SET dunning_step = 0, dunning_started_at = NULL, dunning_last_email_at = NULL
-             WHERE id = $1 AND dunning_step > 0`,
-            [schoolId]
-          );
-        }
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        if (schoolId) {
-          await query(
-            "UPDATE schools SET subscription_status = 'past_due', updated_at = NOW() WHERE id = $1",
-            [schoolId]
-          );
-          dunningService.handlePaymentFailed(schoolId)
-            .catch(err => console.error('[Webhook/Stripe] Dunning trigger failed:', err));
-        }
-        break;
-      }
-
-      case 'customer.subscription.deleted': {
-        if (schoolId) {
-          await query(
-            "UPDATE schools SET subscription_status = 'canceled', updated_at = NOW() WHERE id = $1",
-            [schoolId]
-          );
-        }
-        break;
-      }
-    }
-
-    res.json({ received: true });
-  })
-);
 
 export default router;

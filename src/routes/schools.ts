@@ -202,7 +202,7 @@ router.post('/me/verify-payment', authorize('admin'), asyncHandler(async (req: R
     schoolId: req.schoolId!,
     plan:     plan as any,
     subscriptionEndsAt,
-    stripeSubscriptionId: paymentId, // store Razorpay payment_id in this field
+    razorpaySubscriptionId: paymentId,
   });
 
   // Record billing event

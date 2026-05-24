@@ -328,12 +328,12 @@ router.post('/schools/:id/suspend',    suspendSchool);
 router.post('/schools/:id/reactivate', reactivateSchool);
 
 router.put('/schools/:id/subscription', asyncHandler(async (req: Request, res: Response) => {
-  const { plan, subscriptionEndsAt, stripeCustomerId, stripeSubscriptionId } = req.body;
+  const { plan, subscriptionEndsAt, razorpayCustomerId, razorpaySubscriptionId } = req.body;
   await schoolService.updateSubscription({
     schoolId: req.params.id,
     plan,
-    stripeCustomerId,
-    stripeSubscriptionId,
+    razorpayCustomerId,
+    razorpaySubscriptionId,
     subscriptionEndsAt: subscriptionEndsAt ? new Date(subscriptionEndsAt) : undefined,
   });
   res.json({ success: true, message: 'Subscription updated successfully' });
