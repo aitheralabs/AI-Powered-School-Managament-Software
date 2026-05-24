@@ -95,6 +95,7 @@ export class AuthService {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('rememberMe');
     } catch { /* SSR safe */ }
     
     // Clear subjects
@@ -198,6 +199,28 @@ export class AuthService {
       console.error('Error parsing JWT:', error);
       return null;
     }
+  }
+
+  // ─── Password Reset ─────────────────────────────────────
+
+  forgotPassword(email: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.API_URL}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string, confirmPassword: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.API_URL}/auth/reset-password`, {
+      token, newPassword, confirmPassword
+    });
+  }
+
+  // ─── Email Verification ───────────────────────────────────
+
+  verifyEmail(token: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.API_URL}/auth/verify-email`, { token });
+  }
+
+  resendVerification(email: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.API_URL}/auth/resend-verification`, { email });
   }
 
   isAuthenticated(): boolean {

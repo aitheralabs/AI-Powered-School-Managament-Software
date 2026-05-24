@@ -9,7 +9,12 @@ export const CreateUserSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters').max(100, 'First name must be at most 100 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters').max(100, 'Last name must be at most 100 characters'),
   email: EmailSchema,
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string()
+    .min(10, 'Password must be at least 10 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character'),
   role: UserRoleSchema,
   phone: PhoneSchema.optional(),
   dateOfBirth: DateSchema.optional(),
@@ -25,7 +30,12 @@ export const LoginSchema = z.object({
 
 export const ChangePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+  newPassword: z.string()
+    .min(10, 'New password must be at least 10 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character'),
   confirmPassword: z.string().min(1, 'Password confirmation is required'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
@@ -46,8 +56,36 @@ export const UserResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const ForgotPasswordSchema = z.object({
+  email: EmailSchema,
+});
+
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string()
+    .min(10, 'New password must be at least 10 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string().min(1, 'Password confirmation is required'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export const VerifyEmailSchema = z.object({
+  token: z.string().min(1, 'Verification token is required'),
+});
+
+export const ResendVerificationSchema = z.object({
+  email: EmailSchema,
+});
+
 // Types
 export type UserRole = z.infer<typeof UserRoleSchema>;
+export type ForgotPassword = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPassword = z.infer<typeof ResetPasswordSchema>;
 export type CreateUser = z.infer<typeof CreateUserSchema>;
 export type UpdateUser = z.infer<typeof UpdateUserSchema>;
 export type Login = z.infer<typeof LoginSchema>;

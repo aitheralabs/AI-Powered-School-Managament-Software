@@ -52,13 +52,18 @@ export class FileService {
   }
 
   /**
-   * Get file metadata by ID
+   * Get file metadata by ID (with optional school_id for tenant isolation)
    */
-  async getFileById(fileId: string): Promise<any> {
-    const result = await query(
-      `SELECT * FROM files WHERE id = $1 AND deleted_at IS NULL`,
-      [fileId]
-    );
+  async getFileById(fileId: string, schoolId?: string): Promise<any> {
+    let sql = `SELECT * FROM files WHERE id = $1 AND deleted_at IS NULL`;
+    const params: any[] = [fileId];
+
+    if (schoolId) {
+      sql += ` AND school_id = $2`;
+      params.push(schoolId);
+    }
+
+    const result = await query(sql, params);
 
     if (result.rows.length === 0) {
       throw new AppError('File not found', 404);
@@ -68,14 +73,20 @@ export class FileService {
   }
 
   /**
-   * Get files by entity
+   * Get files by entity (with optional school_id for tenant isolation)
    */
-  async getFilesByEntity(entityType: string, entityId: string, fileType?: string): Promise<any[]> {
+  async getFilesByEntity(entityType: string, entityId: string, fileType?: string, schoolId?: string): Promise<any[]> {
     let sql = `SELECT * FROM files WHERE entity_type = $1 AND entity_id = $2 AND deleted_at IS NULL`;
     const params: any[] = [entityType, entityId];
+    let paramIndex = 3;
+
+    if (schoolId) {
+      sql += ` AND school_id = $${paramIndex++}`;
+      params.push(schoolId);
+    }
 
     if (fileType) {
-      sql += ` AND file_type = $3`;
+      sql += ` AND file_type = $${paramIndex++}`;
       params.push(fileType);
     }
 

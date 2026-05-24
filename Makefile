@@ -4,11 +4,11 @@
 # =============================================================================
 
 .PHONY: help \
-        dev-up dev-down dev-logs dev-restart \
+        dev-up dev-down dev-logs dev-restart setup-dev \
         staging-up staging-down staging-logs \
         up down restart build build-api build-frontend \
         logs logs-api logs-nginx logs-worker \
-        migrate migrate-dev seed seed-dev \
+        migrate migrate-dev seed seed-dev seed-demo seed-demo-dev \
         shell-api shell-db shell-nginx shell-mailhog \
         test test-coverage test-e2e test-e2e-ui \
         ssl-cert \
@@ -164,6 +164,34 @@ seed-dev: ## Seed super-admin user locally (requires env vars)
 	@test -n "$$SUPER_ADMIN_EMAIL"    || (echo "❌ SUPER_ADMIN_EMAIL not set"    && exit 1)
 	@test -n "$$SUPER_ADMIN_PASSWORD" || (echo "❌ SUPER_ADMIN_PASSWORD not set" && exit 1)
 	npx ts-node -r tsconfig-paths/register src/seed-superadmin.ts
+
+seed-demo: ## Seed demo data (school, teachers, students) inside running API container
+	docker compose exec api node dist/seed-demo-data.js
+
+seed-demo-dev: ## Seed demo data locally with ts-node
+	npx ts-node src/seed-demo-data.ts
+
+setup-dev: ## Full dev setup: start containers + seed demo data
+	$(MAKE) dev-up
+	@echo "⏳ Waiting for API to be healthy..."
+	@timeout=60; while [ $$timeout -gt 0 ]; do \
+	  if docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api wget -qO- http://localhost:3000/health > /dev/null 2>&1; then \
+	    break; \
+	  fi; \
+	  sleep 2; \
+	  timeout=$$((timeout - 2)); \
+	done
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api npx ts-node src/seed-demo-data.ts
+	@echo ""
+	@echo "✅ Setup complete!"
+	@echo ""
+	@echo "  API:     http://localhost:3000"
+	@echo "  MailHog: http://localhost:8025"
+	@echo "  DB:      localhost:5432"
+	@echo ""
+	@echo "  Login:   admin@dps-demo.edu / Demo@12345678"
+	@echo "  Run Angular frontend separately: cd school-management-frontend && ng serve"
+	@echo ""
 
 # ── Shells ───────────────────────────────────────────────────────────────────
 shell-api: ## Open a shell inside the API container

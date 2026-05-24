@@ -61,8 +61,9 @@ export class SchoolsListComponent implements OnInit, OnDestroy {
     const qs = new URLSearchParams(params).toString();
     this.http.get<any>(`${this.API}/schools?${qs}`, { headers: this.headers() }).subscribe({
       next: (res) => {
-        this.schools = res.data?.schools || res.data || [];
-        this.total   = res.data?.total   || this.schools.length;
+        const payload = res.data || {};
+        this.schools = Array.isArray(payload) ? payload : (payload.data || []);
+        this.total   = payload.total ?? this.schools.length;
         this.isLoading = false;
       },
       error: (err) => {

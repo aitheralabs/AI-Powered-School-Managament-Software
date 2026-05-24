@@ -48,3 +48,42 @@
 .chip-info    { background: #dbeafe; color: #1e40af; }
 .chip-neutral { background: #f3e8ff; color: #6b21a8; }
 .text-muted   { font-size: 11px; color: #94a3b8; }
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .fee-page { padding: 16px; }
+
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .filter-row { flex-direction: column; width: 100%; }
+  .filter-select { width: 100%; }
+
+  // Hide less important columns on tablet/mobile
+  ::ng-deep .mat-column-paid,
+  ::ng-deep .mat-column-dueDate,
+  ::ng-deep .mat-column-mandatory,
+  ::ng-deep .mat-column-frequency {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+
+  .stat-card { padding: 14px 12px; }
+  .stat-value { font-size: 16px; }
+}

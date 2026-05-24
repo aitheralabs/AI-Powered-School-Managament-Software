@@ -215,8 +215,12 @@ export class AttendanceService extends BaseService {
   }
 
   async deleteAttendance(id: string) {
+    const schoolId = this.requireSchool();
     const existingAttendance = await this.checkEntityExists('attendance', id);
-    await this.executeQuery('DELETE FROM attendance WHERE id = $1', [existingAttendance.id]);
+    await this.executeQuery(
+      'UPDATE attendance SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND school_id = $2',
+      [existingAttendance.id, schoolId]
+    );
     return { success: true };
   }
 

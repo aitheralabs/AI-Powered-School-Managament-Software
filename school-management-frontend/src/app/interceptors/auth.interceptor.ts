@@ -35,6 +35,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // Token expired or invalid, attempt to refresh (school users only)
         return handle401Error(authReq, next, authService, router);
       }
+      if (error.status === 403) {
+        // User lacks required role — redirect to unauthorized page
+        router.navigate(['/unauthorized']);
+        return throwError(() => error);
+      }
       return throwError(() => error);
     })
   );

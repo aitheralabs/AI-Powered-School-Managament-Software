@@ -585,6 +585,28 @@ export class StaffFormDialogComponent {
         margin: 0;
         opacity: 0.7;
       }
+
+      /* ─── Mobile Responsive ─────────────────────────── */
+      @media (max-width: 768px) {
+        .staff-page { padding: 16px; }
+        .page-header { flex-direction: column; gap: 12px; align-items: stretch; }
+        .filters-row { flex-direction: column; }
+        .search-field { min-width: 0; width: 100%; }
+
+        ::ng-deep .mat-column-employeeId,
+        ::ng-deep .mat-column-joiningDate,
+        ::ng-deep .mat-column-position {
+          display: none;
+        }
+
+        .data-card { overflow-x: auto; }
+      }
+
+      @media (max-width: 480px) {
+        ::ng-deep .mat-column-status { display: none; }
+        .avatar { width: 30px; height: 30px; font-size: 12px; }
+        .employee-cell { gap: 8px; }
+      }
     `,
   ],
 })

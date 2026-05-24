@@ -39,9 +39,10 @@ router.get(
   getGradeStats
 );
 
-// Get grades for a specific student
+// Get grades for a specific student (admin, teacher, staff, parent, student)
 router.get(
   '/student/:studentId',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   validateParams(z.object({ studentId: IdSchema })),
   validateQuery(z.object({
     semesterId: IdSchema.optional(),
@@ -91,17 +92,19 @@ router.post(
   createGrade
 );
 
-// Get grades with filtering and pagination
+// Get grades with filtering and pagination (admin, teacher, staff)
 router.get(
   '/',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(GradeQuerySchema),
   cacheResponse(300), // Cache for 5 minutes
   getGrades
 );
 
-// Get grade by ID
+// Get grade by ID (admin, teacher, staff, parent, student)
 router.get(
   '/:id',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   getGradeById
 );
 

@@ -44,6 +44,6 @@
 
 @media (max-width: 768px) {
   .main-container .app-sidenav {
-    width: 280px;
+    width: var(--sidebar-width, 264px);
   }
 }

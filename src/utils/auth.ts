@@ -28,6 +28,7 @@ export interface TokenPayload {
 // Generate JWT access token (short-lived)
 export const generateAccessToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
+    algorithm: 'HS256',
     expiresIn: '1h',
   } as jwt.SignOptions);
 };
@@ -35,6 +36,7 @@ export const generateAccessToken = (payload: TokenPayload): string => {
 // Generate JWT refresh token (long-lived)
 export const generateRefreshToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, env.JWT_SECRET, {
+    algorithm: 'HS256',
     expiresIn: env.JWT_EXPIRES_IN,
     jwtid: crypto.randomUUID(),
   } as jwt.SignOptions);
@@ -53,9 +55,9 @@ export const generateToken = (payload: TokenPayload): string => {
   return generateAccessToken(payload);
 };
 
-// Verify JWT token
+// Verify JWT token (only accept HS256 to prevent algorithm confusion attacks)
 export const verifyToken = (token: string) => {
-  return jwt.verify(token, env.JWT_SECRET);
+  return jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
 };
 
 // Check if token is expired

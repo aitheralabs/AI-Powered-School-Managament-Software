@@ -17,16 +17,18 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate, resolveTenant, requireActiveSubscription);
 
-// Generate attendance report
+// Generate attendance report (admin, teacher, staff)
 router.get(
   '/report',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(AttendanceReportQuerySchema),
   generateAttendanceReport
 );
 
-// Get attendance trends and analytics
+// Get attendance trends and analytics (admin, teacher, staff)
 router.get(
   '/trends',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(z.object({
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format'),
     endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format'),
@@ -37,18 +39,20 @@ router.get(
   getAttendanceTrends
 );
 
-// Get attendance statistics for dashboard
+// Get attendance statistics for dashboard (admin, teacher, staff)
 router.get(
   '/statistics',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(z.object({
     period: z.enum(['today', 'week', 'month', 'semester']).optional().default('today'),
   })),
   getAttendanceStatistics
 );
 
-// Export attendance data
+// Export attendance data (admin, teacher, staff)
 router.get(
   '/export',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(z.object({
     format: z.enum(['csv', 'json', 'excel']).optional().default('csv'),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format').optional(),

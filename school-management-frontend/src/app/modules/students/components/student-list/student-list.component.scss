@@ -310,3 +310,58 @@
   border-bottom: 1px solid var(--gray-200, #e2e8f0);
   background: var(--gray-50, #f8fafc);
 }
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+
+    .page-actions {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .table-toolbar {
+    padding: 12px 14px;
+  }
+
+  .search-box {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  // Hide less important columns on tablet/mobile
+  ::ng-deep .mat-column-enrollmentDate,
+  ::ng-deep .mat-column-status {
+    display: none;
+  }
+
+  // Always show actions on touch devices
+  .row-actions { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  // Hide student ID on small phones — name + class + actions is enough
+  ::ng-deep .mat-column-studentId {
+    display: none;
+  }
+
+  .student-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .student-cell { gap: 8px; }
+
+  .btn {
+    padding: 0 12px;
+    height: 36px;
+    font-size: 12.5px;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}

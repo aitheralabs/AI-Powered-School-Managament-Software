@@ -48,11 +48,12 @@ export const uploadFiles = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get file by ID
+ * Get file by ID (tenant-scoped)
  */
 export const getFile = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const file = await fileService.getFileById(id);
+  const schoolId = (req as any).schoolId;
+  const file = await fileService.getFileById(id, schoolId);
 
   res.json({
     success: true,
@@ -61,16 +62,18 @@ export const getFile = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get files by entity
+ * Get files by entity (tenant-scoped)
  */
 export const getFilesByEntity = asyncHandler(async (req: Request, res: Response) => {
   const { entityType, entityId } = req.params;
   const { fileType } = req.query;
+  const schoolId = (req as any).schoolId;
 
   const files = await fileService.getFilesByEntity(
     entityType,
     entityId,
-    fileType as string | undefined
+    fileType as string | undefined,
+    schoolId
   );
 
   res.json({
@@ -81,11 +84,12 @@ export const getFilesByEntity = asyncHandler(async (req: Request, res: Response)
 });
 
 /**
- * Download file
+ * Download file (tenant-scoped)
  */
 export const downloadFile = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const file = await fileService.getFileById(id);
+  const schoolId = (req as any).schoolId;
+  const file = await fileService.getFileById(id, schoolId);
 
   // Check if file exists
   const fileExists = await fileService.fileExists(file.filePath);

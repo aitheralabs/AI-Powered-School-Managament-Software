@@ -103,3 +103,31 @@
   border-bottom: 1px solid var(--gray-200, #e2e8f0);
   background: var(--gray-50, #f8fafc);
 }
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-box { max-width: 100%; min-width: 0; }
+
+  // Hide less important columns
+  ::ng-deep .mat-column-employeeId,
+  ::ng-deep .mat-column-subjects {
+    display: none;
+  }
+
+  .row-actions { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .person-avatar { width: 32px; height: 32px; font-size: 11px; }
+  .person-cell { gap: 8px; }
+
+  .btn {
+    padding: 0 12px; height: 36px; font-size: 12.5px;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+}

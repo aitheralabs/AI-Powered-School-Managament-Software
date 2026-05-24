@@ -9,6 +9,7 @@ import { Request, Response } from 'express';
 import { query } from '../database/connection';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 // ─── Simple CSV parser (no extra dependency) ────────────────────────────────
 
@@ -86,7 +87,7 @@ export const importStudentsCSV = asyncHandler(async (req: Request, res: Response
 
     try {
       // Create user account for student
-      const tempPassword = Math.random().toString(36).slice(-8);
+      const tempPassword = crypto.randomBytes(12).toString('base64url').slice(0, 16);
       const passwordHash = await bcrypt.hash(tempPassword, 10);
       const userEmail = email || `student_${Date.now()}_${i}@placeholder.local`;
 
@@ -197,7 +198,7 @@ export const importTeachersCSV = asyncHandler(async (req: Request, res: Response
     }
 
     try {
-      const tempPassword = Math.random().toString(36).slice(-8);
+      const tempPassword = crypto.randomBytes(12).toString('base64url').slice(0, 16);
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
       const userResult = await query(

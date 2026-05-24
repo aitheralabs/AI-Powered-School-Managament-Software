@@ -74,6 +74,7 @@ const ExamScheduleSchema = z.object({
 // ── Named special routes (MUST come before /:id) ───────────────────────────
 
 router.get('/class/:classId',
+  authorize('admin', 'teacher', 'staff', 'student', 'parent'),
   validateParams(z.object({ classId: IdSchema })),
   cacheResponse(300),
   getClassWeeklyTimetable
@@ -89,11 +90,13 @@ router.get('/teacher/:teacherId',
 // ── Exam routes ────────────────────────────────────────────────────────────
 
 router.get('/exams',
+  authorize('admin', 'teacher', 'staff', 'student', 'parent'),
   cacheResponse(300),
   getExams
 );
 
 router.get('/exams/:id',
+  authorize('admin', 'teacher', 'staff', 'student', 'parent'),
   validateParams(z.object({ id: IdSchema })),
   getExamById
 );
@@ -121,6 +124,7 @@ router.delete('/exams/:id',
 );
 
 router.get('/exams/:examId/schedules',
+  authorize('admin', 'teacher', 'staff', 'student', 'parent'),
   validateParams(z.object({ examId: IdSchema })),
   getExamSchedules
 );
@@ -141,11 +145,13 @@ router.delete('/exams/:examId/schedules/:scheduleId',
 // ── Slot CRUD ──────────────────────────────────────────────────────────────
 
 router.get('/',
+  authorize('admin', 'teacher', 'staff'),
   cacheResponse(300),
   getSlots
 );
 
 router.get('/:id',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   getSlotById
 );

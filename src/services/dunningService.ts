@@ -62,8 +62,8 @@ export class DunningService {
     const result = await query(
       `SELECT s.id, s.name, s.email, s.currency, s.dunning_step, s.dunning_started_at
        FROM schools s
-       WHERE s.subscription_status = 'past_due'
-         AND s.dunning_step < 4
+       WHERE s.subscription_status IN ('past_due', 'suspended')
+         AND s.dunning_step < 5
        ORDER BY s.dunning_started_at ASC`,
       []
     );
@@ -125,6 +125,7 @@ export class DunningService {
         subject: `Account suspended – ${school.name}`,
         html: buildDunningEmailHtml(school.name, 4, appUrl, appName, 0),
       }).catch(err => console.error(`[Dunning] Step-4 email error:`, err));
+
       await query(
         `UPDATE schools
          SET dunning_step          = 4,
@@ -135,7 +136,36 @@ export class DunningService {
          WHERE id = $1`,
         [school.id]
       );
+
+      // Invalidate all refresh tokens for users in this school
+      await query(
+        `UPDATE refresh_tokens SET is_active = false
+         WHERE user_id IN (SELECT id FROM users WHERE school_id = $1)`,
+        [school.id]
+      );
+
       console.log(`[Dunning] Step 4 (day-14 suspension) → ${school.name}`);
+    }
+
+    // Step 5: 30-day auto-cancellation
+    else if (currentStep === 4 && daysPastDue >= 30) {
+      await emailService.sendEmail({
+        to: school.email,
+        subject: `Subscription cancelled – ${school.name}`,
+        html: buildDunningEmailHtml(school.name, 5, appUrl, appName, 0),
+      }).catch(err => console.error(`[Dunning] Step-5 email error:`, err));
+
+      await query(
+        `UPDATE schools
+         SET dunning_step          = 5,
+             dunning_last_email_at = NOW(),
+             subscription_status   = 'cancelled',
+             updated_at            = NOW()
+         WHERE id = $1`,
+        [school.id]
+      );
+
+      console.log(`[Dunning] Step 5 (day-30 cancellation) → ${school.name}`);
     }
   }
 
@@ -262,15 +292,20 @@ function buildDunningEmailHtml(
   appName: string,
   daysLeft: number
 ): string {
-  const isSuspended = step >= 4;
-  const headerColor = isSuspended ? '#7f1d1d' : step === 3 ? '#dc2626' : '#d97706';
-  const title       = isSuspended
+  const isCancelled = step >= 5;
+  const isSuspended = step === 4;
+  const headerColor = isCancelled ? '#450a0a' : isSuspended ? '#7f1d1d' : step === 3 ? '#dc2626' : '#d97706';
+  const title       = isCancelled
+    ? 'Subscription Cancelled'
+    : isSuspended
     ? 'Account Suspended'
     : step === 3
     ? 'Final Warning — Access Restricted'
     : 'Payment Reminder';
 
-  const body = isSuspended
+  const body = isCancelled
+    ? `Your subscription has been <strong>cancelled</strong> due to prolonged non-payment. Your data will be retained for 90 days. Please contact <a href="mailto:billing@edusaas.in">billing@edusaas.in</a> to reactivate your account.`
+    : isSuspended
     ? `Your account has been <strong>suspended</strong> due to non-payment. Your data is safe. Please contact <a href="mailto:billing@edusaas.in">billing@edusaas.in</a> to reactivate your account.`
     : step === 3
     ? `Your payment is now <strong>7 days overdue</strong>. Some advanced features have been temporarily disabled. Please update your payment method immediately — you have <strong>7 days</strong> before full suspension.`

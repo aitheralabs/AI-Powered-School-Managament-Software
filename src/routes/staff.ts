@@ -32,9 +32,10 @@ router.post(
   createStaff
 );
 
-// Get staff members with filtering and pagination
+// Get staff members with filtering and pagination (admin and staff only)
 router.get(
   '/',
+  authorize('admin', 'staff'),
   validateQuery(StaffQuerySchema),
   getStaff
 );
@@ -46,15 +47,17 @@ router.get(
   getStaffSummary
 );
 
-// Get staff member by ID
+// Get staff member by ID (admin and staff only)
 router.get(
   '/:id',
+  authorize('admin', 'staff'),
   getStaffById
 );
 
-// Update staff member
+// Update staff member (admin only)
 router.put(
   '/:id',
+  authorize('admin'),
   validateBody(UpdateStaffSchema),
   updateStaff
 );

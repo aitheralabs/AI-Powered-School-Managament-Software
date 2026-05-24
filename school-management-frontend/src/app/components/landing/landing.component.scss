@@ -62,14 +62,18 @@
 .nav-actions {
   display: flex; gap: 10px; margin-left: auto;
   .nav-btn {
-    display: inline-flex; align-items: center; height: 38px; padding: 0 18px;
-    border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none;
-    transition: all .18s;
+    display: inline-flex; align-items: center; height: 40px; padding: 0 20px;
+    border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: all .2s; cursor: pointer;
     &.outline { background: transparent; color: #1e293b; border: 1.5px solid #e2e8f0;
-      &:hover { background: #f8fafc; } }
+      &:hover { background: #f8fafc; border-color: var(--gray-300, #cbd5e1); } }
     &.primary { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
       box-shadow: 0 4px 14px rgba(99,102,241,.3);
-      &:hover { transform: translateY(-1px); } }
+      &:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.4); } }
+  }
+  @media (max-width: 480px) {
+    .nav-btn { height: 36px; padding: 0 14px; font-size: 13px; }
+    .nav-btn.outline { display: none; }
   }
 }
 
@@ -105,8 +109,8 @@
 
 .hero-btn {
   display: inline-flex; align-items: center; gap: 8px; height: 52px;
-  padding: 0 28px; border-radius: 14px; font-size: 15px; font-weight: 700;
-  text-decoration: none; transition: all .2s;
+  padding: 0 28px; border-radius: 12px; font-size: 15px; font-weight: 700;
+  text-decoration: none; transition: all .2s; cursor: pointer;
   mat-icon { font-size: 20px; width: 20px; height: 20px; }
   &.primary {
     background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff;
@@ -116,6 +120,10 @@
   &.outline {
     background: #fff; color: #1e293b; border: 2px solid #e2e8f0;
     &:hover { background: #f8fafc; border-color: #6366f1; color: #6366f1; }
+  }
+  @media (max-width: 480px) {
+    height: 46px; padding: 0 22px; font-size: 14px; width: 100%;
+    justify-content: center;
   }
 }
 
@@ -243,8 +251,8 @@
 
 .pricing-card {
   border: 2px solid #e2e8f0; border-radius: 20px; padding: 32px 28px;
-  position: relative; transition: all .2s;
-  &:hover { box-shadow: 0 12px 32px rgba(0,0,0,.1); }
+  position: relative; transition: all .2s; background: #fff;
+  &:hover { box-shadow: 0 12px 32px rgba(0,0,0,.1); transform: translateY(-2px); }
   &.highlighted {
     border-color: #6366f1;
     box-shadow: 0 8px 32px rgba(99,102,241,.2);
@@ -358,4 +366,30 @@
       &:hover { color: rgba(255,255,255,.8); }
     }
   }
+}
+
+// ─── Mobile Refinements ─────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .features-grid, .testimonials-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+  .roles-grid { grid-template-columns: 1fr 1fr; }
+
+  .hero-stats { gap: 20px; }
+  .hero-stats .stat-val { font-size: 22px; }
+}
+
+@media (max-width: 480px) {
+  .hero-section { padding: 40px 16px; }
+  .features-section, .roles-section, .pricing-section,
+  .testimonials-section, .cta-section { padding: 48px 0; }
+
+  .section-header { margin-bottom: 32px; }
+  .roles-grid { grid-template-columns: 1fr; }
+
+  .feature-card, .testimonial-card { padding: 22px 18px; }
+  .pricing-card { padding: 24px 20px; }
+  .role-card { padding: 22px 18px; }
+
+  .cta-inner h2 { font-size: 24px; }
+  .cta-inner p { font-size: 15px; }
 }

@@ -373,3 +373,59 @@ $transition: all 0.22s cubic-bezier(.4,0,.2,1);
     flex-shrink: 0;
   }
 }
+
+// ─── Mobile Responsive Enhancements ──────────────────────────────────────────
+@media (max-width: 768px) {
+  .dashboard-header {
+    .greeting { font-size: 22px; }
+    .header-actions { width: 100%; }
+  }
+
+  .chart-card {
+    padding: 16px 14px !important;
+
+    .chart-container {
+      max-height: 220px;
+      canvas { max-height: 220px !important; }
+    }
+  }
+
+  .quick-card .quick-actions-list {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-card {
+    padding: 16px 14px !important;
+
+    .activity-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      mat-icon { font-size: 17px; width: 17px; height: 17px; }
+    }
+
+    .activity-item { gap: 10px; padding: 10px 0; }
+  }
+
+  .trial-banner { font-size: 13px; padding: 10px 14px; }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard { padding: 12px; }
+
+  .dashboard-header {
+    margin-bottom: 20px;
+    .greeting { font-size: 20px; }
+  }
+
+  .kpi-card {
+    .kpi-body { padding: 16px 14px 10px; }
+    .kpi-value { font-size: 24px; }
+    .kpi-icon-wrap { width: 42px; height: 42px; mat-icon { font-size: 22px; width: 22px; height: 22px; } }
+  }
+
+  .chart-card .chart-container {
+    max-height: 180px;
+    canvas { max-height: 180px !important; }
+  }
+}

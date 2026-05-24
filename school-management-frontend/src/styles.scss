@@ -433,8 +433,52 @@ a:hover { text-decoration: underline; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+// ── Focus States (Accessibility) ──────────────────────────────────────────
+*:focus-visible {
+  outline: 2px solid var(--brand-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand-400);
+  outline-offset: 2px;
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────
+::selection {
+  background: var(--brand-100);
+  color: var(--brand-900);
+}
+
 // ── Responsive ────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .page-header { flex-direction: column; }
   .card-header { flex-direction: column; align-items: flex-start; }
+
+  // Ensure touch-friendly tap targets
+  button, a, [role="button"] {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  // Improve paginator on mobile
+  .mat-mdc-paginator {
+    .mat-mdc-paginator-page-size { display: none !important; }
+    .mat-mdc-paginator-range-label { font-size: 12px !important; }
+  }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+
+  .empty-state {
+    padding: 40px 16px;
+    mat-icon { font-size: 44px; width: 44px; height: 44px; }
+  }
 }

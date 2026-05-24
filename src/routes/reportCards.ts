@@ -31,9 +31,10 @@ router.post(
   generateReportCard
 );
 
-// Get report cards with filtering and pagination
+// Get report cards with filtering and pagination (admin, teacher, staff, parent, student)
 router.get(
   '/',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   validateQuery(z.object({
     studentId: IdSchema.optional(),
     semesterId: IdSchema.optional(),
@@ -44,9 +45,10 @@ router.get(
   getReportCards
 );
 
-// Get report card by ID with full details
+// Get report card by ID with full details (admin, teacher, staff, parent, student)
 router.get(
   '/:id',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   getReportCardById
 );
 

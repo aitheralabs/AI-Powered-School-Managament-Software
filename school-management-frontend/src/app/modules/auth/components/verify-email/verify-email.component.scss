@@ -1,0 +1,43 @@
+@use '../forgot-password/forgot-password.component.scss' as *;
+
+.status-box {
+  text-align: center;
+  padding: 32px 0;
+
+  mat-spinner {
+    margin: 0 auto 16px;
+  }
+
+  p {
+    color: #64748b;
+  }
+}
+
+.error-box {
+  text-align: center;
+  padding: 24px 0;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #ef4444;
+    margin-bottom: 16px;
+  }
+
+  p {
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .back-link {
+    color: #4f46e5;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

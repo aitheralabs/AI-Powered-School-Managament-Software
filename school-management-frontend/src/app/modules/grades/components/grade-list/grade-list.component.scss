@@ -59,3 +59,36 @@
   display: inline-block; padding: 3px 10px; border-radius: 8px;
   font-size: 13px; font-weight: 700;
 }
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .grade-page { padding: 16px; }
+
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .filter-card .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .filter-field { width: 100%; }
+
+  // Hide less important columns on tablet/mobile
+  ::ng-deep .mat-column-assessment,
+  ::ng-deep .mat-column-semester,
+  ::ng-deep .mat-column-percentage {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+
+  .stat-value { font-size: 18px; }
+
+  .distribution-row { gap: 8px; padding: 12px 14px; }
+  .grade-pill { padding: 8px 12px; min-width: 48px; }
+}

@@ -1,5 +1,7 @@
 .class-list-container {
   padding: 24px;
+  max-width: 1300px;
+  margin: 0 auto;
 
   mat-card {
     .header {
@@ -7,11 +9,14 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
 
       h2 {
         margin: 0;
-        font-size: 24px;
-        font-weight: 600;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--gray-800, #1e293b);
       }
 
       button {
@@ -30,8 +35,8 @@
       gap: 16px;
 
       p {
-        color: #64748b;
-        font-size: 16px;
+        color: var(--gray-500, #64748b);
+        font-size: 14px;
       }
     }
 
@@ -45,15 +50,17 @@
       text-align: center;
 
       mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
+        font-size: 56px;
+        width: 56px;
+        height: 56px;
+        color: var(--error-500, #ef4444);
       }
 
       p {
-        color: #dc2626;
-        font-size: 16px;
+        color: var(--error-600, #dc2626);
+        font-size: 14px;
         margin: 0;
+        max-width: 300px;
       }
     }
 
@@ -65,10 +72,10 @@
 
         .class-row {
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: background .15s;
 
           &:hover {
-            background-color: #f8fafc;
+            background-color: var(--brand-50, #eef2ff);
           }
         }
       }
@@ -83,23 +90,47 @@
       text-align: center;
 
       mat-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: #cbd5e1;
+        font-size: 56px;
+        width: 56px;
+        height: 56px;
+        color: var(--gray-300, #cbd5e1);
         margin-bottom: 16px;
       }
 
       p {
-        color: #64748b;
-        font-size: 16px;
+        color: var(--gray-500, #64748b);
+        font-size: 14px;
         margin: 8px 0;
       }
 
       .hint {
-        color: #94a3b8;
-        font-size: 14px;
+        color: var(--gray-400, #94a3b8);
+        font-size: 13px;
       }
     }
+  }
+}
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .class-list-container {
+    padding: 16px;
+
+    mat-card .header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  // Hide less important columns
+  ::ng-deep .mat-column-room,
+  ::ng-deep .mat-column-enrollment {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  ::ng-deep .mat-column-teacher {
+    display: none;
   }
 }

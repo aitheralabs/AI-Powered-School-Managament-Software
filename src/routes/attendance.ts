@@ -55,17 +55,19 @@ router.post(
   markBulkAttendance
 );
 
-// Get attendance records with filtering
+// Get attendance records with filtering (admin, teacher, staff)
 router.get(
   '/',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(AttendanceQuerySchema),
   cacheResponse(300), // Cache for 5 minutes
   getAttendanceRecords
 );
 
-// Get attendance by ID
+// Get attendance by ID (admin, teacher, staff)
 router.get(
   '/:id',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   getAttendanceById
 );
@@ -87,9 +89,10 @@ router.delete(
   deleteAttendance
 );
 
-// Get class attendance for a specific date
+// Get class attendance for a specific date (admin, teacher, staff)
 router.get(
   '/class/:classId',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ classId: IdSchema })),
   validateQuery(z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
@@ -98,9 +101,10 @@ router.get(
   getClassAttendance
 );
 
-// Get class attendance summary (aggregated stats per student)
+// Get class attendance summary (admin, teacher, staff)
 router.get(
   '/class/:classId/summary',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ classId: IdSchema })),
   validateQuery(z.object({
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -109,9 +113,10 @@ router.get(
   getClassAttendanceSummary
 );
 
-// Get student attendance records list
+// Get student attendance records list (admin, teacher, staff, parent, student)
 router.get(
   '/student/:studentId',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   validateParams(z.object({ studentId: IdSchema })),
   validateQuery(z.object({
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -120,9 +125,10 @@ router.get(
   getStudentAttendanceList
 );
 
-// Get student attendance summary
+// Get student attendance summary (admin, teacher, staff, parent, student)
 router.get(
   '/student/:studentId/summary',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   validateParams(z.object({ studentId: IdSchema })),
   validateQuery(z.object({
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format').optional(),

@@ -35,15 +35,18 @@ router.post('/razorpay', asyncHandler(async (req: Request, res: Response) => {
   const signature = req.headers['x-razorpay-signature'] as string;
   const body = JSON.stringify(req.body);
 
-  if (RAZORPAY_WEBHOOK_SECRET) {
-    const expectedSig = crypto
-      .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
-      .update(body)
-      .digest('hex');
+  if (!RAZORPAY_WEBHOOK_SECRET) {
+    console.error('RAZORPAY_WEBHOOK_SECRET not configured — rejecting webhook');
+    throw new AppError('Webhook signature verification not configured', 500);
+  }
 
-    if (signature !== expectedSig) {
-      throw new AppError('Invalid webhook signature', 401);
-    }
+  const expectedSig = crypto
+    .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
+    .update(body)
+    .digest('hex');
+
+  if (!signature || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+    throw new AppError('Invalid webhook signature', 401);
   }
 
   const event = req.body;
@@ -169,21 +172,32 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
 
-    if (STRIPE_WEBHOOK_SECRET && sig) {
-      // Manual Stripe signature verification (avoids stripe npm dependency)
-      const payload = Buffer.isBuffer(req.body) ? req.body.toString() : JSON.stringify(req.body);
-      const parts = sig.split(',');
-      const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
-      const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
+    if (!STRIPE_WEBHOOK_SECRET) {
+      console.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook');
+      throw new AppError('Webhook signature verification not configured', 500);
+    }
 
-      const expected = crypto
-        .createHmac('sha256', STRIPE_WEBHOOK_SECRET)
-        .update(`${timestamp}.${payload}`)
-        .digest('hex');
+    if (!sig) {
+      throw new AppError('Missing Stripe signature header', 401);
+    }
 
-      if (expected !== v1) {
-        throw new AppError('Invalid Stripe webhook signature', 401);
-      }
+    // Manual Stripe signature verification (avoids stripe npm dependency)
+    const payload = Buffer.isBuffer(req.body) ? req.body.toString() : JSON.stringify(req.body);
+    const parts = sig.split(',');
+    const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
+    const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
+
+    if (!timestamp || !v1) {
+      throw new AppError('Malformed Stripe signature', 401);
+    }
+
+    const expected = crypto
+      .createHmac('sha256', STRIPE_WEBHOOK_SECRET)
+      .update(`${timestamp}.${payload}`)
+      .digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) {
+      throw new AppError('Invalid Stripe webhook signature', 401);
     }
 
     // req.body may be: a parsed object (express.json), a Buffer (express.raw),

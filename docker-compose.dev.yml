@@ -21,7 +21,7 @@ services:
       context:    .
       dockerfile: Dockerfile
       target:     builder           # Use the build stage (has dev dependencies)
-    command: npx nodemon --watch src --ext ts,json --exec "ts-node -r tsconfig-paths/register src/index.ts"
+    command: sh -c "npx ts-node src/database/migrate.ts && npx nodemon --watch src --ext ts,json --exec 'ts-node -r tsconfig-paths/register src/index.ts'"
     environment:
       NODE_ENV: development
       PORT:     3000

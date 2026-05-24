@@ -39,14 +39,18 @@ export const getPaginationParams = (
   const offset = (page - 1) * limit;
   
   // Map camelCase to snake_case for database columns
+  // SECURITY: Only allow whitelisted column names to prevent SQL injection via ORDER BY
   const allMappings = { ...COLUMN_MAPPINGS, ...columnMappings };
-  const mappedSortBy = allMappings[sortBy as string] || sortBy;
-  
+  const mappedSortBy = allMappings[sortBy as string];
+
+  // If sortBy is not in the whitelist, fall back to defaultSortBy
+  const safeSortBy = mappedSortBy || defaultSortBy;
+
   return {
     page,
     limit,
     offset,
-    sortBy: mappedSortBy as string,
+    sortBy: safeSortBy as string,
     sortOrder: (sortOrder === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc'
   };
 };

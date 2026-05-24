@@ -56,17 +56,19 @@ router.get(
   getStudents
 );
 
-// Get student by ID
+// Get student by ID (admin, teacher, staff, parent)
 router.get(
   '/:id',
+  authorize('admin', 'teacher', 'staff', 'parent'),
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // Cache for 10 minutes
   getStudentById
 );
 
-// Get student summary/dashboard
+// Get student summary/dashboard (admin, teacher, staff, parent, student)
 router.get(
   '/:id/summary',
+  authorize('admin', 'teacher', 'staff', 'parent', 'student'),
   validateParams(z.object({ id: IdSchema })),
   getStudentSummary
 );

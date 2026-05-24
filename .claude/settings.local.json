@@ -101,7 +101,11 @@
       "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'billing_events' LIMIT 5;\")",
       "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT column_name FROM information_schema.columns WHERE table_name = 'schools' AND column_name LIKE '%stripe%';\")",
       "Bash(PGPASSWORD=Kishan8051 psql -h localhost -U postgres -d SMS -c \"SELECT stripe_customer_id, stripe_subscription_id FROM schools WHERE id = '00000000-0000-0000-0000-000000000001';\")",
-      "Bash(npx tsx -e ':*)"
+      "Bash(npx tsx -e ':*)",
+      "WebFetch(domain:localhost)",
+      "Bash(xargs -I {} bash -c \"echo '=== {} ===' && head -20 {}\")",
+      "Bash(wc -l \"D:/SCHOOL MANAGEMNET/src/services\"/*.ts)",
+      "Bash(wc -l \"D:/SCHOOL MANAGEMNET/src/middleware\"/*.ts)"
     ]
   }
 }

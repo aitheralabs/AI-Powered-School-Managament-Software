@@ -19,6 +19,8 @@
     "db:migrate": "node dist/database/migrate.js",
     "db:migrate:dev": "ts-node src/database/migrate.ts",
     "db:seed": "ts-node src/seed-superadmin.ts",
+    "db:seed:demo": "ts-node src/seed-demo-data.ts",
+    "db:setup": "npm run db:migrate:dev && npm run db:seed:demo",
     "start:prod": "node dist/database/migrate.js && node dist/index.js",
     "build:prod": "npm run build && npm run db:migrate",
     "typecheck": "tsc --noEmit",

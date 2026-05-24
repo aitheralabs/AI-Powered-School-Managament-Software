@@ -42,9 +42,10 @@ router.get(
   getFeeStats
 );
 
-// Get fees for a specific student by student ID
+// Get fees for a specific student by student ID (admin, staff, parent, student)
 router.get(
   '/student/:studentId',
+  authorize('admin', 'staff', 'parent', 'student'),
   validateParams(z.object({ studentId: IdSchema })),
   getStudentFeesByStudentId
 );
@@ -60,9 +61,10 @@ router.post(
   createFeeCategory
 );
 
-// Get all fee categories
+// Get all fee categories (admin, staff)
 router.get(
   '/categories',
+  authorize('admin', 'staff'),
   validateQuery(PaginationSchema.extend({
     academicYearId: IdSchema.optional(),
     frequency: z.enum(['monthly', 'quarterly', 'semester', 'annual', 'one-time']).optional(),
@@ -73,9 +75,10 @@ router.get(
   getFeeCategories
 );
 
-// Get fee category by ID
+// Get fee category by ID (admin, staff)
 router.get(
   '/categories/:id',
+  authorize('admin', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // Cache for 10 minutes
   getFeeCategoryById
@@ -118,16 +121,18 @@ router.post(
 
 // Student Fee Management Routes
 
-// Get student fees with filtering
+// Get student fees with filtering (admin, staff)
 router.get(
   '/student-fees',
+  authorize('admin', 'staff'),
   validateQuery(FeeQuerySchema),
   getStudentFees
 );
 
-// Get student fee by ID
+// Get student fee by ID (admin, staff, parent, student)
 router.get(
   '/student-fees/:id',
+  authorize('admin', 'staff', 'parent', 'student'),
   validateParams(z.object({ id: IdSchema })),
   getStudentFeeById
 );

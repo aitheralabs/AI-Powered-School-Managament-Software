@@ -5,6 +5,7 @@ import {
   ElementRef,
   AfterViewChecked,
 } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -83,6 +84,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked {
   constructor(
     private aiService: AiService,
     private notificationService: NotificationService,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -201,10 +203,18 @@ What would you like to know?`,
     }
   }
 
-  formatContent(content: string): string {
-    return content
+  formatContent(content: string): SafeHtml {
+    // Escape HTML entities first to prevent XSS
+    const escaped = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    // Then apply safe formatting on the escaped content
+    const formatted = escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br>')
-      .replace(/- (.*?)(?=\n|$)/g, '• $1<br>');
+      .replace(/- (.*?)(?=\n|$)/g, '&bull; $1<br>');
+    return this.sanitizer.bypassSecurityTrustHtml(formatted);
   }
 }

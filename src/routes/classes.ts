@@ -28,11 +28,11 @@ router.use(authenticate, resolveTenant, requireActiveSubscription);
 // Class-level statistics (admin/staff) — must be before /:id
 router.get('/stats', authorize('admin', 'staff'), getClassStats);
 
-// Get all classes with filtering and pagination
-router.get('/', cacheResponse(300), getClasses); // Cache for 5 minutes
+// Get all classes with filtering and pagination (admin, teacher, staff)
+router.get('/', authorize('admin', 'teacher', 'staff'), cacheResponse(300), getClasses);
 
-// Get class by ID
-router.get('/:id', cacheResponse(600), getClassById); // Cache for 10 minutes
+// Get class by ID (admin, teacher, staff)
+router.get('/:id', authorize('admin', 'teacher', 'staff'), cacheResponse(600), getClassById);
 
 // Get class statistics (admin and teachers only)
 router.get('/:id/statistics', authorize('admin', 'teacher'), cacheResponse(300), getClassStatistics); // Cache for 5 minutes

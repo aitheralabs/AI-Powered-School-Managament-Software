@@ -40,6 +40,7 @@ export const routes: Routes = [
         (m) => m.DashboardModule,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'student', 'parent', 'staff'] },
   },
   {
     path: 'academic',
@@ -48,6 +49,7 @@ export const routes: Routes = [
         (m) => m.routes,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'staff'] },
   },
   {
     path: 'students',
@@ -56,6 +58,7 @@ export const routes: Routes = [
         (m) => m.StudentsModule,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'teachers',
@@ -64,12 +67,14 @@ export const routes: Routes = [
         (m) => m.TeachersModule,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'staff'] },
   },
   {
     path: 'classes',
     loadChildren: () =>
       import('./modules/classes/classes.module').then((m) => m.ClassesModule),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'attendance',
@@ -78,18 +83,21 @@ export const routes: Routes = [
         (m) => m.AttendanceModule,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'fees',
     loadChildren: () =>
       import('./modules/fees/fees.routes').then((m) => m.feesRoutes),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'staff'] },
   },
   {
     path: 'grades',
     loadChildren: () =>
       import('./modules/grades/grades.routes').then((m) => m.gradesRoutes),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'timetable',
@@ -98,6 +106,7 @@ export const routes: Routes = [
         (m) => m.TimetableModule,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'profile',
@@ -122,6 +131,7 @@ export const routes: Routes = [
         (c) => c.ParentListComponent,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'staff'] },
   },
   // "Add parent" opens a dialog on the list page — redirect to list
   {
@@ -134,6 +144,7 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./modules/reports/reports.routes').then((m) => m.reportsRoutes),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'subjects',
@@ -142,6 +153,7 @@ export const routes: Routes = [
         (c) => c.SubjectListComponent,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'ai-chat',
@@ -150,6 +162,7 @@ export const routes: Routes = [
         (c) => c.AiChatComponent,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin', 'teacher', 'staff'] },
   },
   {
     path: 'ai-insights',
@@ -161,6 +174,7 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./modules/staff/staff.routes').then((m) => m.staffRoutes),
     canActivate: [AuthGuard],
+    data: { roles: ['admin'] },
   },
   {
     path: 'billing',
@@ -169,6 +183,7 @@ export const routes: Routes = [
         (c) => c.BillingComponent,
       ),
     canActivate: [AuthGuard],
+    data: { roles: ['admin'] },
   },
   {
     path: 'verify-email',

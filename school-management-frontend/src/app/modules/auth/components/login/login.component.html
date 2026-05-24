@@ -78,7 +78,7 @@
         <div class="field-group">
           <label for="password">
             Password
-            <a href="#" class="forgot-link">Forgot password?</a>
+            <a routerLink="/auth/forgot-password" class="forgot-link">Forgot password?</a>
           </label>
           <div class="input-wrap" [class.error]="password?.invalid && password?.touched" [class.focused]="passFocused">
             <mat-icon>lock</mat-icon>

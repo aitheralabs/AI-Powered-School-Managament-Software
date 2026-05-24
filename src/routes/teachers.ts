@@ -54,9 +54,10 @@ router.post(
   createTeacher
 );
 
-// Get all teachers
+// Get all teachers (admin, teacher, staff)
 router.get(
   '/',
+  authorize('admin', 'teacher', 'staff'),
   validateQuery(PaginationSchema.extend({
     isActive: z.string().optional().transform(val => val === 'true'),
     search: z.string().optional(),
@@ -87,24 +88,27 @@ router.get(
   getAllTeacherAssignments
 );
 
-// Get teacher by ID
+// Get teacher by ID (admin, teacher, staff)
 router.get(
   '/:id',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // Cache for 10 minutes
   getTeacherById
 );
 
-// Get classes taught by a teacher
+// Get classes taught by a teacher (admin, teacher, staff)
 router.get(
   '/:id/classes',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   getTeacherClasses
 );
 
-// Get subjects taught by a teacher
+// Get subjects taught by a teacher (admin, teacher, staff)
 router.get(
   '/:id/subjects',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   getTeacherSubjects
 );
@@ -129,9 +133,10 @@ router.delete(
   deleteTeacher
 );
 
-// Get teacher workload and schedule
+// Get teacher workload and schedule (admin, teacher, staff)
 router.get(
   '/:id/workload',
+  authorize('admin', 'teacher', 'staff'),
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // Cache workload for 10 minutes (expensive calculation)
   getTeacherWorkload

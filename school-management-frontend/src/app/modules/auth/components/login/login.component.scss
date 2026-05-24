@@ -431,3 +431,38 @@
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+// ─── Mobile Refinements ───────────────────────────────────
+@media (max-width: 900px) {
+  .form-card {
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-panel {
+    padding: 24px 16px;
+  }
+
+  .form-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .form-header {
+    margin-bottom: 24px;
+
+    .form-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      mat-icon { font-size: 24px; width: 24px; height: 24px; }
+    }
+
+    h2 { font-size: 1.35rem; }
+  }
+
+  .auth-form { gap: 16px; }
+  .input-wrap { height: 46px; }
+  .submit-btn { height: 48px; font-size: 14px; }
+}

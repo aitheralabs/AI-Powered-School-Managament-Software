@@ -113,6 +113,50 @@ export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
 // Alias for backward compatibility
 export const getProfile = getCurrentUser;
 
+// Forgot password
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await authService.forgotPassword(email);
+
+  res.json({
+    success: true,
+    message: result.message,
+  });
+});
+
+// Reset password
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  const result = await authService.resetPassword(token, newPassword);
+
+  res.json({
+    success: true,
+    message: result.message,
+  });
+});
+
+// Verify email
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.body;
+  const result = await authService.verifyEmail(token);
+
+  res.json({
+    success: true,
+    message: result.message,
+  });
+});
+
+// Resend verification email
+export const resendVerification = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await authService.resendVerification(email);
+
+  res.json({
+    success: true,
+    message: result.message,
+  });
+});
+
 // Update user profile
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;

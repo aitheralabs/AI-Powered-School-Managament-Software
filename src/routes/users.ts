@@ -8,11 +8,12 @@ import { IdSchema } from '../types/common';
 import { z } from 'zod';
 import { sanitizeUser } from '../middleware/sanitization';
 import { cacheResponse, invalidateCache } from '../middleware/caching';
+import { resolveTenant, requireActiveSubscription } from '../middleware/tenant';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate);
+// All routes require authentication + tenant isolation
+router.use(authenticate, resolveTenant, requireActiveSubscription);
 
 // Create user (admin only)
 router.post(
@@ -33,9 +34,10 @@ router.get(
   getUsers
 );
 
-// Get user by ID
+// Get user by ID (admin only)
 router.get(
   '/:id',
+  authorize('admin'),
   validateParams(z.object({ id: IdSchema })),
   cacheResponse(600), // 10 minutes cache
   getUserById

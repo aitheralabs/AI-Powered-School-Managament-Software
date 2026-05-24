@@ -1,0 +1,27 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="form-header">
+      <div class="form-icon-wrap">
+        <mat-icon>mark_email_read</mat-icon>
+      </div>
+      <h2>Email Verification</h2>
+    </div>
+
+    <div *ngIf="isLoading" class="status-box">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Verifying your email...</p>
+    </div>
+
+    <div *ngIf="!isLoading && verified" class="success-box">
+      <mat-icon>check_circle</mat-icon>
+      <p>Your email has been verified successfully!</p>
+      <button class="submit-btn" (click)="goToLogin()">Go to Login</button>
+    </div>
+
+    <div *ngIf="!isLoading && errorMessage" class="error-box">
+      <mat-icon>error</mat-icon>
+      <p>{{ errorMessage }}</p>
+      <a routerLink="/auth/login" class="back-link">Back to Login</a>
+    </div>
+  </div>
+</div>

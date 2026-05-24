@@ -175,7 +175,8 @@ export class StaffService extends BaseService {
       if (staffUpdateFields.length > 0) {
         staffUpdateFields.push(`updated_at = CURRENT_TIMESTAMP`);
         staffUpdateValues.push(staffId);
-        await client.query(`UPDATE staff SET ${staffUpdateFields.join(', ')} WHERE id = $${staffParamIndex} AND school_id = '${schoolId}'`, staffUpdateValues);
+        staffUpdateValues.push(schoolId);
+        await client.query(`UPDATE staff SET ${staffUpdateFields.join(', ')} WHERE id = $${staffParamIndex} AND school_id = $${staffParamIndex + 1}`, staffUpdateValues);
       }
 
       await client.query('COMMIT');
